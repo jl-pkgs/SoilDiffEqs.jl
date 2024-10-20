@@ -5,6 +5,9 @@ using Parameters
 include("Soil_depth.jl")
 
 
+# 两种边界条件的设定方法：
+# 1. Q0
+# 2. ψ0
 @with_kw mutable struct Soil{FT}
   n::Int = 10
   z::Vector{FT} = zeros(FT, n)       # cm, 向下为负
@@ -17,10 +20,12 @@ include("Soil_depth.jl")
   K::Vector{FT} = zeros(FT, n)       # [cm/s]
   ψ::Vector{FT} = zeros(FT, n)       # [cm]，约干越负
   ψ0::FT = FT(0.0)                   # [cm]
+  Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
 
   sink::Vector{FT} = ones(FT, n) .* 0.0    # 蒸发项, [cm per unit time]
   param::NamedTuple = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
 end
+# Ksat: [cm/s]
 
 # Function to calculate hydraulic conductivity from water content
 function van_genuchten_K(θ; param)
