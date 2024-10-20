@@ -20,3 +20,5 @@
 - <https://github.com/amireson/RichardsEquation/blob/master/Richards%20Equation.ipynb>
 
 ## TODO
+
+- [ ] 考虑地下水影响的求解方案
