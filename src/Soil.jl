@@ -7,38 +7,39 @@ include("Soil_depth.jl")
 
 @with_kw mutable struct Soil{FT}
   n::Int = 10
-  z::Vector{FT} = zeros(FT, n)
+  z::Vector{FT} = zeros(FT, n)       # cm, 向下为负
   z₊ₕ::Vector{FT} = zeros(FT, n)
   Δz::Vector{FT} = zeros(FT, n)
   Δz₊ₕ::Vector{FT} = zeros(FT, n)
 
-  u::Vector{FT} = ones(FT, n) .* 0.1# θ
-  Q::Vector{FT} = zeros(FT, n)
-  K::Vector{FT} = zeros(FT, n)
-  ψ::Vector{FT} = zeros(FT, n)
-  ψ0::FT = FT(0.0)
+  u::Vector{FT} = ones(FT, n) .* 0.1 # θ [m3 m-3]
+  Q::Vector{FT} = zeros(FT, n)       # [cm/s]
+  K::Vector{FT} = zeros(FT, n)       # [cm/s]
+  ψ::Vector{FT} = zeros(FT, n)       # [cm]，约干越负
+  ψ0::FT = FT(0.0)                   # [cm]
 
-  param::NamedTuple = (; θs=0.287, θr=0.075, Ks=34 / 3600, α=0.027, n=3.96, m=1)
+  sink::Vector{FT} = ones(FT, n) .* 0.0    # 蒸发项, [cm per unit time]
+  param::NamedTuple = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
 end
 
 # Function to calculate hydraulic conductivity from water content
 function van_genuchten_K(θ; param)
-  (; θs, θr, Ks, α, n, m) = param
+  (; θs, θr, Ksat, α, n, m) = param
   Se = (θ - θr) / (θs - θr)
   # Se = clamp(Se, 0, 1)
   # effective_saturation = Se^0.5
   # term = (1 - (1 - Se^(1 / m))^m)^2
-  # return Ks * effective_saturation * term
+  # return Ksat * effective_saturation * term
 
   if Se <= 1
     # Special case for:
     # - `soil_texture = 1`: Haverkamp et al. (1977) sand
     # - `soil_texture = 2`: Yolo light clay
     ψ = van_genuchten_ψ(θ; param)
-    Ks * 1.175e6 / (1.175e6 + abs(ψ)^4.74) # Haverkamp et al. (1977) sand
-  # Ks * 124.6 / (124.6 + abs(ψ)^1.77)   # Yolo light clay
+    return Ksat * 1.175e6 / (1.175e6 + abs(ψ)^4.74) # Haverkamp et al. (1977) sand
+  # Ksat * 124.6 / (124.6 + abs(ψ)^1.77)   # Yolo light clay
   else
-    Ks
+    return Ksat
   end
 end
 

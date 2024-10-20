@@ -3,19 +3,20 @@ using JLD2, Test
 bonan = load("data/output_bonan.jld2")
 
 
-param = (; θs=0.287, θr=0.075, Ks=34 / 3600, α=0.027, n=3.96, m=1)
+param = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
 θ0 = 0.267
 ψ0 = van_genuchten_ψ(θ0; param)
 
-n = 150
+n = 150      # 150 cm?
 Δz = ones(n) # Δz₊ₕ
 z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
-
+sink = ones(n) * 0.3 / 86400 # [cm s⁻¹]
 
 function solve_ode()
   u0 = fill(0.1, n) |> collect # Example initial soil moisture profile
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
-  p = Soil{Float64}(; n=150, ψ0, z, z₊ₕ, Δz, Δz₊ₕ)
+  p = Soil{Float64}(; n=150, ψ0, z, z₊ₕ, Δz, Δz₊ₕ, sink)
+  
   prob = ODEProblem(RichardsEquation, u0, tspan, p)
   solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6, saveat=200)
 end
