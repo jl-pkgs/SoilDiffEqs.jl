@@ -1,5 +1,5 @@
 function solve_ode()
-  param = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
+  param = ParamVanGenuchten(θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   θ0 = 0.267
   ψ0 = van_genuchten_ψ(θ0; param)
   Q0 = -param.Ksat * 0.5  # [cm s-1] 向下为负
@@ -25,6 +25,8 @@ function solve_bonan()
     θ_res=0.075, θ_sat=0.287,
     α=0.027, n=3.96, m=1, K_sat=34 / 3600)
 
+  n = 150
+  dz = ones(n)
   θ = fill(0.1, n)
   ψ = matric_potential(θ, param; method="van_Genuchten")
 
@@ -75,6 +77,5 @@ end
 #   plot!(θ, z; label="Bonan")
 # end
 # plot!(solution, z; label="ODE")
-
 
 # ODE: 10 times slower

@@ -1,5 +1,8 @@
+using HydroTools, Plots, Test
+includet("../src/Richards.jl")
+
 function solve_ode()
-  param = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
+  param = ParamVanGenuchten(θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   θ0 = 0.267
   ψ0 = van_genuchten_ψ(θ0; param)
 
@@ -10,12 +13,17 @@ function solve_ode()
 
   θ0 = fill(0.1, n) |> collect # Example initial soil moisture profile
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
-  p = Soil{Float64}(; n=150, ψ0, θ=θ0, z, z₊ₕ, Δz, Δz₊ₕ, sink)
+  p = Soil{Float64}(; n=150, ψ0, θ=θ0, z, z₊ₕ, Δz, Δz₊ₕ, sink, param_water=param)
 
   prob = ODEProblem(RichardsEquation, θ0, tspan, p)
   sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6, saveat=200)
+  @show p.timestep
   sol.u[end]
 end
+
+# 40 times slower
+@time solution = solve_ode();
+@profview solution = solve_ode();
 
 function solve_bonan()
   n = 150
@@ -43,7 +51,7 @@ function solve_bonan()
   sum_store = 0
 
   # --- Time stepping loop: NTIM iterations with a time step of DT seconds
-  @time for itim = 1:ntim
+  for itim = 1:ntim
     hour = itim * (dt / 86400 * 24)
     # @printf("hour = %8.3f\n", hour)
     # Calculate soil moisture
@@ -59,8 +67,8 @@ function solve_bonan()
   θ
 end
 
-@time solution = solve_ode()
-@time θ = solve_bonan()
+@time solution = solve_ode();
+@time θ = solve_bonan();
 
 @testset "RichardsEquation θ0" begin
   @test maximum(abs.(solution - θ)) <= 1e-3 # 误差小于1/1000
