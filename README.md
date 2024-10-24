@@ -22,3 +22,7 @@
 ## TODO
 
 - [ ] 考虑地下水影响的求解方案
+
+1. <https://github.com/NCAR/noahmp/blob/master/src/GroundWaterTopModelMod.F90>
+2. <https://github.com/CoLM-SYSU/CoLM202X/blob/master/main/HYDRO/MOD_Hydro_SoilWater.F90>
+3. <>
