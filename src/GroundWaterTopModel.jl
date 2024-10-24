@@ -8,7 +8,7 @@ mutable struct NoahmpType{FT}
   F_frz_max::FT                  # 最大土壤不透水部分 [-]
   θ_ice::Vector{FT}                    # 土壤冰含量 [m3/m3]
   K::Vector{FT}        # 土壤水力传导率 [m/s]
-  Θ_sat::Vector{FT}            # 土壤饱和水分含量 [m3/m3]
+  θ_sat::Vector{FT}            # 土壤饱和水分含量 [m3/m3]
   λ::FT                      # 网格平均地形指数 [-]
   Ψ_sat::Vector{FT}        # 饱和基质势 [m]
   SoilExpCoeffB::Vector{FT}              # 土壤B参数 [-]
@@ -27,7 +27,7 @@ end
 
 function GroundWaterTopModel!(noahmp::NoahmpType{FT}) where {FT}
   (; n, dt, z, F_frz_max, θ_ice, K,
-    Θ_sat, λ, Ψ_sat, SoilExpCoeffB, Sy, MicroPoreContent,
+    θ_sat, λ, Ψ_sat, SoilExpCoeffB, Sy, MicroPoreContent,
     Ksat, θ_liq, hgw, Wa, S_SoilAqf,
     f, R_sb_max, Q, R_sb) = noahmp
 
@@ -53,7 +53,7 @@ function GroundWaterTopModel!(noahmp::NoahmpType{FT}) where {FT}
   for i in 1:n
     θ[i] = θ_liq[i] + θ_ice[i]
     _θ_liq[i] = θ_liq[i] * dz_mm[i]
-    porosity[i] = max(0.01, Θ_sat[i] - θ_ice[i]) # effective porosity
+    porosity[i] = max(0.01, θ_sat[i] - θ_ice[i]) # effective porosity
     _K[i] = 1.0e3 * K[i]
   end
 
@@ -72,7 +72,7 @@ function GroundWaterTopModel!(noahmp::NoahmpType{FT}) where {FT}
   R_sb = (1.0 - F_frz_max) * R_sb_max * exp(-λ - f * hgw)
 
   # 计算未饱和层的基质势
-  perc_unsat = clamp(θ[j] / Θ_sat[j], 0.01, 1.0)
+  perc_unsat = clamp(θ[j] / θ_sat[j], 0.01, 1.0)
 
   Ψ_Frz = -Ψ_sat[j] * 1000.0 * perc_unsat^(-SoilExpCoeffB[j])
   Ψ_Frz = max(-120000.0, MicroPoreContent * Ψ_Frz)
@@ -116,25 +116,25 @@ function GroundWaterTopModel!(noahmp::NoahmpType{FT}) where {FT}
   hgw = max(1.5, hgw)
 
   # 限制SoilLiqTmp不小于SoilMoistureMin
-  Θ_min = 0.01
+  θ_min = 0.01
   for i in 1:n-1
     if _θ_liq[i] < 0.0
-      Θ_excess = Θ_min - _θ_liq[i]
+      θ_excess = θ_min - _θ_liq[i]
     else
-      Θ_excess = 0.0
+      θ_excess = 0.0
     end
-    _θ_liq[i] += Θ_excess
-    _θ_liq[i+1] -= Θ_excess
+    _θ_liq[i] += θ_excess
+    _θ_liq[i+1] -= θ_excess
   end
 
-  if _θ_liq[n] < Θ_min
-    Θ_excess = Θ_min - _θ_liq[n]
+  if _θ_liq[n] < θ_min
+    θ_excess = θ_min - _θ_liq[n]
   else
-    Θ_excess = 0.0
+    θ_excess = 0.0
   end
-  _θ_liq[n] += Θ_excess
-  Wa -= Θ_excess
-  S_SoilAqf -= Θ_excess
+  _θ_liq[n] += θ_excess
+  Wa -= θ_excess
+  S_SoilAqf -= θ_excess
 
   # 更新土壤水分
   for i in 1:n

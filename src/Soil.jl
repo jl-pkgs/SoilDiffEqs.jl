@@ -15,15 +15,22 @@ include("Soil_depth.jl")
   Δz::Vector{FT} = zeros(FT, n)
   Δz₊ₕ::Vector{FT} = zeros(FT, n)
 
-  u::Vector{FT} = ones(FT, n) .* 0.1 # θ [m3 m-3]
+  # 水分
+  θ::Vector{FT} = ones(FT, n) .* 0.1 # θ [m3 m-3]
   Q::Vector{FT} = zeros(FT, n)       # [cm/s]
-  K::Vector{FT} = zeros(FT, n)       # [cm/s]
+  K::Vector{FT} = zeros(FT, n)       # 水力传导系数，[cm/s]
   ψ::Vector{FT} = zeros(FT, n)       # [cm]，约干越负
   ψ0::FT = FT(0.0)                   # [cm]
   Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
-
   sink::Vector{FT} = ones(FT, n) .* 0.0    # 蒸发项, [cm per unit time]
-  param::NamedTuple = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
+
+  # 温度
+  κ::Vector{FT} = zeros(FT, n)
+  cv::Vector{FT} = zeros(FT, n)
+  TS0::FT = FT(NaN)                  # 边界层条件，地表温度
+  F0::FT = FT(NaN)                   # 边界层条件，地表热通量
+
+  param_water::NamedTuple = (; θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1)
 end
 # Ksat: [cm/s]
 

@@ -4,8 +4,8 @@ include("soil_moisture.jl")
 
 
 function RichardsEquation_Q0(dθ, u, p::Soil, t)
-  (; n, Q, z, Δz, K, ψ, Q0, param, sink) = p
-
+  (; n, Q, z, Δz, K, ψ, Q0, sink) = p
+  param = p.param_water
   @. K = van_genuchten_K(u; param)
   @. ψ = van_genuchten_ψ(u; param)
 
@@ -25,8 +25,8 @@ function RichardsEquation_Q0(dθ, u, p::Soil, t)
 end
 
 function RichardsEquation(dθ, u, p::Soil, t)
-  (; n, Q, z, Δz, K, ψ, ψ0, param, sink) = p
-
+  (; n, Q, z, Δz, K, ψ, ψ0, sink) = p
+  param = p.param_water
   @. K = van_genuchten_K(u; param)
   @. ψ = van_genuchten_ψ(u; param)
 
