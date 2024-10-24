@@ -1,6 +1,5 @@
-using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
+using SoilDifferentialEquations, Test, RTableTools, Dates
 using DifferentialEquations
-import Ipaper: drop_missing
 
 
 include("test-soil_moisture.jl")

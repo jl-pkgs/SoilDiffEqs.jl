@@ -4,12 +4,22 @@ authors = ["Dongdong Kong <kongdd@users.noreply.github.com>"]
 version = "0.1.0"
 
 [deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HydroTools = "179359cd-bac3-4aa1-bccd-287172463ab0"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 
+[sources]
+HydroTools = {url = "https://github.com/jl-pkgs/HydroTools.jl"}
+
 [compat]
+Dates = "1.11.0"
 HydroTools = "0.1.6"
 Parameters = "0.12.3"
 
-[sources]
-HydroTools = {url = "https://github.com/jl-pkgs/HydroTools.jl"}
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+RTableTools = "76227a05-389e-44bd-84ad-996dde4b1834"
+
+[targets]
+test = ["Test", "DifferentialEquations", "RTableTools"]
