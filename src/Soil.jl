@@ -1,7 +1,3 @@
-using DifferentialEquations
-using HydroTools
-using Plots
-using Parameters
 include("Soil_depth.jl")
 
 
@@ -25,6 +21,7 @@ include("Soil_depth.jl")
   sink::Vector{FT} = ones(FT, n) .* 0.0    # 蒸发项, [cm per unit time]
 
   # 温度
+  T::Vector{FT} = ones(FT, n) .* NaN # [°C]
   κ::Vector{FT} = zeros(FT, n)
   cv::Vector{FT} = zeros(FT, n)
   TS0::FT = FT(NaN)                  # 边界层条件，地表温度
