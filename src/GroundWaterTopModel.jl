@@ -2,27 +2,27 @@
 # 模拟地下水流动和基于TOPMODEL的地下径流 (Niu et al., 2007)
 
 mutable struct NoahmpType{FT}
-  n::Int                      # 土壤层数
-  dt::FT                      # 土壤时间步长 [s]
-  z::Vector{FT}               # 土壤层底部深度 [m], 向下为负
-  F_frz_max::FT                  # 最大土壤不透水部分 [-]
-  θ_ice::Vector{FT}                    # 土壤冰含量 [m3/m3]
-  K::Vector{FT}        # 土壤水力传导率 [m/s]
-  θ_sat::Vector{FT}            # 土壤饱和水分含量 [m3/m3]
-  λ::FT                      # 网格平均地形指数 [-]
-  Ψ_sat::Vector{FT}        # 饱和基质势 [m]
-  SoilExpCoeffB::Vector{FT}              # 土壤B参数 [-]
-  SpecYieldGw::FT                        # 特定产水量 [-]
-  MicroPoreContent::FT                   # 微孔含量 (0.0-1.0)
-  Ksat::Vector{FT}     # 饱和土壤水力传导率 [m/s]
-  θ_liq::Vector{FT}               # 土壤液态水含量 [m3/m3]
-  WaterTableDepth::FT                    # 地下水位深度 [m]
-  WaterStorageAquifer::FT                # 含水层水储量 [mm]
-  WaterStorageSoilAqf::FT                # 含水层和饱和土壤的水储量 [mm]
-  RunoffDecayFac::FT                     # 径流衰减因子 (1/m)
-  BaseflowCoeff::FT                      # 底流系数 [mm/s]
-  RechargeGw::FT                         # 地下水补给速率 [mm/s]
-  DischargeGw::FT                        # 地下水排放速率 [mm/s]
+  n::Int                     # 土壤层数
+  dt::FT                     # 土壤时间步长       [s]
+  z::Vector{FT}              # 土壤层底部深度     [m], 向下为负
+  F_frz_max::FT              # 最大土壤不透水部分 [-]
+  θ_ice::Vector{FT}          # 土壤冰含量        [m3/m3]
+  K::Vector{FT}              # 土壤水力传导率     [m/s]
+  θ_sat::Vector{FT}          # 土壤饱和水分含量   [m3/m3]
+  λ::FT                      # 网格平均地形指数   [-]
+  Ψ_sat::Vector{FT}          # 饱和基质势        [m]
+  SoilExpCoeffB::Vector{FT}  # 土壤B参数         [-]
+  SpecYieldGw::FT            # 特定产水量        [-]
+  MicroPoreContent::FT       # 微孔含量         (0.0-1.0)
+  Ksat::Vector{FT}           # 饱和土壤水力传导率 [m/s]
+  θ_liq::Vector{FT}          # 土壤液态水含量     [m3/m3]
+  WaterTableDepth::FT        # 地下水位深度       [m]
+  WaterStorageAquifer::FT    # 含水层水储量       [mm]
+  WaterStorageSoilAqf::FT    # 含水层和饱和土壤的水储量 [mm]
+  RunoffDecayFac::FT         # 径流衰减因子       (1/m)
+  BaseflowCoeff::FT          # 底流系数          [mm/s]
+  RechargeGw::FT             # 地下水补给速率     [mm/s]
+  DischargeGw::FT            # 地下水排放速率     [mm/s]
 end
 
 function GroundWaterTopModel!(noahmp::NoahmpType{FT}) where {FT}

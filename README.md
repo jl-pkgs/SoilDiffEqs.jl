@@ -1,4 +1,4 @@
-# Richards Equation Example
+# Soil DifferentialEquations
 
 > 求解土壤水运动方程
 

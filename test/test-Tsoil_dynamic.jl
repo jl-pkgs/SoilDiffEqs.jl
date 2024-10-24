@@ -27,7 +27,7 @@ function solve_Tsoil_ODE(TS0; reltol=1e-5, abstol=1e-5)
     prob.u0 .= soil.Tsoil
     # @assert prob.p.TS0 == TS0[i] # 确认
     sol = solve(prob, Tsit5(); reltol, abstol, saveat=3600)
-    soil.Tsoil .= sol.u[end]
+    soil.Tsoil .= sol.u[end] # 更新这个时刻的结果
   end
   @show soil.timestep
   soil.Tsoil
