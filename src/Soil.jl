@@ -1,5 +1,4 @@
 using Parameters
-include("Soil_depth.jl")
 
 # 2.5x faster power method
 "Faster method for exponentiation"
@@ -21,7 +20,8 @@ end
 
 # 两种边界条件的设定方法：
 @with_kw mutable struct Soil{FT}
-  n::Int = 10
+  n::Int = 10                        # layers of soil
+  dt::Float64 = 3600                 # 时间步长, seconds
   z::Vector{FT} = zeros(FT, n)       # cm, 向下为负
   z₊ₕ::Vector{FT} = zeros(FT, n)
   Δz::Vector{FT} = zeros(FT, n)
@@ -37,7 +37,7 @@ end
   sink::Vector{FT} = fill(0.0, n)    # 蒸发项, [cm per unit time]
 
   # 温度
-  T::Vector{FT} = ones(FT, n) .* NaN # [°C]
+  Tsoil::Vector{FT} = ones(FT, n) .* NaN # [°C]
   κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
   cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
   F::Vector{FT} = zeros(FT, n)       # heat flux, [W m-2]

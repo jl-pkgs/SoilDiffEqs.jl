@@ -1,5 +1,11 @@
+Manifest.toml
+
 __pycache__
 *.ipynb_checkpoints
 *.png
 
 *.pdf
+.vscode/*
+
+examples
+data

@@ -1,3 +1,7 @@
+using SoilDifferentialEquations, Plots, Test
+using DifferentialEquations
+
+
 function solve_ode()
   param = ParamVanGenuchten(θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   θ0 = 0.267

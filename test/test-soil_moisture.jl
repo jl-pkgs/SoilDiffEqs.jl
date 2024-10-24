@@ -1,5 +1,6 @@
-using HydroTools, Plots, Test
-includet("../src/Richards.jl")
+using SoilDifferentialEquations, Plots, Test
+using DifferentialEquations
+
 
 function solve_ode()
   param = ParamVanGenuchten(θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
@@ -23,7 +24,7 @@ end
 
 # 40 times slower
 @time solution = solve_ode();
-@profview solution = solve_ode();
+# @profview solution = solve_ode();
 
 function solve_bonan()
   n = 150

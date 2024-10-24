@@ -1,0 +1,15 @@
+name = "SoilDifferentialEquations"
+uuid = "65c8d809-e25b-4adf-9c1b-de173a457f19"
+authors = ["Dongdong Kong <kongdd@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+HydroTools = "179359cd-bac3-4aa1-bccd-287172463ab0"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+
+[compat]
+HydroTools = "0.1.6"
+Parameters = "0.12.3"
+
+[sources]
+HydroTools = {url = "https://github.com/jl-pkgs/HydroTools.jl"}
