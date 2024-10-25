@@ -1,4 +1,4 @@
-# 优化模型参数
+# TODO: 优化模型参数
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
 using DifferentialEquations
 import HydroTools: sceua, GOF, of_KGE, of_NSE
@@ -13,6 +13,15 @@ A = Matrix(d[:, 2:end]) #|> drop_missing
 ibeg = 2
 TS0 = A[:, ibeg]
 yobs = A[:, ibeg:end]
+Tsoil0 = A[1, :]
+
+soil = init_soil(; soil_type=7)
+ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+
+plot(
+  [plot_soil(i) for i in 1:8]...,
+  size=(1200, 800),
+)
 
 begin
   soil = init_soil(; soil_type=7)
@@ -31,13 +40,12 @@ begin
   @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(1e5))
 end
 
+theta = [fill(0.2, 9); fill(0.1, 9) * 1e6]
+goal(theta; ibeg=2)
+
 # theta = r.minimizer
 ysim = model_sim(theta; ibeg)
 
-plot(
-  [plot_soil(i) for i in 1:8]...,
-  size=(1200, 800),
-)
 # of_NSE(yobs, ysim)
 
 # z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)

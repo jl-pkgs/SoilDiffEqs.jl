@@ -1,3 +1,4 @@
+using Plots
 gr(framestyle=:box)
 
 Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
@@ -18,7 +19,7 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
   m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
   m_ice = 0 * m_sat
   m_liq = 0.8 * m_sat
-  Tsoil = fill(10.0, n)
+  Tsoil = deepcopy(Tsoil0)
 
   κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
     soil_texture=soil_type, method="apparent-heat-capacity")
@@ -31,7 +32,6 @@ end
 function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibeg=1)
   ntime = length(TS0)
   R = zeros(ntime, soil.n - ibeg + 1)
-  # soil = init_soil()
   tspan = (0, 3600)
   u0 = soil.Tsoil[ibeg:end]
   _TsoilEquation(dT, T, p, t) = TsoilEquation_partial(dT, T, p, t; ibeg)
@@ -40,10 +40,11 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibe
   # prob = ODEProblem(TsoilEquation, u0, tspan, soil)
 
   # solver = Tsit5()
-  solver = Rodas5(autodiff=false)
   # solver = Rosenbrock23()
+  solver = Rodas5(autodiff=false)
+  R[1, :] .= soil.Tsoil[ibeg:end]
 
-  for i = 1:ntime
+  for i = 2:ntime
     soil.TS0 = TS0[i]
     prob.u0 .= soil.Tsoil[ibeg:end]
     # @assert prob.p.TS0 == TS0[i] # 确认
@@ -52,18 +53,29 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibe
     R[i, :] .= soil.Tsoil[ibeg:end]
   end
   verbose && (@show soil.timestep)
-  # soil.Tsoil
+  R
+end
+
+
+function solve_Tsoil_bonan(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibeg=1)
+  ntime = length(TS0)
+  R = zeros(ntime, soil.n - ibeg + 1)
+  for i = 1:ntime
+    soil_temperature!(soil, TS0[i]; ibeg)
+    R[i, :] .= soil.Tsoil[ibeg:end]
+  end
   R
 end
 
 
 function theta2param(theta)
-  κ = fill(theta[1], 9)
-  cv = fill(theta[2], 9)
-  if length(theta) == 2
-    κ = fill(theta[1], 9)
-    cv = fill(theta[2], 9)  
-  end
+  n = length(theta) ÷ 2
+  κ = theta[1:n]
+  cv = theta[n+1:end]
+  # if length(theta) == 2
+  #   κ = fill(theta[1], 9)
+  #   cv = fill(theta[2], 9)  
+  # end
   return κ, cv
 end
 

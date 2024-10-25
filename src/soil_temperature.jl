@@ -19,7 +19,7 @@ Tsoil_next, G = soil_temperature!(Soil, Real; solution="implicit", method="appar
 ```
 """
 function soil_temperature!(soil::Soil, Tsurf_next::Real;
-  solution="implicit", method="apparent-heat-capacity")
+  solution="implicit", method="apparent-heat-capacity", ibeg::Int=1)
   (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
     κ, cv, κ₊ₕ, Tsoil, u,
     a, b, c, d, f) = soil
@@ -33,9 +33,9 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
 
   ## Set up tridiagonal matrix
   @inbounds if solution == "implicit"
-    for i = 1:n
+    for i = ibeg:n
       m = cv[i] * Δz[i] / dt
-      if i == 1
+      if i == ibeg
         a[i] = 0
         c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
         b[i] = m - c[i] + κ[i] / (0 - z[i])  # κ_(1/2) / dz_(1/2) = κ₁ / (0 - z₁)
@@ -58,13 +58,13 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
   elseif solution == "crank-nicolson"
     # --- Heat flux at time n (W/m2) of each layer
     # f = zeros(n)
-    for i = 1:n-1
+    for i = ibeg:n-1
       f[i] = -κ₊ₕ[i] / Δz₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) # Eq. 5.15
     end
 
-    for i = 1:n
+    for i = ibeg:n
       m = cv[i] * Δz[i] / dt
-      if i == 1
+      if i == ibeg
         a[i] = 0
         c[i] = -0.5 * κ₊ₕ[i] / Δz₊ₕ[i]
         b[i] = m - c[i] + κ[i] / (0 - z[i])
@@ -85,10 +85,15 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
     end
   end
 
-  u .= tridiagonal_solver(a, b, c, d) # the updated Tsoil
+  _a = @view a[ibeg:end]
+  _b = @view b[ibeg:end]
+  _c = @view c[ibeg:end]
+  _d = @view d[ibeg:end]
+  u[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d) # the updated Tsoil
 
   # --- Derive energy flux into soil (W/m2)
-  G = κ[1] * (Tsurf_next - u[1]) / (0 - z[1]) # gound heat flux, G
+  z_above = ibeg == 1 ? 0 : z[ibeg-1]
+  G = κ[ibeg] * (Tsurf_next - u[ibeg]) / (z_above - z[ibeg]) # gound heat flux, G
 
   ## --- Check for energy conservation
   if method == "apparent-heat-capacity"
@@ -98,7 +103,7 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
   end
 
   edif = 0.0 # Sum change in energy (W/m2)
-  @inbounds for i = 1:n
+  @inbounds for i = ibeg:n
     edif += cv[i] * Δz[i] * (u[i] - Tsoil[i]) / dt
   end
 
