@@ -22,6 +22,9 @@ include("soil_temperature_F0.jl")
 include("Equations/TsoilEquation.jl")
 include("Equations/RichardsEquation.jl")
 
+include("Solver.jl")
+
+export solve_Tsoil_Bonan
 
 dir_soil = "$(@__DIR__)/.." |> abspath
 export dir_soil

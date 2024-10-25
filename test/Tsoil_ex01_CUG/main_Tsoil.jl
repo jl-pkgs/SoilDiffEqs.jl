@@ -60,18 +60,6 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibe
 end
 
 
-function solve_Tsoil_bonan(soil, TS0; ibeg=1)
-  ntime = length(TS0)
-  R = zeros(ntime, soil.n - ibeg + 1)
-  R[1, :] .= soil.Tsoil[ibeg:end]
-  for i = 2:ntime
-    soil_temperature!(soil, TS0[i]; ibeg)
-    R[i, :] .= soil.Tsoil[ibeg:end]
-  end
-  R
-end
-
-
 function theta2param(theta)
   n = length(theta) ÷ 2
   κ = theta[1:n]
@@ -85,7 +73,7 @@ function model_sim(theta; ibeg::Int=1)
   soil.κ .= κ
   soil.cv .= cv
   # ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
-  ysim = solve_Tsoil_bonan(soil, TS0; ibeg=1)
+  ysim = solve_Tsoil_Bonan(soil, TS0; ibeg=1)
   ysim
 end
 

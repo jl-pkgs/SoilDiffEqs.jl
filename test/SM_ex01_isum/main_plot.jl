@@ -13,3 +13,9 @@ function plot_obs(i)
   plot!(t, yobs[:, i], label="OBS")
   # plot!(t, TS_sim[:, i], label="SIM")
 end
+
+
+plot(
+  [plot_soil(i) for i in 1:12]...,
+  size=(1200, 800),
+)

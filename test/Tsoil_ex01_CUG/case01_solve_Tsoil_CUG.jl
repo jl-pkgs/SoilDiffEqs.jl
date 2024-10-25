@@ -21,7 +21,7 @@ begin
   # method = "ODE"
 
   if method == "Bonan"
-    ysim = solve_Tsoil_bonan(soil, TS0; ibeg)
+    ysim = solve_Tsoil_Bonan(soil, TS0; ibeg)
   elseif method == "ODE"
     ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
   end
