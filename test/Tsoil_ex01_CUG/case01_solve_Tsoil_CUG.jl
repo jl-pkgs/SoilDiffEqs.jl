@@ -5,7 +5,6 @@ using Optim
 includet("main_Tsoil.jl")
 
 d = fread("$dir_soil/data/CUG_TS_202306.csv")
-
 t = d.time
 A = Matrix(d[:, 2:end]) #|> drop_missing 
 
@@ -14,44 +13,39 @@ TS0 = A[:, ibeg]
 yobs = A[:, ibeg:end]
 Tsoil0 = A[1, :]
 
+solver = Tsit5()
+# solver = Rosenbrock23()
+# solver = Rodas5(autodiff=false)
+
 begin
   soil = init_soil(; soil_type=7)
-
   method = "Bonan"
   # method = "ODE"
 
   if method == "Bonan"
-    ysim = solve_Tsoil_Bonan(soil, TS0; ibeg)
+    ysim = solve_Tsoil_Bonan(soil, TS0)
   elseif method == "ODE"
-    ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+    ysim = solve_Tsoil_ODE(soil, TS0; solver)
   end
 
   plot(
     [plot_soil(i; ibeg) for i in 1:8]...,
     size=(1200, 800),
   )
-  savefig("case01_Tsoil_CUG_$(method).png")
+  # savefig("case01_Tsoil_CUG_$(method).png")
 end
-
 
 begin
   soil = init_soil(; soil_type=7)
-  # x0 = [soil.κ[1]; soil.cv[1]]
-  # lower = [0.1; 0.1 * 1e6]
-  # upper = [10.0; 5.0 * 1e6]
   x0 = [soil.κ; soil.cv]
   lower = [fill(0.1, 9); fill(0.1, 9) * 1e6]
   upper = [fill(10.0, 9); fill(5.0, 9) * 1e6]
 
-  f(theta) = goal(theta; ibeg=2)
-
-  # inner_optimizer = GradientDescent()
-  # options = Optim.Options(show_trace=true)
-  # r = optimize(f, lower, upper, x0, Fminbox(inner_optimizer), options)
-  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(1 * 1e3))
+  f(theta) = goal(theta)
+  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(5 * 1e4))
 end
-ysim = model_sim(theta; ibeg)
 
-# theta0 = [fill(0.2, 9); fill(0.1, 9) * 1e6]
-# goal(theta; ibeg=2)
+ysim = model_Tsoil_sim(soil, TS0, theta;)
+
+# r = optimize(f, lower, upper, x0, Fminbox(inner_optimizer), options)
 # theta = r.minimizer

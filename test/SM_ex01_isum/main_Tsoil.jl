@@ -15,35 +15,6 @@ function init_soil(Δz; TS0=20.0, dt=3600.0, soil_type=1)
   Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
 end
 
-
-function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibeg=5)
-  ntime = length(TS0)
-  R = zeros(ntime, soil.n - ibeg + 1)
-  tspan = (0, 3600)
-  u0 = soil.Tsoil[ibeg:end]
-
-  _TsoilEquation(dT, T, p, t) = TsoilEquation_partial(dT, T, p, t; ibeg)
-  prob = ODEProblem(_TsoilEquation, u0, tspan, soil)
-  # prob = ODEProblem(TsoilEquation, u0, tspan, soil)
-
-  solver = Tsit5()
-  # solver = Rosenbrock23()
-  # solver = Rodas5(autodiff=false)
-  R[1, :] .= soil.Tsoil[ibeg:end]
-
-  for i = 2:ntime
-    soil.TS0 = TS0[i]
-    prob.u0 .= soil.Tsoil[ibeg:end]
-
-    sol = solve(prob, solver; reltol, abstol, saveat=3600)
-    soil.Tsoil[ibeg:end] .= sol.u[end] # 更新这个时刻的结果
-    R[i, :] .= soil.Tsoil[ibeg:end]
-  end
-
-  _inds = @. inds_obs - ibeg + 1
-  R[:, _inds]
-end
-
 function theta2param(theta)
   n = length(theta) ÷ 2
   κ = fill(theta[1], n)

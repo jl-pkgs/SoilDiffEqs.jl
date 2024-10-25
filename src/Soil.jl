@@ -20,8 +20,8 @@ end
 
 @with_kw mutable struct Soil{FT}
   n::Int = 10                        # layers of soil
-  inds_obs::Vector{Int} = 1:n        # indices of observed layers
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
+  inds_obs::Vector{Int} = ibeg:n     # indices of observed layers
 
   dt::Float64 = 3600                 # 时间步长, seconds
   z::Vector{FT} = zeros(FT, n)       # cm, 向下为负
