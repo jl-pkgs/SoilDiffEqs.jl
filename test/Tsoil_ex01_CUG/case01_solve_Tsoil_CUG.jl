@@ -1,4 +1,3 @@
-# TODO: 优化模型参数
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
 using DifferentialEquations
 import HydroTools: sceua, GOF, of_KGE, of_NSE
@@ -15,14 +14,25 @@ TS0 = A[:, ibeg]
 yobs = A[:, ibeg:end]
 Tsoil0 = A[1, :]
 
-soil = init_soil(; soil_type=7)
-# soil.κ[5:9] .= 4.0
-ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+begin
+  soil = init_soil(; soil_type=7)
 
-plot(
-  [plot_soil(i; ibeg) for i in 1:8]...,
-  size=(1200, 800),
-)
+  method = "Bonan"
+  # method = "ODE"
+
+  if method == "Bonan"
+    ysim = solve_Tsoil_bonan(soil, TS0; ibeg)
+  elseif method == "ODE"
+    ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+  end
+
+  plot(
+    [plot_soil(i; ibeg) for i in 1:8]...,
+    size=(1200, 800),
+  )
+  savefig("case01_Tsoil_CUG_$(method).png")
+end
+
 
 begin
   soil = init_soil(; soil_type=7)

@@ -1,7 +1,7 @@
 """
     soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
         m_liq::AbstractVector, m_ice::AbstractVector;
-        soil_texture::Integer=1, method="excess-heat")
+        soil_type::Integer=1, method="excess-heat")
 
 # Arguments
 
@@ -11,7 +11,7 @@
 - `Tsoil` : Soil temperature of each soil layer (℃)
 
 - `method`: method of phase change
-- `soil_texture`: 
+- `soil_type`: 
   + `1`: sand
 
 # Return
@@ -21,8 +21,7 @@
 """
 function soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
   m_liq::AbstractVector, m_ice::AbstractVector;
-  soil_texture::Integer=1, 
-  method="excess-heat")
+  soil_type::Integer=1, method="excess-heat")
 
   # Volumetric soil water content (%) at saturation (porosity)
   # (Clapp and Hornberger. 1978. Water Resources Research 14:601-604)
@@ -45,7 +44,7 @@ function soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
   κ = zeros(n)
   cv = zeros(n)
 
-  k = soil_texture
+  k = soil_type
   @fastmath @inbounds for i = 1:n
     # --- Volumetric soil water and ice
     θ_liq = m_liq[i] / (ρ_wat * dz[i])

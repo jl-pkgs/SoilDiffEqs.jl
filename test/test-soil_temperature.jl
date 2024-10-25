@@ -12,7 +12,7 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
   Tsoil = fill(10.0, n)
 
   κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
-    soil_texture=soil_type, method="apparent-heat-capacity")
+    soil_type, method="apparent-heat-capacity")
   Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
 end
 

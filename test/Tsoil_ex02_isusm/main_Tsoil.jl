@@ -10,7 +10,7 @@ function init_soil(Δz; TS0=20.0, dt=3600.0, soil_type=1)
   Tsoil = fill(TS0[1], n)
 
   κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
-    soil_texture=soil_type, method="apparent-heat-capacity")
+    soil_texture=soil_type)
   # κ, cv：两个比较重要的参数
   Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
 end
@@ -32,7 +32,7 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-4, abstol=1e-4, verbose=false, ibe
   # solver = Rodas5(autodiff=false)
   # solver = Rosenbrock23(autodiff=false)
 
-  for i = 1:ntime
+  for i = 2:ntime
     soil.TS0 = TS0[i]
     prob.u0 .= soil.Tsoil[ibeg:end]
     sol = solve(prob, solver; reltol, abstol, saveat=600)

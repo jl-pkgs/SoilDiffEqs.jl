@@ -25,7 +25,7 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
   Tsoil = deepcopy(Tsoil0)
 
   κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
-    soil_texture=soil_type, method="apparent-heat-capacity")
+    soil_type, method="apparent-heat-capacity")
   # κ, cv：两个比较重要的参数
   Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
 end
@@ -50,7 +50,7 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibe
   for i = 2:ntime
     soil.TS0 = TS0[i]
     prob.u0 .= soil.Tsoil[ibeg:end]
-    # @assert prob.p.TS0 == TS0[i] # 确认
+
     sol = solve(prob, solver; reltol, abstol, saveat=3600)
     soil.Tsoil[ibeg:end] .= sol.u[end] # 更新这个时刻的结果
     R[i, :] .= soil.Tsoil[ibeg:end]
@@ -60,10 +60,11 @@ function solve_Tsoil_ODE(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibe
 end
 
 
-function solve_Tsoil_bonan(soil, TS0; reltol=1e-3, abstol=1e-3, verbose=false, ibeg=1)
+function solve_Tsoil_bonan(soil, TS0; ibeg=1)
   ntime = length(TS0)
   R = zeros(ntime, soil.n - ibeg + 1)
-  for i = 1:ntime
+  R[1, :] .= soil.Tsoil[ibeg:end]
+  for i = 2:ntime
     soil_temperature!(soil, TS0[i]; ibeg)
     R[i, :] .= soil.Tsoil[ibeg:end]
   end
@@ -75,10 +76,6 @@ function theta2param(theta)
   n = length(theta) ÷ 2
   κ = theta[1:n]
   cv = theta[n+1:end]
-  # if length(theta) == 2
-  #   κ = fill(theta[1], 9)
-  #   cv = fill(theta[2], 9)  
-  # end
   return κ, cv
 end
 
@@ -87,7 +84,8 @@ function model_sim(theta; ibeg::Int=1)
   κ, cv = theta2param(theta)
   soil.κ .= κ
   soil.cv .= cv
-  ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+  # ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
+  ysim = solve_Tsoil_bonan(soil, TS0; ibeg=1)
   ysim
 end
 
