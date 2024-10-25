@@ -2,8 +2,8 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT, param; fun=van_Genuc
   FT<:Real,V<:AbstractVector{FT}}
 
   (; n, dt, Δz, Δz₊ₕ,
-    θ, ψ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev,
-    a, b, c, d) = soil
+    ψ, 
+    θ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
 
   θ_prev .= θ # backup
   ψ_prev .= ψ

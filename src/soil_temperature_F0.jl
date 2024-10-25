@@ -5,13 +5,13 @@
 
 # Arguments: 
 
-- `κ`: thermal conductivity (W/m/K)
-- `cv`: volumetric heat capacity (J/m3/K)
-- `f0`: 
-- `Tsurf_next`: Tsurf_next_next, T0_{n+1}
-- `solution`:
-  + `implicit`:
-  + `crank-nicolson`:
+- `κ`   : thermal conductivity (W/m/K)
+- `cv`  : volumetric heat capacity (J/m3/K)
+- `f0`  : 
+- `df0` : Tsurf_next_next, T0_{n+1}
+- `solution`   : 
+  + `implicit`       : 
+  + `crank-nicolson` : 
 
 # Examples
 
@@ -30,8 +30,8 @@ Tsoil_next, G = soil_temperature_F0(dz, dt, κ, cv, Tsoil_cur, df0, f0, snow_wat
 """
 function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=0.0)
   (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
-    κ, cv, κ₊ₕ, Tsoil, u,
-    a, b, c, d, e, f) = soil
+    κ, cv, Tsoil, 
+    κ₊ₕ, u, a, b, c, d, e, f) = soil
 
   # Thermal conductivity at interface (W/m/K)
   @inbounds for i = 1:n-1

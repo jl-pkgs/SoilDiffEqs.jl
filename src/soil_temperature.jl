@@ -21,8 +21,8 @@ Tsoil_next, G = soil_temperature!(Soil, Real; solution="implicit", method="appar
 function soil_temperature!(soil::Soil, Tsurf_next::Real;
   solution="implicit", method="apparent-heat-capacity", ibeg::Int=1)
   (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
-    κ, cv, κ₊ₕ, Tsoil, u,
-    a, b, c, d, f) = soil
+    κ, cv, Tsoil, 
+    κ₊ₕ, u, a, b, c, d, f) = soil
 
   # Thermal conductivity at interface (W/m/K)
   # κ₊ₕ = zeros(1, n - 1)
