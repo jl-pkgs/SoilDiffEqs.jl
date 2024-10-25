@@ -37,14 +37,16 @@ end
   sink::Vector{FT} = fill(0.0, n)    # 蒸发项, [cm per unit time]
 
   # 温度
-  Tsoil::Vector{FT} = ones(FT, n) .* NaN # [°C]
+  Tsoil::Vector{FT} = fill(NaN, n)   # [°C]
   κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
   cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
   F::Vector{FT} = zeros(FT, n)       # heat flux, [W m-2]
   TS0::FT = FT(NaN)                  # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]
+  _Tsoil::Vector{FT} = fill(NaN, n)  # [°C], 为了从ibeg求解地温，定义的临时变量
+  _dTsoil::Vector{FT} = fill(NaN, n) # [°C]
 
-  timestep::Int = 0             # 时间步长
+  timestep::Int = 0                  # 时间步长
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
 end
 

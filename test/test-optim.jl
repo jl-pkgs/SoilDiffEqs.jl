@@ -5,13 +5,14 @@ import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Optim
 includet("main_Tsoil.jl")
 
-
 d = fread("$dir_soil/data/CUG_TS_202306.csv")
 
 t = d.time
 A = Matrix(d[:, 2:end]) #|> drop_missing 
-TS0 = A[:, 1]
-yobs = A[:, :]
+
+ibeg = 2
+TS0 = A[:, ibeg]
+yobs = A[:, ibeg:end]
 
 begin
   soil = init_soil(; soil_type=7)
@@ -22,20 +23,21 @@ begin
   lower = [fill(0.1, 9); fill(0.1, 9) * 1e6]
   upper = [fill(10.0, 9); fill(5.0, 9) * 1e6]
 
-  inner_optimizer = GradientDescent()
-  options = Optim.Options(show_trace=true)
-  r = optimize(goal, lower, upper, x0, Fminbox(inner_optimizer), options)
-  # x, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=Int(1e5))
+  f(theta) = goal(theta; ibeg=2)
+  
+  # inner_optimizer = GradientDescent()
+  # options = Optim.Options(show_trace=true)
+  # r = optimize(f, lower, upper, x0, Fminbox(inner_optimizer), options)
+  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(1e5))
 end
 
-theta = r.minimizer
-ysim = model_sim(theta)
+# theta = r.minimizer
+ysim = model_sim(theta; ibeg)
 
 plot(
-  [plot_soil(i) for i in 1:9]...,
+  [plot_soil(i) for i in 1:8]...,
   size=(1200, 800),
 )
-
 # of_NSE(yobs, ysim)
 
 # z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
