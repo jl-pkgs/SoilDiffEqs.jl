@@ -5,10 +5,10 @@
 
 # Arguments
 
-- `dz`: the thickness of each soil layer (m)
-- `m_liq`: Unfrozen water, liquid (kg H2O/m2)
-- `m_ice`: Frozen water, ice (kg H2O/m2)
-- `Tsoil`: Soil temperature of each soil layer (℃)
+- `dz`    : the thickness of each soil layer (m)
+- `m_liq` : Unfrozen water, liquid (kg H2O/m2)
+- `m_ice` : Frozen water, ice (kg H2O/m2)
+- `Tsoil` : Soil temperature of each soil layer (℃)
 
 - `method`: method of phase change
 - `soil_texture`: 

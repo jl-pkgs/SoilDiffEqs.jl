@@ -1,5 +1,5 @@
-using SoilDifferentialEquations, Test, RTableTools, Dates
-using DifferentialEquations
+using SoilDifferentialEquations, DifferentialEquations, Test
+using RTableTools, Dates
 
 
 include("test-soil_moisture.jl")

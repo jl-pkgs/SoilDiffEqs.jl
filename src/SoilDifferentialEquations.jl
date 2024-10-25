@@ -31,7 +31,7 @@ export soil_moisture!, soil_moisture_Q0!
 export TsoilEquation, TsoilEquation_partial, RichardsEquation
 
 # HydroTools
-export soil_temperature_F0, soil_temperature
+export soil_temperature!, soil_temperature_F0!
 export soil_depth_init, soil_thermal_properties, θ_S, ρ_wat, K0, matric_potential
 
 end

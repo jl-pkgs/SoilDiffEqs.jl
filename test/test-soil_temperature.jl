@@ -1,3 +1,6 @@
+using SoilDifferentialEquations, DifferentialEquations, Test
+
+
 function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
   n = 120
   Δz = fill(0.025, n)
@@ -26,15 +29,14 @@ end
 # solution = "crank-nicolson", "implicit"
 function solve_bonan(; TS0=20.0, solution="crank-nicolson")
   soil = init_soil()
-  (; dt, Δz, κ, cv, Tsoil) = soil
+  (; dt, Tsoil) = soil
 
   ts = tspan[1]:dt:tspan[2]
   ntime = length(ts)
   length(TS0) == 1 && (TS0 = fill(TS0, ntime))
 
   for k in 1:ntime
-    Tsoil_next, G = soil_temperature(Δz, dt, κ, cv, Tsoil, TS0[k]; solution)
-    Tsoil .= Tsoil_next
+    soil_temperature!(soil, TS0[k]; solution) # Tsoil_next, G
   end
   Tsoil
 end

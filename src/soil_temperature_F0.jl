@@ -28,51 +28,40 @@ f0 = -798.1091814317192
 Tsoil_next, G = soil_temperature_F0(dz, dt, κ, cv, Tsoil_cur, df0, f0, snow_water)
 ```
 """
-function soil_temperature_F0(dz::AbstractVector, dt::Real, 
-  κ::AbstractVector, cv::AbstractVector, Tsoil_cur::AbstractVector,
-  df0::Real, f0::Real, snow_water::Real=0.0)
-  # solution = "implicit", method = "apparent-heat-capacity"
-  z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
-  n = length(dz)
+function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=0.0)
+  (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
+    κ, cv, κ₊ₕ, Tsoil, u,
+    a, b, c, d, e, f) = soil
 
   # Thermal conductivity at interface (W/m/K)
-  κ₊ₕ = zeros(1, n - 1)
   @inbounds for i = 1:n-1
     κ₊ₕ[i] = κ[i] * κ[i+1] * (z[i] - z[i+1]) /
              (κ[i] * (z₊ₕ[i] - z[i+1]) + κ[i+1] * (z[i] - z₊ₕ[i])) # Eq. 5.16
   end
 
-  a = zeros(n)
-  b = zeros(n)
-  c = zeros(n)
-  d = zeros(n)
-
   # implicit
   @inbounds for i = 1:n
     if i == 1
       a[i] = 0
-      c[i] = -κ₊ₕ[i] / dz₊ₕ[i]
-      b[i] = cv[i] * dz[i] / dt - c[i] - df0
-      d[i] = -κ₊ₕ[i] * (Tsoil_cur[i] - Tsoil_cur[i+1]) / dz₊ₕ[i] + f0
+      c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
+      b[i] = cv[i] * Δz[i] / dt - c[i] - df0
+      d[i] = -κ₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) / Δz₊ₕ[i] + f0
     elseif i < n
-      a[i] = -κ₊ₕ[i-1] / dz₊ₕ[i-1]
-      c[i] = -κ₊ₕ[i] / dz₊ₕ[i]
-      b[i] = cv[i] * dz[i] / dt - a[i] - c[i]
-      d[i] = κ₊ₕ[i-1] * (Tsoil_cur[i-1] - Tsoil_cur[i]) / dz₊ₕ[i-1] -
-             κ₊ₕ[i] * (Tsoil_cur[i] - Tsoil_cur[i+1]) / dz₊ₕ[i]
+      a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
+      c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
+      b[i] = cv[i] * Δz[i] / dt - a[i] - c[i]
+      d[i] = κ₊ₕ[i-1] * (Tsoil[i-1] - Tsoil[i]) / Δz₊ₕ[i-1] -
+             κ₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) / Δz₊ₕ[i]
     elseif i == n
-      a[i] = -κ₊ₕ[i-1] / dz₊ₕ[i-1]
+      a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
       c[i] = 0
-      b[i] = cv[i] * dz[i] / dt - a[i]
-      d[i] = κ₊ₕ[i-1] * (Tsoil_cur[i-1] - Tsoil_cur[i]) / dz₊ₕ[i-1]
+      b[i] = cv[i] * Δz[i] / dt - a[i]
+      d[i] = κ₊ₕ[i-1] * (Tsoil[i-1] - Tsoil[i]) / Δz₊ₕ[i-1]
     end
   end
 
   # --- Begin tridiagonal solution: forward sweep for layers N to 1
   # Bottom soil layer
-  e = zeros(n)
-  f = zeros(n)
-  
   e[n] = a[n] / b[n]
   f[n] = d[n] / b[n]
 
@@ -89,7 +78,7 @@ function soil_temperature_F0(dz::AbstractVector, dt::Real,
   num = d[i] - c[i] * f[i+1]
   f[1] = num / den
 
-  tsoi_test = Tsoil_cur[i] + f[1]
+  tsoi_test = Tsoil[i] + f[1]
 
   # Potential melt rate based on temperature above freezing
   pot_snow_melt = max(0, (tsoi_test - tfrz) * den / λ_fus)
@@ -98,18 +87,20 @@ function soil_temperature_F0(dz::AbstractVector, dt::Real,
   G_snow = snow_melt * λ_fus # Energy flux for snow melt
 
   # Update temperature
-  Tsoil = zeros(n)
-  Tsoil[1] = Tsoil_cur[1] + (num - G_snow) / den
-  dtsoi = Tsoil[1] - Tsoil_cur[1]
+  u[1] = Tsoil[1] + (num - G_snow) / den
+  dtsoi = u[1] - Tsoil[1]
 
   # Now complete the tridiagonal solution for layers 2 to N
   @inbounds for i = 2:n
-    # dtsoi = f[i] - e[i] * Tsoil[i-1]
+    # dtsoi = f[i] - e[i] * u[i-1]
     dtsoi = f[i] - e[i] * dtsoi
-    Tsoil[i] = Tsoil_cur[i] + dtsoi
+    u[i] = Tsoil[i] + dtsoi
   end
   # G_soil = f0([T_1]n) + df0 / dT * ([T_1]n + 1 - [T_1]n)
-  G_soil = f0 + df0 * (Tsoil[1] - Tsoil_cur[1]) - G_snow # 一部分能量分配给融雪
+  G_soil = f0 + df0 * (u[1] - Tsoil[1]) - G_snow # 一部分能量分配给融雪
+  G = G_soil + G_snow
+  soil.G = G_soil + G_snow
 
-  Tsoil, G_soil, G_snow
+  Tsoil .= u
+  u, G_soil, G_snow
 end
