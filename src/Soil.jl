@@ -18,7 +18,6 @@ abstract type AbstractSoilParam{FT} end
 end
 
 
-# 两种边界条件的设定方法：
 @with_kw mutable struct Soil{FT}
   n::Int = 10                        # layers of soil
   dt::Float64 = 3600                 # 时间步长, seconds
@@ -30,16 +29,22 @@ end
   # 水分
   θ::Vector{FT} = fill(0.1, n)       # θ [m3 m-3]
   Q::Vector{FT} = zeros(FT, n)       # [cm/s]
-  K::Vector{FT} = zeros(FT, n)       # 水力传导系数，[cm/s]
+  K::Vector{FT} = zeros(FT, n)       # hydraulic conductivity，[cm/s]
+  K₊ₕ::Vector{FT} = zeros(FT, n - 1)  # hydraulic conductivity at interface, [cm/s]
+  Cap::Vector{FT} = zeros(FT, n)     # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
   ψ::Vector{FT} = zeros(FT, n)       # [cm]，约干越负
+  ψ_next::Vector{FT} = zeros(FT, n)  # ψ[n+1/2], [cm], 临时变量
+  θ0::FT = FT(0.0)                   # [m3 m-3]
   ψ0::FT = FT(0.0)                   # [cm]
   Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
   sink::Vector{FT} = fill(0.0, n)    # 蒸发项, [cm per unit time]
+  θ_prev::Vector{FT} = zeros(FT, n)  # backup of θ
+  ψ_prev::Vector{FT} = zeros(FT, n)  # backup of ψ
 
   # 温度
   Tsoil::Vector{FT} = fill(NaN, n)   # [°C]
   κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
-  κ₊ₕ::Vector{FT} = zeros(FT, n - 1)      # thermal conductivity at interface [W m-1 K-1]
+  κ₊ₕ::Vector{FT} = zeros(FT, n - 1)  # thermal conductivity at interface [W m-1 K-1]
   cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
   F::Vector{FT} = zeros(FT, n)       # heat flux, [W m-2]
   TS0::FT = FT(NaN)                  # surface temperature, [°C]
@@ -58,7 +63,7 @@ end
   e::Vector{FT} = zeros(FT, n)
   f::Vector{FT} = zeros(FT, n)
 
-  timestep::Int = 0                  # 时间步长
+  timestep::Int = 0                  # 迭代次数
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
 end
 
