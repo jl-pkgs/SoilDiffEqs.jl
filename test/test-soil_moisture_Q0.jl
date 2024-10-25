@@ -3,11 +3,8 @@ using DifferentialEquations
 
 
 function data_loader_soil()
-  param_water = ParamVanGenuchten(θs=0.287, θr=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
-  param = (soil_texture=1,
-    θ_res=0.075, θ_sat=0.287,
-    α=0.027, n=3.96, m=1.0, K_sat=34 / 3600)
-
+  param_water = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
+  
   n = 150
   Δz = ones(n)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
@@ -22,13 +19,13 @@ function data_loader_soil()
   sink = ones(n) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
   soil = Soil{Float64}(; n, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ,
     Q0, θ0, ψ0, dt, sink, param_water)
-  return soil, param
+  return soil
 end
 
-p, param = data_loader_soil()
+p = data_loader_soil()
 
 function solve_ode()
-  p, param = data_loader_soil()
+  p = data_loader_soil()
   u0 = p.θ
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
 
@@ -40,7 +37,7 @@ end
 
 function solve_bonan()
   # soil_texture = 1
-  soil, param = data_loader_soil()
+  soil = data_loader_soil()
   (; dt, Q0, sink) = soil
 
   # % --- Initialize accumulators for water balance check
@@ -53,7 +50,7 @@ function solve_bonan()
     hour = itim * (dt / 86400 * 24)
     # @printf("hour = %8.3f\n", hour)
     # Calculate soil moisture
-    Q0, QN, dθ, err = soil_moisture_Q0!(soil, sink, Q0, param)
+    Q0, QN, dθ, err = soil_moisture_Q0!(soil, sink, Q0)
 
     # % Sum fluxes for relative mass balance error
     sum_in -= Q0 * dt

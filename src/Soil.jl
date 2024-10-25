@@ -9,8 +9,8 @@ pow(x, y) = x^y
 abstract type AbstractSoilParam{FT} end
 
 @with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
-  θs::T = 0.287       # [m3 m-3]
-  θr::T = 0.075       # [m3 m-3]
+  θ_sat::T = 0.287       # [m3 m-3]
+  θ_res::T = 0.075       # [m3 m-3]
   Ksat::T = 34 / 3600 # [cm s-1]
   α::T = 0.027
   n::T = 3.96
@@ -65,37 +65,4 @@ end
 
   timestep::Int = 0                  # 迭代次数
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
-end
-
-# Function to calculate hydraulic conductivity from water content
-function van_genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  (; θs, θr, Ksat) = param
-  Se = (θ - θr) / (θs - θr)
-  # Se = clamp(Se, 0, 1)
-  # effective_saturation = Se^0.5
-  # term = (1 - (1 - Se^(1 / m))^m)^2
-  # return Ksat * effective_saturation * term
-
-  if Se <= 1
-    # Special case for:
-    # - `soil_texture = 1`: Haverkamp et al. (1977) sand
-    # - `soil_texture = 2`: Yolo light clay
-    ψ = van_genuchten_ψ(θ; param)
-    return Ksat * 1.175e6 / (1.175e6 + pow(abs(ψ), 4.74)) # Haverkamp et al. (1977) sand
-  # Ksat * 124.6 / (124.6 + abs(ψ)^1.77)   # Yolo light clay
-  else
-    return Ksat
-  end
-end
-
-# Function to calculate pressure head psi from water content
-function van_genuchten_ψ(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  (; θs, θr, α, n, m) = param
-  if θ <= θr
-    return -Inf  # Return a very high positive number indicating very dry conditions
-  elseif θ >= θs
-    return 0  # Saturated condition, psi is zero
-  else
-    return -1 / α * pow(pow((θs - θr) / (θ - θr), (1 / m)) - 1, 1 / n)
-  end
 end

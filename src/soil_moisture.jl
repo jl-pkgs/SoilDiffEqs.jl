@@ -1,14 +1,15 @@
 import HydroTools: soil_moisture!
 
 # soil_moisture!(soil, sink, ψ0, param)
-function soil_moisture!(soil::Soil, sink::V, ψ0::T, param; fun=van_Genuchten) where {
+function soil_moisture!(soil::Soil, sink::V, ψ0::T; fun=van_Genuchten) where {
   T<:Real,V<:AbstractVector{T}}
 
   isnothing(sink) && (sink = zeros(n))
 
   (; n, dt, Δz, Δz₊ₕ,
-    ψ, 
+    ψ,
     θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
+  param = soil.param_water
 
   θ_prev .= θ # backup
   ψ_prev .= ψ

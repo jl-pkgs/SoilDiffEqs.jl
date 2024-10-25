@@ -5,11 +5,11 @@ import HydroTools: θ_S, ρ_wat, ρ_ice,
   SAND, SILT, CLAY, 
   λ_fus, tfrz, 
   tridiagonal_solver,
-  van_Genuchten, 
   K0, matric_potential, soil_depth_init
 using Parameters
 
 include("Soil.jl")
+include("ψ_van_Genuchten.jl")
 include("Soil_depth.jl")
 
 include("soil_moisture_Q0.jl")
