@@ -8,7 +8,7 @@
 - `dz`: the thickness of each soil layer (m)
 - `m_liq`: Unfrozen water, liquid (kg H2O/m2)
 - `m_ice`: Frozen water, ice (kg H2O/m2)
-- `Tsoil`: Soil temperature of each soil layer (K)
+- `Tsoil`: Soil temperature of each soil layer (℃)
 
 - `method`: method of phase change
 - `soil_texture`: 
@@ -16,8 +16,8 @@
 
 # Return
 
-- `κ` : thermal conductivity, W/m/K
-- `cv`: heat capacity, J/m3/K
+- `κ` : thermal conductivity, [W/m/K]
+- `cv`: heat capacity, [J/m3/K]
 """
 function soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
   m_liq::AbstractVector, m_ice::AbstractVector;
@@ -34,7 +34,7 @@ function soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
   cv_wat = _c_wat * ρ_wat # Heat capacity of water (J/m3/K)
   cv_ice = _c_ice * ρ_ice # Heat capacity of ice (J/m3/K)
 
-  tfrz = 273.15                         # Freezing point of water [k]
+  tfrz = 0.0                            # Freezing point of water [k]
 
   ## --- Physical constants in physcon structure
   κ_wat = 0.57                          # Thermal conductivity of water (W/m/K)

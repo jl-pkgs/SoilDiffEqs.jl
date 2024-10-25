@@ -44,7 +44,13 @@ tspan = (0.0, 3600 * 24 * 10)  # Time span for the simulation
 @testset "Tsoil" begin
   @time Tsoil_bonan = solve_bonan()
   @time Tsoil_ode = solve_ode()
-  @test maximum(abs.(Tsoil_ode - Tsoil_bonan)) <= 0.05 # 误差小于0.05°
+  @test maximum(abs.(Tsoil_ode - Tsoil_bonan)) <= 0.008 # 0.0074
+end
+
+@testset "Tsoil" begin
+  @time Tsoil_bonan = solve_bonan(; solution="implicit")
+  @time Tsoil_ode = solve_ode()
+  @test maximum(abs.(Tsoil_ode - Tsoil_bonan)) <= 0.015 # 0.0131
 end
 
 # begin

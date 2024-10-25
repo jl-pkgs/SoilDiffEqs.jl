@@ -25,10 +25,10 @@ Tsoil_cur = fill(K0 + 25, n)
 df0 = -148.3184062187158
 f0 = -798.1091814317192
 
-Tsoil_next, G = soil_temperature_delta(dz, dt, κ, cv, Tsoil_cur, df0, f0, snow_water)
+Tsoil_next, G = soil_temperature_F0(dz, dt, κ, cv, Tsoil_cur, df0, f0, snow_water)
 ```
 """
-function soil_temperature_delta(dz::AbstractVector, dt::Real, 
+function soil_temperature_F0(dz::AbstractVector, dt::Real, 
   κ::AbstractVector, cv::AbstractVector, Tsoil_cur::AbstractVector,
   df0::Real, f0::Real, snow_water::Real=0.0)
   # solution = "implicit", method = "apparent-heat-capacity"
@@ -100,7 +100,6 @@ function soil_temperature_delta(dz::AbstractVector, dt::Real,
   # Update temperature
   Tsoil = zeros(n)
   Tsoil[1] = Tsoil_cur[1] + (num - G_snow) / den
-
   dtsoi = Tsoil[1] - Tsoil_cur[1]
 
   # Now complete the tridiagonal solution for layers 2 to N

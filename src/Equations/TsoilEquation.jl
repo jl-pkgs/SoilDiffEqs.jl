@@ -47,9 +47,9 @@ function TsoilEquation(dT, T, p::Soil, t; method="TS0", ibeg::Int=1)
 end
 
 function TsoilEquation_partial(dT, T, p::Soil, t; method="TS0", ibeg::Int=1)
-  p._dTsoil[ibeg:end] .= dT
-  p._Tsoil[ibeg:end] .= T
-  TsoilEquation(p._dTsoil, p._Tsoil, p, t; method, ibeg)
-  dT .= p._dTsoil[ibeg:end]
+  p.du[ibeg:end] .= dT
+  p.u[ibeg:end] .= T
+  TsoilEquation(p.du, p.u, p, t; method, ibeg)
+  dT .= p.du[ibeg:end]
   return nothing
 end

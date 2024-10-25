@@ -8,8 +8,8 @@
 
 # Arguments: 
 
-- `κ`: thermal conductivity (W/m/K)
-- `cv`: volumetric heat capacity (J/m3/K)
+- `κ`: thermal conductivity, [W/m/K]
+- `cv`: volumetric heat capacity, [J/m3/K]
 
 - `Tsurf_next`: Tsurf_next_next, T0_{n+1}
 - `solution`:
