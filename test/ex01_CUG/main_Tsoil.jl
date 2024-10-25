@@ -1,11 +1,14 @@
-using Plots
+using Plots, Printf
 gr(framestyle=:box)
 
 Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
+z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 # _z = [4, 12, 14, 16, 20, 24, 28, 32, 36, 42, 50, 52] * 25.4/1000 # inch to mm
 
-function plot_soil(i)
-  plot(title="layer $i")
+function plot_soil(i; ibeg=1)
+  i2 = i + ibeg - 1
+  title = @sprintf("layer %d: depth = %d cm", i2, -z[i2] * 100)
+  plot(; title)
   plot!(t, yobs[:, i], label="OBS")
   plot!(t, ysim[:, i], label="SIM")
 end

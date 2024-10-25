@@ -16,10 +16,11 @@ yobs = A[:, ibeg:end]
 Tsoil0 = A[1, :]
 
 soil = init_soil(; soil_type=7)
+# soil.κ[5:9] .= 4.0
 ysim = solve_Tsoil_ODE(soil, TS0; ibeg)
 
 plot(
-  [plot_soil(i) for i in 1:8]...,
+  [plot_soil(i; ibeg) for i in 1:8]...,
   size=(1200, 800),
 )
 
@@ -33,21 +34,14 @@ begin
   upper = [fill(10.0, 9); fill(5.0, 9) * 1e6]
 
   f(theta) = goal(theta; ibeg=2)
-  
+
   # inner_optimizer = GradientDescent()
   # options = Optim.Options(show_trace=true)
   # r = optimize(f, lower, upper, x0, Fminbox(inner_optimizer), options)
-  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(1e5))
+  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(1 * 1e3))
 end
-
-theta = [fill(0.2, 9); fill(0.1, 9) * 1e6]
-goal(theta; ibeg=2)
-
-# theta = r.minimizer
 ysim = model_sim(theta; ibeg)
 
-# of_NSE(yobs, ysim)
-
-# z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
-# nlayer = length(dz)
-# soil = Soil(dz)
+# theta0 = [fill(0.2, 9); fill(0.1, 9) * 1e6]
+# goal(theta; ibeg=2)
+# theta = r.minimizer
