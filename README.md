@@ -1,5 +1,10 @@
 # Soil DifferentialEquations
 
+<!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://jl-pkgs.github.io/SoilDifferentialEquations.jl/stable) -->
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jl-pkgs.github.io/SoilDifferentialEquations.jl/dev)
+[![CI](https://github.com/jl-pkgs/SoilDifferentialEquations.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/jl-pkgs/SoilDifferentialEquations.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/jl-pkgs/SoilDifferentialEquations.jl/graph/badge.svg?token=gNwrAxE8oz)](https://codecov.io/gh/jl-pkgs/SoilDifferentialEquations.jl)
+
 > 求解土壤水运动方程
 
 - [x] `Bonan 2021`：计算速度快，但公式复杂

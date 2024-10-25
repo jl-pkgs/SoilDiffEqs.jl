@@ -22,6 +22,7 @@ function cal_Δz₊ₕ(z)
   Δz₊ₕ
 end
 
+export cal_Δz, cal_Δz₊ₕ, C2F, F2C
 # Δz = [2, 4, 6, 10]
 # z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 # cal_Δz(z₊ₕ) == Δz
