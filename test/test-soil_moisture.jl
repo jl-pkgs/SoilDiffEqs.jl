@@ -49,7 +49,7 @@ function solve_bonan()
     hour = itim * (dt / 86400 * 24)
     # @printf("hour = %8.3f\n", hour)
     # Calculate soil moisture
-    Q0, QN, dθ, err = soil_moisture!(soil, ψ0, sink, param)
+    Q0, QN, dθ, err = soil_moisture!(soil, sink, ψ0, param)
 
     # % Sum fluxes for relative mass balance error
     sum_in += abs(Q0) * dt
