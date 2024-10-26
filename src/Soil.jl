@@ -1,4 +1,5 @@
 using Parameters
+using Printf
 
 # 2.5x faster power method
 "Faster method for exponentiation"
@@ -18,7 +19,7 @@ abstract type AbstractSoilParam{FT} end
 end
 
 
-@with_kw mutable struct Soil{FT}
+@with_kw_noshow mutable struct Soil{FT}
   n::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
   inds_obs::Vector{Int} = ibeg:n     # indices of observed layers
@@ -68,4 +69,37 @@ end
 
   timestep::Int = 0                  # 迭代次数
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
+end
+
+
+function Base.show(io::IO, x::Soil{T}) where {T<:Real}
+  printstyled(io, "Soil{$T}: ", color=:blue)
+  printstyled(io, "n = $(x.n), ibeg=$(x.ibeg), ", color=:blue, underline=true)
+  print_index(io, x.inds_obs; prefix = "inds_obs =")
+  printstyled(io, "DATA: \n", color=:green, bold=true)
+
+  print_var(io, x, :κ)
+  print_var(io, x, :cv; scale=1e6)
+  print_var(io, x, :Tsoil)
+  print_var(io, x, :TS0)
+  return nothing
+end
+
+function print_var(io::IO, x, var; scale=nothing, digits=2)
+  value = getfield(x, var)
+  name = @sprintf("%-5s", string(var))
+  printstyled(io, " - $name: ", color=:blue)
+  if isnothing(scale)
+    println(io, round.(value; digits))
+  else
+    println(io, "$(round.(x.cv/scale; digits)) * $scale")
+  end
+end
+
+function print_index(io::IO, inds; prefix="", color=:blue, underline=true)
+  if length(unique(diff(inds))) == 1
+    printstyled(io, "$prefix $(inds[1]):$(inds[end]) \n"; color, underline)
+  else
+    printstyled(io, "$prefix $inds \n"; color, underline)
+  end
 end

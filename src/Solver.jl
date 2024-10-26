@@ -14,12 +14,16 @@ function Tsoil_theta2param(theta)
   return κ, cv
 end
 
-function model_Tsoil_sim(soil, TS0, theta)
+function model_Tsoil_sim(soil, TS0, theta; method="Bonan", kw...)
   κ, cv = Tsoil_theta2param(theta)
   soil.κ .= κ
   soil.cv .= cv
-  # ysim = solve_Tsoil_ODE(soil, TS0;)
-  ysim = solve_Tsoil_Bonan(soil, TS0;)
+  
+  if method == "Bonan"
+    ysim = solve_Tsoil_Bonan(soil, TS0;)
+  elseif method == "ODE"
+    ysim = solve_Tsoil_ODE(soil, TS0; kw...)
+  end
   ysim
 end
 
