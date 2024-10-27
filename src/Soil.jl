@@ -76,12 +76,19 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   printstyled(io, "Soil{$T}: ", color=:blue)
   printstyled(io, "n = $(x.n), ibeg=$(x.ibeg), ", color=:blue, underline=true)
   print_index(io, x.inds_obs; prefix = "inds_obs =")
-  printstyled(io, "DATA: \n", color=:green, bold=true)
 
+  printstyled(io, "Soil Temperature: \n", color=:blue, bold=true)
   print_var(io, x, :κ)
   print_var(io, x, :cv; scale=1e6)
   print_var(io, x, :Tsoil)
   print_var(io, x, :TS0)
+
+  printstyled(io, "Soil Moisture: \n", color=:blue, bold=true)
+  print_var(io, x, :K)
+  print_var(io, x, :ψ)
+  print_var(io, x, :θ)
+  print_var(io, x, :θ0)
+  print_var(io, x, :ψ0)
   return nothing
 end
 
@@ -98,7 +105,8 @@ end
 
 function print_index(io::IO, inds; prefix="", color=:blue, underline=true)
   if length(unique(diff(inds))) == 1
-    printstyled(io, "$prefix $(inds[1]):$(inds[end]) \n"; color, underline)
+    n = length(inds)
+    printstyled(io, "$prefix $(inds[1]):$(inds[end]) [n=$n] \n"; color, underline)
   else
     printstyled(io, "$prefix $inds \n"; color, underline)
   end

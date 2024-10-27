@@ -1,11 +1,5 @@
-using DiffEqBase
-using HydroTools: GOF
-
 export model_Tsoil_sim, Tsoil_theta2param, of_MSE
 export solve_Tsoil_ODE, solve_Tsoil_Bonan
-
-
-of_MSE(yobs, ysim) = mean((yobs .- ysim) .^ 2)
 
 function Tsoil_theta2param(theta)
   n = length(theta) ÷ 2
@@ -18,7 +12,7 @@ function model_Tsoil_sim(soil, TS0, theta; method="Bonan", kw...)
   κ, cv = Tsoil_theta2param(theta)
   soil.κ .= κ
   soil.cv .= cv
-  
+
   if method == "Bonan"
     ysim = solve_Tsoil_Bonan(soil, TS0;)
   elseif method == "ODE"
