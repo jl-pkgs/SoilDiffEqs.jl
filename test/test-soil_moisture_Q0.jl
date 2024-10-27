@@ -1,5 +1,5 @@
 using SoilDifferentialEquations, Test
-using DifferentialEquations
+using OrdinaryDiffEq
 
 
 function data_loader_soil()

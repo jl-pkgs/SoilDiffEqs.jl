@@ -1,4 +1,4 @@
-using SoilDifferentialEquations, DifferentialEquations, Test
+using SoilDifferentialEquations, OrdinaryDiffEq, Test
 # using RTableTools, Dates
 
 @testset "soil_depth" begin

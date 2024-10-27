@@ -1,6 +1,6 @@
 module SoilDifferentialEquations
   
-# using DifferentialEquations
+# using OrdinaryDiffEq
 import HydroTools: θ_S, ρ_wat, ρ_ice, 
   SAND, SILT, CLAY, 
   λ_fus, tfrz, 

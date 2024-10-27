@@ -1,4 +1,4 @@
-using SoilDifferentialEquations, DifferentialEquations, Test
+using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
 function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)

@@ -1,6 +1,6 @@
 # 优化模型参数
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
-using DifferentialEquations
+using OrdinaryDiffEq
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 import NetCDFTools: approx
 using Optim

@@ -1,4 +1,4 @@
-using SoilDifferentialEquations, DifferentialEquations, Test
+using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
 function data_loader_soil()

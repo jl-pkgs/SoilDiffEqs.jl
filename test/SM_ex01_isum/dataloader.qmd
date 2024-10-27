@@ -1,5 +1,5 @@
 ```{julia}
-using SoilDifferentialEquations, DifferentialEquations
+using SoilDifferentialEquations, OrdinaryDiffEq
 using Plots, Test, RTableTools, Dates
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 import NetCDFTools: approx
