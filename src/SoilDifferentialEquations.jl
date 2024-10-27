@@ -26,7 +26,8 @@ include("soil_temperature_F0.jl")
 include("Equations/TsoilEquation.jl")
 include("Equations/RichardsEquation.jl")
 
-include("Solver.jl")
+include("Solve_Tsoil.jl")
+include("Solve_SM.jl")
 
 export solve_Tsoil_Bonan
 
