@@ -21,7 +21,9 @@ function data_loader_soil()
     Q0, θ0, ψ0, dt, sink, param_water)
   return soil
 end
-# p = data_loader_soil()
+
+p = data_loader_soil()
+display(p)
 
 function solve_ode()
   p = data_loader_soil()
