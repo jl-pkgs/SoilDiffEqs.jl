@@ -1,8 +1,28 @@
-using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
+using SoilDifferentialEquations, Plots, Test, Dates
+import RTableTools: fread
 using OrdinaryDiffEq, Ipaper
-import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Artifacts
 includet("main_Tsoil.jl")
+
+function plot_SM(i; ysim=nothing)
+  band = vars_SM[i]
+  t = d[:, :time]
+  x = d[:, band]
+
+  time_min, time_max = minimum(t), maximum(t)
+  ticks = time_min:Dates.Day(7):time_max
+  xticks = ticks, format.(ticks, "mm-dd")
+
+  p = plot(title=string(band); xticks,
+    xrot=30, tickfonthalign=:center, tickfontvalign=:bottom)
+  plot!(p, t, x, label="OBS")
+  if i >= 2 && ysim !== nothing
+    # i2 = i - 1
+    # title = @sprintf("layer %d: depth = %d cm", i2, -z[i2] * 100)
+    plot!(p, t, ysim[:, i-1], label="SIM")
+  end
+  return p
+end
 
 
 begin
@@ -15,8 +35,68 @@ begin
 
   df.time = DateTime.(df.time, "yyyy-mm-ddTHH:MM:SSZ")
 
+  i = 1
   SITE = sites[i]
   d = df[df.site.==SITE, :][1:24*7*8, [:time; vars_SM]]
+
+  # [5, 10, 20, 50, 100]
+  yobs_full = d[:, 3:end] |> Matrix |> drop_missing
+  θ0 = yobs_full[1, :]
+  θ_surf = yobs_full[:, 1]
 end
- 
-yobs_full = d[:, 3:end] |> Matrix |> drop_missing
+
+
+z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100 # 第一层是虚拟的
+
+
+function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
+  z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100 # 第一层是虚拟的
+  Δz = cal_Δz(z)
+  z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
+  # dz = [2.5, 5, 5, 15, 45, 55]
+  
+  n = length(Δz)
+  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+
+  # m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
+  θ = zeros(n)
+  θ[ibeg:end] .= θ0
+  param_water = get_soilpar(soil_type)
+  Soil{Float64}(; n, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param_water)
+end
+
+
+function goal(theta; kw...)
+  soil = init_soil(; θ0, soil_type=8)
+  soil.param_water = get_soilpar(theta)
+
+  ysim = solve_SM_Bonan(soil, θ_surf)
+  yobs = yobs_full
+
+  obs = yobs[:, 2:end]
+  sim = ysim[:, 2:end]
+  # of_MSE(obs, sim)
+  gof = GOF(obs[:], sim[:])
+  -gof.NSE
+end
+
+# θ_sat, θ_res, Ksat, α, n
+lower = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05]
+upper = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00]
+
+soil = init_soil(; θ0, soil_type=11)
+theta0 = soil.param_water |> Vector
+goal(theta0)
+
+f(theta) = goal(theta)
+# f(theta) = goal(theta; method="Bonan")
+@time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(5e4))
+
+
+soil = init_soil(; θ0, soil_type=10)
+theta0 = soil.param_water |> Vector
+goal(theta0)
+
+# ysim = solve_SM_Bonan(soil, θ_surf)
+# yobs = yobs_full
+plot([plot_SM(i; ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))

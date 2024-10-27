@@ -85,9 +85,9 @@ end
 function van_genuchten_ψ(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, α, n, m) = param
   if θ <= θ_res
-    return -Inf  # Return a very high positive number indicating very dry conditions
+    return T(-Inf)  # Return a very high positive number indicating very dry conditions
   elseif θ >= θ_sat
-    return 0  # Saturated condition, psi is zero
+    return T(0.0)  # Saturated condition, psi is zero
   else
     return -1 / α * pow(pow((θ_sat - θ_res) / (θ - θ_res), (1 / m)) - 1, 1 / n)
   end

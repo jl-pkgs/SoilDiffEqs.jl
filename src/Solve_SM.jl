@@ -15,18 +15,20 @@ end
 
 
 function solve_SM_Bonan(soil::Soil{FT}, θ_surf::AbstractVector{FT}) where {FT<:Real}
-  (; n, inds_obs, ibeg) = soil
+  (; n, ibeg, inds_obs, sink) = soil
+  param = soil.param_water # 这是需要优化的参数。
 
   ntime = length(θ_surf)
-  R = zeros(ntime, soil.n - ibeg + 1)
+  R = zeros(ntime, n - ibeg + 1)
   R[1, :] .= soil.θ[ibeg:end]
 
   for i = 2:ntime
-    soil_temperature!(soil, θ_surf[i]; ibeg)
+    ψ0 = van_genuchten_ψ(θ_surf[i]; param)
+    soil_moisture!(soil, sink, ψ0)
     R[i, :] .= soil.θ[ibeg:end]
   end
 
-  inds = inds_obs .- ibeg .+ 1
+  inds = @. inds_obs - ibeg + 1
   R[:, inds]
 end
 

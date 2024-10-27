@@ -21,7 +21,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
     K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
   end
   K0₊ₕ = K[ibeg]
-  dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[i-1]
+  dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[ibeg-1]
   # dz0₊ₕ = 0.5 * Δz[1] # ? 
 
   @inbounds for i = ibeg:n
