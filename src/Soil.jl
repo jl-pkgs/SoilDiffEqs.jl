@@ -19,8 +19,8 @@ abstract type AbstractSoilParam{FT} end
 end
 
 function Base.Vector(x::ParamVanGenuchten)
-  (;θ_sat, θ_res, Ksat, α, n) = x
-  [θ_sat, θ_res, Ksat, α, n]
+  (; θ_sat, θ_res, Ksat, α, n, m) = x
+  [θ_sat, θ_res, Ksat, α, n, m]
 end
 
 # Bonan 2019, Table 8.3
@@ -28,13 +28,13 @@ function get_soilpar(soil_type::Int=1)
   soilparam = [
     # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹)
     0.38 0.068 0.008 1.09 0.2;   #  1,  Clay
-    0.36 0.07  0.005 1.09 0.02;  #  2,  Silty  clay
-    0.38 0.1   0.027 1.23 0.12;  #  3,  Sandy  clay
+    0.36 0.07 0.005 1.09 0.02;  #  2,  Silty  clay
+    0.38 0.1 0.027 1.23 0.12;  #  3,  Sandy  clay
     0.41 0.095 0.019 1.31 0.26;  #  4,  Clay   loam
-    0.43 0.089 0.01  1.23 0.07;  #  5,  Silty  clay loam
-    0.39 0.1   0.059 1.48 1.31;  #  6,  Sandy  clay loam
+    0.43 0.089 0.01 1.23 0.07;  #  5,  Silty  clay loam
+    0.39 0.1 0.059 1.48 1.31;  #  6,  Sandy  clay loam
     0.43 0.078 0.036 1.56 1.04;  #  7,  Loam
-    0.45 0.067 0.02  1.41 0.45;  #  8,  Silty  loam
+    0.45 0.067 0.02 1.41 0.45;  #  8,  Silty  loam
     0.41 0.065 0.075 1.89 4.42;  #  9,  Sandy  loam
     0.41 0.065 0.075 1.89 4.42;  #  10, Silty, no   data in Bonan2019
     0.41 0.057 0.124 2.28 14.59; #  11, Loamy  sand
@@ -46,8 +46,8 @@ function get_soilpar(soil_type::Int=1)
 end
 
 function get_soilpar(theta::AbstractVector)
-  θ_sat, θ_res, Ksat, α, n = theta[1:5]
-  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
+  θ_sat, θ_res, Ksat, α, n, m = theta[1:6]
+  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat, m)
 end
 
 
@@ -61,6 +61,10 @@ end
   z₊ₕ::Vector{FT} = zeros(FT, n)
   Δz::Vector{FT} = zeros(FT, n)
   Δz₊ₕ::Vector{FT} = zeros(FT, n)
+
+  Δz_cm::Vector{FT} = Δz * 100
+  Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
+  z_cm::Vector{FT} = z * 100         # cm, 向下为负
 
   # 水分
   θ::Vector{FT} = fill(0.1, n)       # θ [m3 m-3]
@@ -107,7 +111,7 @@ end
 function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   printstyled(io, "Soil{$T}: ", color=:blue)
   printstyled(io, "n = $(x.n), ibeg=$(x.ibeg), ", color=:blue, underline=true)
-  print_index(io, x.inds_obs; prefix = "inds_obs =")
+  print_index(io, x.inds_obs; prefix="inds_obs =")
 
   printstyled(io, "Soil Temperature: \n", color=:blue, bold=true)
   print_var(io, x, :κ)

@@ -9,7 +9,7 @@ function soil_WaterFlux!(Q::V, θ::V, K::V, ψ::V, z::V;
   # @. K = van_genuchten_K(u; param)
   # @. ψ = van_genuchten_ψ(u; param)
   if method == "ψ0"
-    Q0 = -K[1] * ((ψ0 - ψ[1]) / (0 - z[1]) + 1)
+    Q0 = -K[1] * ((ψ0 - ψ[1]) / (0 - z[1]) + 1) # [cm/s]
   elseif method == "Q0"
     # Q0 = Q0
   end
@@ -23,6 +23,7 @@ function soil_WaterFlux!(Q::V, θ::V, K::V, ψ::V, z::V;
   Q0
 end
 
+
 """
 # Arguments
 - `method`: 
@@ -31,12 +32,24 @@ end
 """
 function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil{T}, t; method="ψ0") where {T<:Real}
   p.timestep += 1
-  (; n, Δz, z, Q, K, ψ, ψ0, Q0, sink) = p
+  (; ibeg, n, Q, K, ψ, ψ0, Q0, sink) = p # Δz, z, 
+  Δz = p.Δz_cm
+  z = p.z_cm
 
   Q0 = soil_WaterFlux!(Q, θ, K, ψ, z; param=p.param_water, ψ0, Q0, method)
 
-  dθ[1] = -(Q0 - Q[1]) / Δz[1] - sink[1] / Δz[1]
-  @inbounds for i in 2:n
+  dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg]
+  @inbounds for i in ibeg+1:n
     dθ[i] = -(Q[i-1] - Q[i]) / Δz[i] - sink[i] / Δz[i]
   end
+end
+
+
+function RichardsEquation_partial(dθ, θ, p::Soil, t; method="ψ0")
+  (; ibeg) = p
+  p.du[ibeg:end] .= dθ
+  p.u[ibeg:end] .= θ
+  RichardsEquation(p.du, p.u, p, t; method)
+  dθ .= p.du[ibeg:end]
+  return nothing
 end

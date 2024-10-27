@@ -6,7 +6,7 @@ function data_loader_soil()
   param_water = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   
   n = 150
-  Δz = ones(n)
+  Δz = fill(0.01, n)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, n)

@@ -6,9 +6,11 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
 
   isnothing(sink) && (sink = zeros(n))
 
-  (; n, dt, Δz, Δz₊ₕ,
+  (; n, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
     θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
+  Δz = soil.Δz_cm
+  Δz₊ₕ = soil.Δz₊ₕ_cm
   param = soil.param_water
 
   θ_prev .= θ # backup
@@ -91,13 +93,13 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   _d = @view d[ibeg:end]
   ψ[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d)
   # ψ .= tridiagonal_solver(a, b, c, d) # Solve for ψ at n+1
-  ## variables already updated by dot operation
 
-  # for i in 1:n
-  #   θ[i], K[i], Cap[i] = fun(ψ_pred[i]; param)
+  ## variables already updated by dot operation
+  # for i in ibeg:n
+  #   θ[i], K[i], Cap[i] = fun(ψ[i]; param)
   # end
 
-  # --- Check water balance
+  ## Check water balance
   Q0 = -K0₊ₕ / (2 * dz0₊ₕ) * ((ψ0 - ψ_prev[1]) + (ψ0 - ψ[1])) - K0₊ₕ # 两个时刻的
   QN = -K[n]
 
