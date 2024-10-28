@@ -75,6 +75,7 @@ end
 function van_Genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, Ksat, m) = param
   Se = (θ - θ_res) / (θ_sat - θ_res)
+  Se = clamp(Se, 0.0, 1.0)
   K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
   return K
 end

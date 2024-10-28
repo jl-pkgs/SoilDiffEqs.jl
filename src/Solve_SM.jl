@@ -3,8 +3,6 @@ export solve_SM_ODE, solve_SM_Bonan
 
 
 function model_SM_sim(soil, θ_surf, theta; method="Bonan", kw...)
-  soil.K .= theta
-
   if method == "Bonan"
     ysim = solve_SM_Bonan(soil, θ_surf;)
   elseif method == "ODE"
@@ -46,7 +44,7 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
   ntime = length(θ_surf)
   u0 = soil.θ[ibeg:end]
 
-  _Equation(dθ, θ, p, t) = RichardsEquation(dθ, θ, p, t; ibeg)
+  _Equation(dθ, θ, p, t) = RichardsEquation_partial(dθ, θ, p, t)
   tspan = (0, dt)
   prob = ODEProblem(_Equation, u0, tspan, soil)
 

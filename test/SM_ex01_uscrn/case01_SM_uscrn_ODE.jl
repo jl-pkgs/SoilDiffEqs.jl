@@ -2,7 +2,7 @@ using SoilDifferentialEquations, Test, Dates
 using Plots, Printf
 import RTableTools: fread
 using OrdinaryDiffEq, Ipaper
-using Artifacts
+using LazyArtifacts
 # includet("main_Tsoil.jl")
 gr(framestyle=:box)
 
@@ -35,7 +35,7 @@ function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
   Δz = cal_Δz(z)
   z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
   # dz = [2.5, 5, 5, 15, 45, 55]
-  
+
   n = length(Δz)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
@@ -45,22 +45,6 @@ function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
   param_water = get_soilpar(soil_type)
   Soil{Float64}(; n, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param_water)
 end
-
-
-function model_sim(theta)
-  soil = init_soil(; θ0, soil_type=8, ibeg)
-  soil.param_water = get_soilpar(theta)
-  ysim = solve_SM_Bonan(soil, θ_surf)
-  return ysim
-end
-
-function goal(theta; kw...)
-  ysim = model_sim(theta)
-  obs = yobs[:, 2:end]
-  sim = ysim[:, 2:end]
-  -GOF(obs[:], sim[:]).R2
-end
-
 
 begin
   # :SOLARAD, RH_HR_AVG
@@ -74,16 +58,40 @@ begin
 end
 
 
+
+function model_sim(theta; method="Bonan")
+  soil = init_soil(; θ0, soil_type=8, ibeg)
+  soil.param_water = get_soilpar(theta)
+  if method == "Bonan"
+    ysim = solve_SM_Bonan(soil, θ_surf)
+  else
+    # solver = Rosenbrock23()
+    # solver = Rodas5(autodiff=false)
+    solver = Tsit5()
+    ysim = solve_SM_ODE(soil, θ_surf; solver)
+  end
+  return ysim
+end
+
+function goal(theta; method="Bonan", kw...)
+  ysim = model_sim(theta; method)
+  obs = yobs[:, 2:end]
+  sim = ysim[:, 2:end]
+  -GOF(obs[:], sim[:]).NSE
+end
+
+
 begin
   i = 6
   SITE = sites[i]
-  d = df[df.site.==SITE, :][1:24*7, [:time; vars_SM]]
+  d = df[df.site.==SITE, [:time; vars_SM]]
+  # d = d[1:24*7*4, ]
 
   ibeg = 2
   # [5, 10, 20, 50, 100]
   yobs_full = d[:, 3:end] |> Matrix |> drop_missing
-  yobs = yobs_full[:, max(ibeg-1, 1):end]
-  θ0 = yobs_full[1, max(ibeg-1, 1):end]
+  yobs = yobs_full[:, max(ibeg - 1, 1):end]
+  θ0 = yobs_full[1, max(ibeg - 1, 1):end]
   θ_surf = yobs_full[:, ibeg-1]
 
   # θ_sat, θ_res, Ksat, α, n, m
@@ -95,26 +103,25 @@ begin
   theta = theta0
   goal(theta0)
 
-  f(theta) = goal(theta)
+  method = "ODE"
+  # method = "Bonan"
+  f(theta) = goal(theta; method)
   @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(5e4))
 
-  ysim = model_sim(theta)
-  # goal(theta)  
+  ysim = model_sim(theta; method)
   plot([plot_SM(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
 end
 
-
-
+soil = init_soil(; θ0, soil_type=7, ibeg)
+param = get_soilpar(theta)
+ysim = model_sim(theta; method)
+plot([plot_SM(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+# goal(theta)
 
 param = get_soilpar(theta)
 ψ = van_Genuchten_ψ.(θ_surf; param)
-
 θ2 = [van_Genuchten(x; param)[1] for x in ψ]
-
 ψ = van_Genuchten_ψ.(θ_surf; param)
 p1 = plot(θ_surf, label="θ_surf")
 plot!(p1, θ2, label="reconstructed θ")
-
 plot(p1, plot(ψ))
-
-

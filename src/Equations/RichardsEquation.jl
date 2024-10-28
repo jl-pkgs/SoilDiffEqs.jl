@@ -12,7 +12,8 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   # @. K = van_Genuchten_K(u; param)
   # @. ψ = van_Genuchten_ψ(u; param)
   if method == "ψ0"
-    Q0 = -K[1] * ((ψ0 - ψ[1]) / (0 - z[1]) + 1) # [cm/s]
+    z_prev = ibeg == 1 ? 0 : z[ibeg-1]
+    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z_prev - z[ibeg]) + 1) # [cm/s]
   elseif method == "Q0"
     # Q0 = Q0
   end

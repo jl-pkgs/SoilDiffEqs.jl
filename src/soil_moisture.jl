@@ -12,8 +12,6 @@ end
 function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   fun=van_Genuchten) where {T<:Real,V<:AbstractVector{T}}
 
-  isnothing(sink) && (sink = zeros(n))
-
   (; n, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
     θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil

@@ -8,6 +8,9 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
   @test z == z2
 end
 
+include("test-solve_SM.jl")
+include("test-solve_Tsoil.jl")
+
 include("test-soil_moisture.jl")
 include("test-soil_moisture_Q0.jl")
 
