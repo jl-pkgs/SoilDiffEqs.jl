@@ -14,9 +14,7 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
   for i in 1:n
     θ[i], K[i], Cap[i] = fun(ψ[i]; param)
   end
-  for i = 1:n-1
-    K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
-  end
+  update_K₊ₕ!(soil)
 
   K0₊ₕ = K[1]
   # dz0₊ₕ = 0.5 * Δz[1]
@@ -47,9 +45,7 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
   for i in 1:n
     θ[i], K[i], Cap[i] = fun(ψ_next[i]; param)
   end
-  for i = 1:n-1
-    K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
-  end
+  update_K₊ₕ!(soil)
   K0₊ₕ = K[1] # 可以按照同样的方法，设置
 
   ## second round

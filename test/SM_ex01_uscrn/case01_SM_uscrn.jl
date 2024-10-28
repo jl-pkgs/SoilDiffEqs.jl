@@ -22,7 +22,6 @@ function plot_SM(i; ibeg, ysim=nothing)
   plot!(p, t, x, label="OBS")
   if k >= 1 && ysim !== nothing
     # i2 = i - 1
-    @show i, k
     # title = @sprintf("layer %d: depth = %d cm", i2, -z[i2] * 100)
     plot!(p, t, ysim[:, k], label="SIM")
   end
@@ -78,7 +77,7 @@ end
 begin
   i = 6
   SITE = sites[i]
-  d = df[df.site.==SITE, :][1:24*7*12, [:time; vars_SM]]
+  d = df[df.site.==SITE, :][1:24*7, [:time; vars_SM]]
 
   ibeg = 2
   # [5, 10, 20, 50, 100]
@@ -101,8 +100,21 @@ begin
 
   ysim = model_sim(theta)
   # goal(theta)  
+  plot([plot_SM(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
 end
 
-get_soilpar(theta)
 
-plot([plot_SM(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+
+
+param = get_soilpar(theta)
+ψ = van_Genuchten_ψ.(θ_surf; param)
+
+θ2 = [van_Genuchten(x; param)[1] for x in ψ]
+
+ψ = van_Genuchten_ψ.(θ_surf; param)
+p1 = plot(θ_surf, label="θ_surf")
+plot!(p1, θ2, label="reconstructed θ")
+
+plot(p1, plot(ψ))
+
+

@@ -1,8 +1,8 @@
 # function RichardsEquation_low(du, u, p::Soil, t)
 #   (; n, z, z₊ₕ, K, ψ, ψ0, param) = p
 
-#   @. K = van_genuchten_K(u; param)
-#   @. ψ = van_genuchten_ψ(u; param)
+#   @. K = van_Genuchten_K(u; param)
+#   @. ψ = van_Genuchten_ψ(u; param)
 
 #   # @inbounds 
 #   @inbounds for i in 2:n-1

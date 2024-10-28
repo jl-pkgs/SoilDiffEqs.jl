@@ -10,9 +10,9 @@ function data_loader_soil()
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, n)
-  ψ = van_genuchten_ψ.(θ; param=param_water)
+  ψ = van_Genuchten_ψ.(θ; param=param_water)
   θ0 = 0.267
-  ψ0 = van_genuchten_ψ(θ0; param=param_water)
+  ψ0 = van_Genuchten_ψ(θ0; param=param_water)
   Q0 = -param_water.Ksat * 0.5  # [cm s-1] 向下为负
 
   dt = 5 # [s]

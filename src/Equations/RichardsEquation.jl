@@ -1,23 +1,27 @@
-function soil_WaterFlux!(Q::V, θ::V, K::V, ψ::V, z::V;
-  param::ParamVanGenuchten{T},
-  ψ0::T=NaN, Q0::T=NaN, method="ψ0") where {T<:Real,V<:AbstractVector{T}}
-  n = length(θ)
+function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
+  ψ0::T=NaN, Q0::T=NaN, method="ψ0") where {T<:Real}
+
+  (; ibeg, n, Q, K, K₊ₕ, ψ) = soil
+  z = soil.z_cm
+  param = soil.param_water
+
   @inbounds for i = 1:n
-    K[i] = van_genuchten_K(θ[i]; param)
-    ψ[i] = van_genuchten_ψ(θ[i]; param)
+    K[i] = van_Genuchten_K(θ[i]; param)
+    ψ[i] = van_Genuchten_ψ(θ[i]; param)
   end
-  # @. K = van_genuchten_K(u; param)
-  # @. ψ = van_genuchten_ψ(u; param)
+  # @. K = van_Genuchten_K(u; param)
+  # @. ψ = van_Genuchten_ψ(u; param)
   if method == "ψ0"
     Q0 = -K[1] * ((ψ0 - ψ[1]) / (0 - z[1]) + 1) # [cm/s]
   elseif method == "Q0"
     # Q0 = Q0
   end
 
-  @inbounds for i in 1:n-1
-    K₊ₕ = (K[i] + K[i+1]) / 2
+  update_K₊ₕ!(soil)
+  @inbounds for i in ibeg:n-1
+    # K₊ₕ = (K[i] + K[i+1]) / 2
     Δz₊ₕ = z[i] - z[i+1]
-    Q[i] = -K₊ₕ * ((ψ[i] - ψ[i+1]) / Δz₊ₕ + 1)
+    Q[i] = -K₊ₕ[i] * ((ψ[i] - ψ[i+1]) / Δz₊ₕ + 1)
   end
   Q[n] = -K[n] # 尾部重力排水
   Q0
@@ -32,11 +36,9 @@ end
 """
 function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil{T}, t; method="ψ0") where {T<:Real}
   p.timestep += 1
-  (; ibeg, n, Q, K, ψ, ψ0, Q0, sink) = p # Δz, z, 
+  (; ibeg, n, Q, ψ0, Q0, sink) = p # Δz, z, 
   Δz = p.Δz_cm
-  z = p.z_cm
-
-  Q0 = soil_WaterFlux!(Q, θ, K, ψ, z; param=p.param_water, ψ0, Q0, method)
+  Q0 = soil_WaterFlux!(p, θ; ψ0, Q0, method)
 
   dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg]
   @inbounds for i in ibeg+1:n

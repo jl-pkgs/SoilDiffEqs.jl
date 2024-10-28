@@ -1,4 +1,12 @@
-import HydroTools: soil_moisture!
+function update_K₊ₕ!(soil)
+  (; n, ibeg, z, z₊ₕ, K, K₊ₕ) = soil
+  for i = ibeg:n-1
+    d1 = z[i] - z₊ₕ[i]
+    d2 = z₊ₕ[i] - z[i+1]
+    K₊ₕ[i] = K[i] * K[i+1] * (d1 + d2) / (K[i] * d2 + K[i+1] * d1) # Eq. 5.16, 
+    # K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
+  end
+end
 
 # soil_moisture!(soil, sink, ψ0, param)
 function soil_moisture!(soil::Soil, sink::V, ψ0::T;
@@ -19,9 +27,8 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   for i in ibeg:n
     θ[i], K[i], Cap[i] = fun(ψ[i]; param)
   end
-  for i = ibeg:n-1
-    K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
-  end
+  update_K₊ₕ!(soil)
+
   K0₊ₕ = K[ibeg]
   dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[ibeg-1]
   # dz0₊ₕ = 0.5 * Δz[1] # ? 
@@ -57,9 +64,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   for i in ibeg:n
     θ[i], K[i], Cap[i] = fun(ψ_next[i]; param)
   end
-  for i = ibeg:n-1
-    K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
-  end
+  update_K₊ₕ!(soil)
   K0₊ₕ = K[ibeg] # 可以按照同样的方法，设置
 
   ## second round

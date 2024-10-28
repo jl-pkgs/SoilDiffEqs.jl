@@ -72,7 +72,7 @@ end
 
 
 # Function to calculate hydraulic conductivity from water content
-function van_genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
+function van_Genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, Ksat, m) = param
   Se = (θ - θ_res) / (θ_sat - θ_res)
   K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
@@ -80,7 +80,7 @@ function van_genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
 end
 
 # Function to calculate pressure head psi from water content
-function van_genuchten_ψ(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
+function van_Genuchten_ψ(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, α, n, m) = param
   if θ <= θ_res
     return T(-Inf)  # Return a very high positive number indicating very dry conditions

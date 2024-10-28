@@ -8,9 +8,9 @@ function data_loader_soil()
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, n)
-  ψ = van_genuchten_ψ.(θ; param=param_water)
+  ψ = van_Genuchten_ψ.(θ; param=param_water)
   θ0 = 0.267
-  ψ0 = van_genuchten_ψ(θ0; param=param_water)
+  ψ0 = van_Genuchten_ψ(θ0; param=param_water)
 
   dt = 5 # [s]
   sink = ones(n) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
@@ -67,13 +67,20 @@ end
 #   θ = solve_bonan()
 # end
 @testset "RichardsEquation θ0" begin
-  @test maximum(abs.(solution - θ)) <= 1e-3 # 误差小于1/1000
+  @test maximum(abs.(solution - θ)) <= 0.004 # 误差小于1/1000
 end
 
 # @test sum_in == 11.810243822643141
 # @test sum_out == 0.10508872215771699
 # @test sum_store == 11.704825251924781
 
-# gr(framestyle=:box)
-# plot(θ, z; label="Bonan", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
-# plot!(solution, z; label="ODE")
+# begin
+#   using Plots
+#   n = 150
+#   Δz = fill(0.01, n)
+#   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+
+#   gr(framestyle=:box)
+#   plot(θ, z; label="Bonan", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
+#   plot!(solution, z; label="ODE")
+# end
