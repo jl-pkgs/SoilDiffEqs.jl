@@ -13,8 +13,8 @@ using DiffEqBase
 of_MSE(yobs, ysim) = mean((yobs .- ysim) .^ 2)
 
 
-include("Soil.jl")
 include("ψ_van_Genuchten.jl")
+include("Soil.jl")
 include("Soil_depth.jl")
 
 include("soil_moisture_Q0.jl")
@@ -36,13 +36,16 @@ export solve_Tsoil_Bonan
 dir_soil = "$(@__DIR__)/.." |> abspath
 export dir_soil
 
-export Soil, ParamVanGenuchten, van_genuchten_K, van_genuchten_ψ
+export Soil
+export ParamVanGenuchten, van_genuchten_K, van_genuchten_ψ
 export soil_moisture!, soil_moisture_Q0!
-export TsoilEquation, TsoilEquation_partial, RichardsEquation
+export soil_temperature!, soil_temperature_F0!
+export TsoilEquation, TsoilEquation_partial
+export RichardsEquation, RichardsEquation_partial
+export soil_thermal_properties
 
 # HydroTools
 export sceua, GOF, of_KGE, of_NSE
-export soil_temperature!, soil_temperature_F0!
-export soil_depth_init, soil_thermal_properties, θ_S, ρ_wat, K0, matric_potential
+export soil_depth_init, θ_S, ρ_wat, K0
 
 end

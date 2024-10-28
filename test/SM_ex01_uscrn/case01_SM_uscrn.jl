@@ -76,7 +76,7 @@ end
 
 
 begin
-  i = 9
+  i = 6
   SITE = sites[i]
   d = df[df.site.==SITE, :][1:24*7*12, [:time; vars_SM]]
 
@@ -91,7 +91,7 @@ begin
   lower = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05, 0.1]
   upper = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00, 10.0]
 
-  soil = init_soil(; θ0, soil_type=2, ibeg)
+  soil = init_soil(; θ0, soil_type=7, ibeg)
   theta0 = soil.param_water |> Vector
   theta = theta0
   goal(theta0)
