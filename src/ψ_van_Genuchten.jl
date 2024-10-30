@@ -11,7 +11,7 @@ abstract type AbstractSoilParam{FT} end
 @with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   θ_res::T = 0.075       # [m3 m-3]
-  Ksat::T = 34 / 3600 # [cm s-1]
+  Ksat::T = 34 / 3600    # [cm s-1]
   α::T = 0.027
   n::T = 3.96
   m::T = 1.0 - 1.0 / n
@@ -27,10 +27,10 @@ van Genuchten (1980) relationships
 + `param`
   - `θ_res`       : Residual water content
   - `θ_sat`       : Volumetric water content at saturation
+  - `Ksat`        : Hydraulic conductivity at saturation (cm/s)
   - `α`           : Inverse of the air entry potential (cm-1)
   - `n`           : Pore-size distribution index
   - `m`           : Exponent
-  - `K_sat`       : Hydraulic conductivity at saturation (cm/s)
   - `soil_texture`: Soil texture flag
 
 # Examples
@@ -38,7 +38,7 @@ van Genuchten (1980) relationships
 # Haverkamp et al. (1977): sand
 param = (soil_texture = 1, 
   θ_res = 0.075, θ_sat = 0.287, 
-  α = 0.027, n = 3.96, m = 1, K_sat = 34 / 3600)
+  α = 0.027, n = 3.96, m = 1, Ksat = 34 / 3600)
 
 # Haverkamp et al. (1977): Yolo light clay
 param = (soil_texture=2, 
@@ -113,13 +113,13 @@ function get_soilpar(soil_type::Int=1)
   soilparam = [
     # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹)
     0.38 0.068 0.008 1.09 0.2;   #  1,  Clay
-    0.36 0.07 0.005 1.09 0.02;  #  2,  Silty  clay
-    0.38 0.1 0.027 1.23 0.12;  #  3,  Sandy  clay
+    0.36 0.070 0.005 1.09 0.02;  #  2,  Silty  clay
+    0.38 0.100 0.027 1.23 0.12;  #  3,  Sandy  clay
     0.41 0.095 0.019 1.31 0.26;  #  4,  Clay   loam
-    0.43 0.089 0.01 1.23 0.07;  #  5,  Silty  clay loam
-    0.39 0.1 0.059 1.48 1.31;  #  6,  Sandy  clay loam
+    0.43 0.089 0.010 1.23 0.07;  #  5,  Silty  clay loam
+    0.39 0.100 0.059 1.48 1.31;  #  6,  Sandy  clay loam
     0.43 0.078 0.036 1.56 1.04;  #  7,  Loam
-    0.45 0.067 0.02 1.41 0.45;  #  8,  Silty  loam
+    0.45 0.067 0.020 1.41 0.45;  #  8,  Silty  loam
     0.41 0.065 0.075 1.89 4.42;  #  9,  Sandy  loam
     0.41 0.065 0.075 1.89 4.42;  #  10, Silty, no   data in Bonan2019
     0.41 0.057 0.124 2.28 14.59; #  11, Loamy  sand

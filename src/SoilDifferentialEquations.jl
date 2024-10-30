@@ -5,14 +5,14 @@ import HydroTools: θ_S, ρ_wat, ρ_ice,
   SAND, SILT, CLAY, 
   λ_fus, tfrz, 
   tridiagonal_solver,
-  K0, matric_potential, soil_depth_init
+  K0, matric_potential
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 
 using Parameters
 using DiffEqBase
 of_MSE(yobs, ysim) = mean((yobs .- ysim) .^ 2)
 
-
+include("ψ_Cambell.jl")
 include("ψ_van_Genuchten.jl")
 include("Soil.jl")
 include("Soil_depth.jl")

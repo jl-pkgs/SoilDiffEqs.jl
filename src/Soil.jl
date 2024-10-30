@@ -32,6 +32,9 @@ using Printf
   θ_prev::Vector{FT} = zeros(FT, n)  # backup of θ
   ψ_prev::Vector{FT} = zeros(FT, n)  # backup of ψ
 
+  # 参数
+  
+
   # 温度
   Tsoil::Vector{FT} = fill(NaN, n)   # [°C]
   κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
