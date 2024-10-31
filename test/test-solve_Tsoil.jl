@@ -13,7 +13,8 @@ function data_loader_soil(; TS0=20.0, dt=3600.0, soil_type=1)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, TS0, Tsoil, 
+    param=SoilParam(;N, κ, cv))
 end
 
 

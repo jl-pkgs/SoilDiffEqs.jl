@@ -1,5 +1,5 @@
 # soil_moisture!(soil, sink, ψ0, param)
-function soil_moisture!(soil::Soil, sink::V, ψ0::T; ) where {T<:Real,V<:AbstractVector{T}}
+function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:AbstractVector{T}}
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
@@ -10,7 +10,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T; ) where {T<:Real,V<:Abstrac
   θ_prev .= θ # backup
   ψ_prev .= ψ
 
-  update_θ!(soil, ψ)
+  update_θ!(soil, ψ) # update, θ, K, Cap
   update_K₊ₕ!(soil)
 
   K0₊ₕ = K[ibeg]

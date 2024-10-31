@@ -1,9 +1,22 @@
 using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
+function SoilParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
+  SoilParam(; N,
+    θ_sat=fill(θ_sat, N),
+    θ_res=fill(θ_res, N),
+    Ksat=fill(Ksat, N),
+    α=fill(α, N),
+    n=fill(n, N),
+    m=fill(m, N))
+end
+
 function data_loader_soil()
-  param_water = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   N = 150
+  _param = (θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
+  param = SoilParam(N, _param...)
+  param_water = ParamVanGenuchten(; _param...)
+  
   Δz = fill(0.01, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
@@ -14,7 +27,8 @@ function data_loader_soil()
 
   dt = 5 # [s]
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
-  soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param_water)
+  soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, 
+    param, param_water)
   return soil
 end
 
@@ -23,7 +37,7 @@ soil = data_loader_soil()
 function solve_ode()
   p = data_loader_soil()
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
-  
+
   u0 = p.θ
   prob = ODEProblem(RichardsEquation, u0, tspan, p)
   sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6, saveat=200)
@@ -75,6 +89,9 @@ end
 # @test sum_store == 11.704825251924781
 
 # begin
+#   @time θ = solve_bonan()
+#   @time solution = solve_ode()
+
 #   using Plots
 #   N = 150
 #   Δz = fill(0.01, N)

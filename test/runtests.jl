@@ -12,8 +12,8 @@ include("test-soil_temperature.jl")
 include("test-soil_temperature_F0.jl")
 
 
-# include("test-soil_moisture.jl")
-# include("test-soil_moisture_Q0.jl")
+include("test-soil_moisture.jl")
+include("test-soil_moisture_Q0.jl")
 
-# include("test-solve_SM.jl")
-# include("test-solve_Tsoil.jl")
+include("test-solve_SM.jl")
+include("test-solve_Tsoil.jl")

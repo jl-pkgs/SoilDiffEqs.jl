@@ -3,9 +3,11 @@ using OrdinaryDiffEq
 
 
 function data_loader_soil()
-  param_water = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, N=3.96, m=1.0)
-  
   N = 150
+  _param = (θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
+  param = SoilParam(N, _param...)
+  param_water = ParamVanGenuchten(; _param...)
+    
   Δz = fill(0.01, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
@@ -18,7 +20,7 @@ function data_loader_soil()
   dt = 5 # [s]
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ,
-    Q0, θ0, ψ0, dt, sink, param_water)
+    Q0, θ0, ψ0, dt, sink, param_water, param)
   return soil
 end
 
@@ -66,8 +68,8 @@ end
 # N = 150
 # dz = ones(N)
 # z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
-@time solution = solve_ode();
-@time θ = solve_bonan();
+@time solution = solve_ode()
+@time θ = solve_bonan()
 
 @testset "RichardsEquation Q0" begin
   @test maximum(abs.(solution - θ)) <= 0.003 # 误差小于3/1000

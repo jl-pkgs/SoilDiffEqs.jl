@@ -1,9 +1,19 @@
 export get_soilpar, ParamVanGenuchten
 
-# Ksat: [cm/s]
+## 结构体形式的参数
+abstract type AbstractSoilParam{FT} end
+
+@with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
+  θ_sat::T = 0.287       # [m3 m-3]
+  θ_res::T = 0.075       # [m3 m-3]
+  Ksat::T = 34 / 3600    # [cm s-1]
+  α::T = 0.027
+  n::T = 3.96
+  m::T = 1.0 - 1.0 / n
+end
 
 """
-    van_Genuchten(ψ, θ_res, θ_sat, Ksat, α, n, m)
+    van_Genuchten(ψ, θ_sat, θ_res, Ksat, α, n, m)
 
 van Genuchten (1980) relationships
 
@@ -32,7 +42,7 @@ param = (soil_texture=2,
   Ksat = 0.0443 / 3600)
 ```
 """
-function van_Genuchten(ψ::T, θ_res::T, θ_sat::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
+function van_Genuchten(ψ::T, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
 
@@ -53,6 +63,11 @@ function van_Genuchten(ψ::T, θ_res::T, θ_sat::T, Ksat::T, α::T, n::T, m::T) 
   θ, K, ∂θ∂ψ
 end
 
+function van_Genuchten(ψ::T; param::ParamVanGenuchten{T}) where {T<:Real}
+  @unpack θ_res, θ_sat, Ksat, α, n, m = param
+  van_Genuchten(ψ, θ_sat, θ_res, Ksat, α, n, m)
+end
+
 
 """
     van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
@@ -62,6 +77,12 @@ function van_Genuchten_K(θ::T, θ_sat::T, θ_res::T, Ksat::T, m::T) where {T<:R
   Se = clamp(Se, 0.0, 1.0)
   K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
   return K
+end
+
+# Function to calculate hydraulic conductivity from water content
+function van_Genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_sat, θ_res, Ksat, m) = param
+  van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
 end
 
 
@@ -77,32 +98,6 @@ function van_Genuchten_ψ(θ::T, θ_sat::T, θ_res::T, α::T, n::T, m::T) where 
   else
     return -1 / α * pow(pow((θ_sat - θ_res) / (θ - θ_res), (1 / m)) - 1, 1 / n)
   end
-end
-
-
-
-## 结构体形式的参数
-abstract type AbstractSoilParam{FT} end
-
-@with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
-  θ_sat::T = 0.287       # [m3 m-3]
-  θ_res::T = 0.075       # [m3 m-3]
-  Ksat::T = 34 / 3600    # [cm s-1]
-  α::T = 0.027
-  n::T = 3.96
-  m::T = 1.0 - 1.0 / n
-end
-
-
-function van_Genuchten(ψ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  @unpack θ_res, θ_sat, Ksat, α, n, m = param
-  van_Genuchten(ψ, θ_res, θ_sat, Ksat, α, n, m)
-end
-
-# Function to calculate hydraulic conductivity from water content
-function van_Genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_sat, θ_res, Ksat, m) = param
-  van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
 end
 
 # Function to calculate pressure head psi from water content

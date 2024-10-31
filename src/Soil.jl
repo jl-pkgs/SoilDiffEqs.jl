@@ -85,10 +85,10 @@ end
 
 function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   printstyled(io, "Parameters: \n", color=:blue, bold=true)
-  println("-----------------------------")
+  println(io, "-----------------------------")
   print_var(io, param, :κ)
   print_var(io, param, :cv; scale=1e6)
-  println("-----------------------------")
+  println(io, "-----------------------------")
 
   method = param.method
   print_selected(io, "van_Genuchten", method)

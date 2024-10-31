@@ -1,17 +1,16 @@
-function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) where {
+function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
   FT<:Real,V<:AbstractVector{FT}}
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ,
     θ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
-  param = soil.param_water
   Δz = soil.Δz_cm
   Δz₊ₕ = soil.Δz₊ₕ_cm
 
   θ_prev .= θ # backup
   ψ_prev .= ψ
 
-  update_θ!(soil, ψ_next)
+  update_θ!(soil, ψ)
   update_K₊ₕ!(soil)
 
   K0₊ₕ = K[1]

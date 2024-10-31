@@ -1,12 +1,13 @@
 # update θ, K, Cap
 function update_θ!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
-  (; θ_sat, θ_res, Ksat, α, n, b, method) = soil.param
+  (; θ_sat, θ_res, Ksat, α, n, m, b, method) = soil.param
 
   if method == "van_Genuchten"
     for i in ibeg:N
-      m = 1 - 1 / n[i] # m，不参与参数优化
-      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_res[i], θ_sat[i], Ksat[i], α[i], n[i], m)
+      # m = 1 - 1 / n[i] # m，不参与参数优化
+      # m = 1.0
+      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_sat[i], θ_res[i], Ksat[i], α[i], n[i], m[i])
       # θ[i], K[i], Cap[i] = van_Genuchten(ψ[i]; param)
     end
   elseif method == "Campbell"
@@ -47,7 +48,7 @@ end
 
 function update_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, ψ) = soil
-  (; θ_sat, θ_res, α, n, m, b, method) = soil.param
+  (; θ_sat, θ_res, α, n, m, ψ_sat, b, method) = soil.param
   if method == "van_Genuchten"
     for i = ibeg:N
       ψ[i] = van_Genuchten_ψ(θ[i], θ_sat[i], θ_res[i], α[i], n[i], m[i])
