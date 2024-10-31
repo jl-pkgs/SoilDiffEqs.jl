@@ -5,11 +5,9 @@ LOWER = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05, 0.1]
 UPPER = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00, 10.0]
 
 function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
+  # dz = [2.5, 5, 5, 15, 45, 55]
   z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100 # 第一层是虚拟的
   Δz = cal_Δz(z)
-  z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
-  # dz = [2.5, 5, 5, 15, 45, 55]
-
   N = length(Δz)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
@@ -21,11 +19,10 @@ function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
   Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, param_water)
 end
 
-LayerSame = true
+LayerSame = false
 if LayerSame == true
   ## 每层参数相同
   function UpdateSoilParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
-    N = soil.N
     soil.param.θ_sat .= theta[1]
     soil.param.θ_res .= theta[2]
     soil.param.Ksat .= theta[3]
@@ -43,7 +40,7 @@ if LayerSame == true
   get_bound(soil) = LOWER, UPPER
 else
   ## 每层参数不同
-  function update_SoilParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
+  function UpdateSoilParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
     N = soil.N
     soil.param.θ_sat .= theta[1:N]
     soil.param.θ_res .= theta[N+1:2N]
@@ -82,7 +79,7 @@ end
 
 function goal(theta; method="Bonan", kw...)
   ysim = model_sim(theta; method)
-  obs = yobs[:, 2:end]
-  sim = ysim[:, 2:end]
+  obs = yobs[:, 1:end]
+  sim = ysim[:, 1:end]
   -GOF(obs[:], sim[:]).NSE
 end

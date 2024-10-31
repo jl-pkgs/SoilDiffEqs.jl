@@ -1,14 +1,13 @@
 # update θ, K, Cap
 function update_θ!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
-  (; θ_sat, θ_res, Ksat, α, n, m, b, method) = soil.param
+  (; θ_sat, θ_res, Ksat, α, n, m, use_m, b, method) = soil.param
 
   if method == "van_Genuchten"
     @inbounds for i in ibeg:N
-      # m = 1 - 1 / n[i] # m，不参与参数优化
-      # m = 1.0
-      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_sat[i], θ_res[i], Ksat[i], α[i], n[i], m[i])
-      # θ[i], K[i], Cap[i] = van_Genuchten(ψ[i]; param)
+      # _m = m[i]
+      _m = use_m ? m[i] : 1 - 1 / n[i] # 不参与参数优化
+      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_sat[i], θ_res[i], Ksat[i], α[i], n[i], _m)
     end
   elseif method == "Campbell"
     @inbounds for i in ibeg:N
@@ -63,14 +62,14 @@ end
 
 
 
-function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
+function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T; use_m::Bool=true) where {T<:Real}
   SoilParam(; N,
     θ_sat=fill(θ_sat, N),
     θ_res=fill(θ_res, N),
     Ksat=fill(Ksat, N),
     α=fill(α, N),
     n=fill(n, N),
-    m=fill(m, N))
+    m=fill(m, N), use_m)
 end
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}

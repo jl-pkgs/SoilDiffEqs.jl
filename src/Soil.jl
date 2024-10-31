@@ -8,6 +8,7 @@ using Printf
   ## Parameter: 土壤水力
   N::Int = 10
   method::String = "van_Genuchten"
+  use_m::Bool = false
 
   θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
@@ -15,7 +16,7 @@ using Printf
   α::Vector{FT} = fill(0.01, N)        # [m-1]
   n::Vector{FT} = fill(2.0, N)         # [-]
   m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
-
+  
   ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
   b::Vector{FT} = fill(4.0, N)         # [-]
 

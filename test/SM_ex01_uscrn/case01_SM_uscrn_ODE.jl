@@ -41,6 +41,12 @@ begin
 end
 
 
+function print_res(theta)
+  ysim = model_sim(theta)
+  plot([plot_sim(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+end
+
+
 # 每次优化一个参数，可能结果更稳定
 begin
   i = 6
@@ -59,17 +65,19 @@ begin
   lower, upper = get_bound(soil)
   # theta0 = soil.param_water |> Vector
   theta0 = param2theta(soil)
-  theta = theta0
+  ysim = model_sim(theta0)
   goal(theta0)
+  print_res(theta0)
 
   # method = "ODE"
   method = "Bonan"
   f(theta) = goal(theta; method)
-  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(5e4))
+  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
 end
 
-ysim = model_sim(theta; method)
-plot([plot_sim(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+print_res(theta)
+UpdateSoilParam!(soil, theta)
+goal(theta)
 
 # soil = init_soil(; θ0, soil_type=7, ibeg)
 # param = get_soilpar(theta)
