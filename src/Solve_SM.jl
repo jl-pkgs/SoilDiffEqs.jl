@@ -13,11 +13,11 @@ end
 
 
 function solve_SM_Bonan(soil::Soil{FT}, θ_surf::AbstractVector{FT}) where {FT<:Real}
-  (; n, ibeg, inds_obs, sink) = soil
+  (; N, ibeg, inds_obs, sink) = soil
   param = soil.param_water # 这是需要优化的参数。
 
   ntime = length(θ_surf)
-  R = zeros(ntime, n - ibeg + 1)
+  R = zeros(ntime, N - ibeg + 1)
   R[1, :] .= soil.θ[ibeg:end]
 
   for i = 2:ntime
@@ -39,7 +39,7 @@ solver = Rosenbrock23()
 solver = Rodas5(autodiff=false)  
 """
 function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=false)
-  (; n, inds_obs, ibeg, dt) = soil
+  (; N, inds_obs, ibeg, dt) = soil
 
   ntime = length(θ_surf)
   u0 = soil.θ[ibeg:end]
@@ -48,7 +48,7 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
   tspan = (0, dt)
   prob = ODEProblem(_Equation, u0, tspan, soil)
 
-  R = zeros(ntime, n - ibeg + 1)
+  R = zeros(ntime, N - ibeg + 1)
   R[1, :] .= soil.θ[ibeg:end]
 
   for i = 2:ntime

@@ -17,9 +17,9 @@ function plot_soil(i; ibeg=1)
 end
 
 function init_soil(; TS0=20.0, dt=3600.0, soil_type=1, ibeg=2)
-  # Δz = fill(0.025, n)
+  # Δz = fill(0.025, N)
   # Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
-  n = length(Δz)
+  N = length(Δz)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
@@ -27,9 +27,9 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1, ibeg=2)
   m_liq = 0.8 * m_sat
   Tsoil = deepcopy(Tsoil0)
 
-  κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
+  κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil, ibeg)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil, ibeg)
 end
 
 function goal(theta;)

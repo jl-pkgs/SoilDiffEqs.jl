@@ -22,7 +22,7 @@ function Tsoil_calib()
 
   info = OrderedDict()
   for i in eachindex(sites)
-    printstyled("[i = $i] site = $(sites[i]) \n", color=:green, bold=true)
+    printstyled("[i = $i] site = $(sites[i]) \N", color=:green, bold=true)
 
     SITE = sites[i]
     d = df[df.site.==SITE, :][1:24*14, [:time; vars]]

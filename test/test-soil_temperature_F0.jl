@@ -2,19 +2,20 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
 function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
-  n = 120
-  Δz = fill(0.025, n)
+  N = 120
+  Δz = fill(0.025, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
   m_ice = 0 * m_sat
   m_liq = 0.8 * m_sat
-  Tsoil = fill(10.0, n)
+  Tsoil = fill(10.0, N)
 
   F0 = -10.0 # [W m-2]
-  κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
+  κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil, F0)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, TS0, Tsoil, F0, 
+    param = SoilParam(; N, κ, cv))
 end
 
 function solve_ode(reltol=1e-5, abstol=1e-5)

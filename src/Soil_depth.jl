@@ -10,41 +10,41 @@ z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
 function soil_depth_init(Δz::AbstractVector)
   # Soil depth (m) at i+1/2 interface between layers i and i+1 (negative distance from surface)
   # z_{i+1/2}
-  nsoil = length(Δz)
+  N = length(Δz)
 
-  z = zeros(nsoil)
-  z₊ₕ = zeros(nsoil)
-  dz₊ₕ = zeros(nsoil)
+  z = zeros(N)
+  z₊ₕ = zeros(N)
+  dz₊ₕ = zeros(N)
 
   z₊ₕ[1] = -Δz[1]
-  for i = 2:nsoil
+  for i = 2:N
     z₊ₕ[i] = z₊ₕ[i-1] - Δz[i] # on the edge
   end
 
   # Soil depth (m) at center of layer i (negative distance from surface)
   z[1] = 0.5 * z₊ₕ[1]
-  for i = 2:nsoil
+  for i = 2:N
     z[i] = 0.5 * (z₊ₕ[i-1] + z₊ₕ[i]) # on the center
   end
 
   # Thickness between between z(i) and z(i+1)
-  for i = 1:nsoil-1
+  for i = 1:N-1
     dz₊ₕ[i] = z[i] - z[i+1]
   end
-  dz₊ₕ[nsoil] = 0.5 * Δz[nsoil]
+  dz₊ₕ[N] = 0.5 * Δz[N]
 
   (; z, z₊ₕ, dz₊ₕ)
 end
 
 
 function cal_Δz(z)
-  n = length(z)
-  z₊ₕ = zeros(n)
-  Δz = zeros(n)
+  N = length(z)
+  z₊ₕ = zeros(N)
+  Δz = zeros(N)
   Δz[1] = 0 - z[1] * 2
   z₊ₕ[1] = -Δz[1]
 
-  for i in 2:n
+  for i in 2:N
     Δz[i] = (z₊ₕ[i-1] - z[i]) * 2
     z₊ₕ[i] = z₊ₕ[i-1] - Δz[i]
   end
@@ -54,14 +54,14 @@ end
 
 # "face to center"
 # function C2F(z::AbstractVector)
-#   n = length(z)
-#   z₊ₕ = zeros(n)
-#   d = zeros(n)
+#   N = length(z)
+#   z₊ₕ = zeros(N)
+#   d = zeros(N)
 
 #   z₊ₕ[1] = z[1] * 2
 #   d[1] = z[1] * 2
 
-#   @inbounds for i = 2:n
+#   @inbounds for i = 2:N
 #     d[i] = 2(z[i] - z[i-1]) - d[i-1]
 #     z₊ₕ[i] = z₊ₕ[i-1] + d[i]
 #   end
@@ -70,10 +70,10 @@ end
 
 # "center to face"
 # function F2C(z₊ₕ::AbstractVector)
-#   n = length(z₊ₕ)
-#   z = zeros(n)
+#   N = length(z₊ₕ)
+#   z = zeros(N)
 #   z[1] = z₊ₕ[1] / 2
-#   @inbounds for i = 2:n
+#   @inbounds for i = 2:N
 #     z[i] = 0.5 * (z₊ₕ[i] + z₊ₕ[i-1])
 #   end
 #   z

@@ -8,7 +8,7 @@
 - `κ`   : thermal conductivity (W/m/K)
 - `cv`  : volumetric heat capacity (J/m3/K)
 - `f0`  : 
-- `df0` : Tsurf_next_next, T0_{n+1}
+- `df0` : Tsurf_next_next, T0_{N+1}
 - `solution`   : 
   + `implicit`       : 
   + `crank-nicolson` : 
@@ -18,10 +18,10 @@
 ```julia
 dz = [0.0175, 0.0276, 0.0455, 0.0750, 0.1236, 0.2038, 0.3360, 0.5539, 0.9133, 1.5058]
 dt = 1800 # seconds, 0.5h
-n = 10
-κ = fill(1.4651477226706402, n)
-cv = fill(2.6628438e6, n)
-Tsoil_cur = fill(K0 + 25, n)
+N = 10
+κ = fill(1.4651477226706402, N)
+cv = fill(2.6628438e6, N)
+Tsoil_cur = fill(K0 + 25, N)
 df0 = -148.3184062187158
 f0 = -798.1091814317192
 
@@ -29,30 +29,30 @@ Tsoil_next, G = soil_temperature_F0(dz, dt, κ, cv, Tsoil_cur, df0, f0, snow_wat
 ```
 """
 function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=0.0)
-  (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
-    κ, cv, Tsoil, 
+  (; N, dt, Δz, z, z₊ₕ, Δz₊ₕ,
+    Tsoil, 
     κ₊ₕ, u, a, b, c, d, e, f) = soil
-
+  (; κ, cv) = soil.param
   # Thermal conductivity at interface (W/m/K)
-  @inbounds for i = 1:n-1
+  @inbounds for i = 1:N-1
     κ₊ₕ[i] = κ[i] * κ[i+1] * (z[i] - z[i+1]) /
              (κ[i] * (z₊ₕ[i] - z[i+1]) + κ[i+1] * (z[i] - z₊ₕ[i])) # Eq. 5.16
   end
 
   # implicit
-  @inbounds for i = 1:n
+  @inbounds for i = 1:N
     if i == 1
       a[i] = 0
       c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
       b[i] = cv[i] * Δz[i] / dt - c[i] - df0
       d[i] = -κ₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) / Δz₊ₕ[i] + f0
-    elseif i < n
+    elseif i < N
       a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
       c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
       b[i] = cv[i] * Δz[i] / dt - a[i] - c[i]
       d[i] = κ₊ₕ[i-1] * (Tsoil[i-1] - Tsoil[i]) / Δz₊ₕ[i-1] -
              κ₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) / Δz₊ₕ[i]
-    elseif i == n
+    elseif i == N
       a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
       c[i] = 0
       b[i] = cv[i] * Δz[i] / dt - a[i]
@@ -62,11 +62,11 @@ function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=
 
   # --- Begin tridiagonal solution: forward sweep for layers N to 1
   # Bottom soil layer
-  e[n] = a[n] / b[n]
-  f[n] = d[n] / b[n]
+  e[N] = a[N] / b[N]
+  f[N] = d[N] / b[N]
 
-  # Layers n-1 to 2
-  @inbounds for i = n-1:-1:2
+  # Layers N-1 to 2
+  @inbounds for i = N-1:-1:2
     den = b[i] - c[i] * e[i+1]
     e[i] = a[i] / den
     f[i] = (d[i] - c[i] * f[i+1]) / den
@@ -91,12 +91,12 @@ function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=
   dtsoi = u[1] - Tsoil[1]
 
   # Now complete the tridiagonal solution for layers 2 to N
-  @inbounds for i = 2:n
+  @inbounds for i = 2:N
     # dtsoi = f[i] - e[i] * u[i-1]
     dtsoi = f[i] - e[i] * dtsoi
     u[i] = Tsoil[i] + dtsoi
   end
-  # G_soil = f0([T_1]n) + df0 / dT * ([T_1]n + 1 - [T_1]n)
+  # G_soil = f0([T_1]N) + df0 / dT * ([T_1]N + 1 - [T_1]N)
   G_soil = f0 + df0 * (u[1] - Tsoil[1]) - G_snow # 一部分能量分配给融雪
   G = G_soil + G_snow
   soil.G = G_soil + G_snow

@@ -1,16 +1,16 @@
 function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
-  n = 120
-  Δz = fill(0.025, n)
+  N = 120
+  Δz = fill(0.025, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
   m_ice = 0 * m_sat
   m_liq = 0.8 * m_sat
-  Tsoil = fill(10.0, n)
+  Tsoil = fill(10.0, N)
 
-  κ, cv = soil_thermal_properties(Δz, Tsoil, m_liq, m_ice;
+  κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_texture=soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; n, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
 end
 
 
@@ -54,8 +54,8 @@ TS0 = A[:, 1]
 
 # @profview Tsoil_ode = solve_ode()
 begin
-  n = 120
-  Δz = fill(0.025, n)
+  N = 120
+  Δz = fill(0.025, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   gr(framestyle=:box)

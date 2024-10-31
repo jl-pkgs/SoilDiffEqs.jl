@@ -1,85 +1,118 @@
+export SoilParam, Soil
 using Parameters
 using Printf
 
 
+# 参数优化过程中，可能需要优化的参数
+@with_kw mutable struct SoilParam{FT}
+  ## Parameter: 土壤水力
+  N::Int = 10
+  method::String = "van_Genuchten"
+
+  θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
+  θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
+  Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1], 2.0 cm/h
+  α::Vector{FT} = fill(0.01, N)        # [m-1]
+  n::Vector{FT} = fill(2.0, N)         # [-]
+  m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
+
+  ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
+  b::Vector{FT} = fill(4.0, N)         # [-]
+
+  ## Parameter: 土壤热力
+  κ::Vector{FT} = fill(2.0, N)       # thermal conductivity [W m-1 K-1]
+  cv::Vector{FT} = fill(2.0*1e6, N)      # volumetric heat capacity [J m-3 K-1]
+end
+
+
 @with_kw_noshow mutable struct Soil{FT}
-  n::Int = 10                        # layers of soil
+  N::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
-  inds_obs::Vector{Int} = ibeg:n     # indices of observed layers
+  inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
   dt::Float64 = 3600                 # 时间步长, seconds
-  z::Vector{FT} = zeros(FT, n)       # cm, 向下为负
-  z₊ₕ::Vector{FT} = zeros(FT, n)
-  Δz::Vector{FT} = zeros(FT, n)
-  Δz₊ₕ::Vector{FT} = zeros(FT, n)
+  z::Vector{FT} = zeros(FT, N)       # cm, 向下为负
+  z₊ₕ::Vector{FT} = zeros(FT, N)
+  Δz::Vector{FT} = zeros(FT, N)
+  Δz₊ₕ::Vector{FT} = zeros(FT, N)
 
   z_cm::Vector{FT} = z * 100         # cm, 向下为负
   Δz_cm::Vector{FT} = Δz * 100
   Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
 
   # 水分
-  θ::Vector{FT} = fill(0.1, n)       # θ [m3 m-3]
-  Q::Vector{FT} = zeros(FT, n)       # [cm/s]
-  K::Vector{FT} = zeros(FT, n)       # hydraulic conductivity，[cm/s]
-  K₊ₕ::Vector{FT} = zeros(FT, n - 1)  # hydraulic conductivity at interface, [cm/s]
-  Cap::Vector{FT} = zeros(FT, n)     # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
-  ψ::Vector{FT} = zeros(FT, n)       # [cm]，约干越负
-  ψ_next::Vector{FT} = zeros(FT, n)  # ψ[n+1/2], [cm], 临时变量
+  θ::Vector{FT} = fill(0.1, N)       # θ [m3 m-3]
+  Q::Vector{FT} = zeros(FT, N)       # [cm/s]
+  K::Vector{FT} = zeros(FT, N)       # hydraulic conductivity，[cm/s]
+  K₊ₕ::Vector{FT} = zeros(FT, N - 1)  # hydraulic conductivity at interface, [cm/s]
+  Cap::Vector{FT} = zeros(FT, N)     # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
+  ψ::Vector{FT} = zeros(FT, N)       # [cm]，约干越负
+  ψ_next::Vector{FT} = zeros(FT, N)  # ψ[N+1/2], [cm], 临时变量
   θ0::FT = FT(0.0)                   # [m3 m-3]
   ψ0::FT = FT(0.0)                   # [cm]
   Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
-  sink::Vector{FT} = fill(0.0, n)    # 蒸发项, [cm per unit time]
-  θ_prev::Vector{FT} = zeros(FT, n)  # backup of θ
-  ψ_prev::Vector{FT} = zeros(FT, n)  # backup of ψ
+  sink::Vector{FT} = fill(0.0, N)    # 蒸发项, [cm per unit time]
+  θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ
+  ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
 
   ## Parameter: 土壤水力
-  θ_sat::Vector{FT} = fill(0.4, n)     # saturated water content, [m3 m-3]
-  θ_res::Vector{FT} = fill(0.1, n)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(2.0 / 3600, n) # saturated hydraulic conductivity, [cm s-1], 2.0 cm/h
-  α::Vector{FT} = fill(0.01, n)        # [m-1]
-  n::Vector{FT} = fill(2.0, n)         # [-]
-  m::Vector{FT} = fill(0.5, n)         # [-]，优化时的可选参数
-
-  ψ_sat::Vector{FT} = fill(-10.0, n)   # [cm]
-  b::Vector{FT} = fill(4.0, n)         # [-]
+  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
+  param::SoilParam{FT} = SoilParam{FT}(; N)
 
   # 温度
-  Tsoil::Vector{FT} = fill(NaN, n)   # [°C]
-  κ₊ₕ::Vector{FT} = zeros(FT, n - 1)  # thermal conductivity at interface [W m-1 K-1]
-  F::Vector{FT} = zeros(FT, n)       # heat flux, [W m-2]
+  Tsoil::Vector{FT} = fill(NaN, N)   # [°C]
+  κ₊ₕ::Vector{FT} = zeros(FT, N - 1)  # thermal conductivity at interface [W m-1 K-1]
+  F::Vector{FT} = zeros(FT, N)       # heat flux, [W m-2]
   TS0::FT = FT(NaN)                  # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
 
-  ## Parameter: 土壤热力
-  κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
-  cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
-
   # ODE求解临时变量
-  u::Vector{FT} = fill(NaN, n)  # [°C], 为了从ibeg求解地温，定义的临时变量
-  du::Vector{FT} = fill(NaN, n) # [°C]
+  u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量
+  du::Vector{FT} = fill(NaN, N) # [°C]
 
   # 三角阵求解临时变量
-  a::Vector{FT} = zeros(FT, n)
-  b::Vector{FT} = zeros(FT, n)
-  c::Vector{FT} = zeros(FT, n)
-  d::Vector{FT} = zeros(FT, n)
-  e::Vector{FT} = zeros(FT, n)
-  f::Vector{FT} = zeros(FT, n)
+  a::Vector{FT} = zeros(FT, N)
+  b::Vector{FT} = zeros(FT, N)
+  c::Vector{FT} = zeros(FT, N)
+  d::Vector{FT} = zeros(FT, N)
+  e::Vector{FT} = zeros(FT, N)
+  f::Vector{FT} = zeros(FT, N)
 
   timestep::Int = 0                  # 迭代次数
-  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
+end
+
+
+function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
+  printstyled(io, "Parameters: \n", color=:blue, bold=true)
+  println("-----------------------------")
+  print_var(io, param, :κ)
+  print_var(io, param, :cv; scale=1e6)
+  println("-----------------------------")
+
+  method = param.method
+  print_selected(io, "van_Genuchten", method)
+  print_var(io, param, :θ_sat)
+  print_var(io, param, :θ_res)
+  print_var(io, param, :Ksat; scale=1e-3)
+  print_var(io, param, :α)
+  print_var(io, param, :n)
+  print_var(io, param, :m)
+  print_selected(io, "Cambell", method)
+  print_var(io, param, :ψ_sat)
+  print_var(io, param, :b)
+  return nothing
 end
 
 
 function Base.show(io::IO, x::Soil{T}) where {T<:Real}
+  param = x.param
+
   printstyled(io, "Soil{$T}: ", color=:blue)
-  printstyled(io, "n = $(x.n), ibeg=$(x.ibeg), ", color=:blue, underline=true)
+  printstyled(io, "N = $(x.N), ibeg=$(x.ibeg), ", color=:blue, underline=true)
   print_index(io, x.inds_obs; prefix="inds_obs =")
 
   printstyled(io, "Soil Temperature: \n", color=:blue, bold=true)
-  print_var(io, x, :κ)
-  print_var(io, x, :cv; scale=1e6)
   print_var(io, x, :Tsoil)
   print_var(io, x, :TS0)
 
@@ -91,9 +124,18 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :θ0)
   print_var(io, x, :ψ0)
 
-  printstyled(io, "param_water: ", color=:blue, bold=true)
-  show(io, x.param_water)
+  # printstyled(io, "param_water: ", color=:blue, bold=true)
+  # show(io, x.param_water)
+  show(io, param)
   return nothing
+end
+
+function print_selected(io::IO, name::String, method::String)
+  if name == method
+    printstyled(io, "   [$name]\n", bold=true, color=:green)
+  else
+    printstyled(io, "   [$name]\n", bold=true)
+  end
 end
 
 function print_var(io::IO, x, var; scale=nothing, digits=2)
@@ -103,7 +145,7 @@ function print_var(io::IO, x, var; scale=nothing, digits=2)
   if isnothing(scale)
     println(io, round.(value; digits))
   else
-    println(io, "$(round.(x.cv/scale; digits)) * $scale")
+    println(io, "$(round.(value/scale; digits)) * $scale")
   end
 end
 

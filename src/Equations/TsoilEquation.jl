@@ -6,7 +6,7 @@
 function soil_HeatFlux!(F::V, T::V, κ::V, z::V, z₊ₕ::V;
   F0::FT=NaN, TS0::FT=NaN, method="TS0", ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT}}
 
-  n = length(T)
+  N = length(T)
   if method == "TS0"
     if ibeg == 1
       F0 = -κ[1] * (TS0 - T[1]) / (0 - z[1])
@@ -15,7 +15,7 @@ function soil_HeatFlux!(F::V, T::V, κ::V, z::V, z₊ₕ::V;
     end
   end
 
-  @inbounds for i in ibeg:n-1
+  @inbounds for i in ibeg:N-1
     d1 = z[i] - z₊ₕ[i]
     d2 = z₊ₕ[i] - z[i+1]
     κ₊ₕ = κ[i] * κ[i+1] * (d1 + d2) / (κ[i] * d2 + κ[i+1] * d1) # Eq. 5.16, 
@@ -23,7 +23,7 @@ function soil_HeatFlux!(F::V, T::V, κ::V, z::V, z₊ₕ::V;
     Δz₊ₕ = z[i] - z[i+1]
     F[i] = -κ₊ₕ * (T[i] - T[i+1]) / Δz₊ₕ
   end
-  F[n] = 0
+  F[N] = 0
   return F0
 end
 
@@ -34,14 +34,15 @@ end
   + `TS0` : TS0 boundary condition, 第一类边界条件
   + `F0`  : F0 boundary condition, 第二类边界条件
 """
-function TsoilEquation(dT, T, p::Soil, t; method="TS0", ibeg::Int=1)
-  p.timestep += 1
+function TsoilEquation(dT, T, soil::Soil, t; method="TS0", ibeg::Int=1)
+  soil.timestep += 1
   # TODO: 根据t，更新TS0
-  (; n, Δz, z, z₊ₕ, F, κ, cv, TS0) = p
-  F0 = soil_HeatFlux!(F, T, κ, z, z₊ₕ; TS0, F0=p.F0, method, ibeg)
+  (; N, Δz, z, z₊ₕ, F, TS0) = soil
+  (; κ, cv) = soil.param
+  F0 = soil_HeatFlux!(F, T, κ, z, z₊ₕ; TS0, F0=soil.F0, method, ibeg)
 
   dT[ibeg] = -(F0 - F[ibeg]) / (Δz[ibeg] * cv[ibeg])
-  @inbounds for i in ibeg+1:n
+  @inbounds for i in ibeg+1:N
     dT[i] = -(F[i-1] - F[i]) / (Δz[i] * cv[i])
   end
 end

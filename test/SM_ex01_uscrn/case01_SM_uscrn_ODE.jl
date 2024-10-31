@@ -36,14 +36,14 @@ function init_soil(; θ0, dt=3600.0, ibeg=2, soil_type=7)
   z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
   # dz = [2.5, 5, 5, 15, 45, 55]
 
-  n = length(Δz)
+  N = length(Δz)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   # m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
-  θ = fill(0.2, n)
+  θ = fill(0.2, N)
   θ[ibeg:end] .= θ0
   param_water = get_soilpar(soil_type)
-  Soil{Float64}(; n, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param_water)
+  Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param_water)
 end
 
 begin
@@ -94,7 +94,7 @@ begin
   θ0 = yobs_full[1, max(ibeg - 1, 1):end]
   θ_surf = yobs_full[:, ibeg-1]
 
-  # θ_sat, θ_res, Ksat, α, n, m
+  # θ_sat, θ_res, Ksat, α, N, m
   lower = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05, 0.1]
   upper = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00, 10.0]
 

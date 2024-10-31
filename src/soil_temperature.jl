@@ -8,7 +8,7 @@
 - `κ`          : thermal conductivity, [W/m/K]
 - `cv`         : volumetric heat capacity, [J/m3/K]
 - `Tsoil`      : Tsoil_cur
-- `Tsurf_next` : Tsurf_next_next, T0_{n+1}
+- `Tsurf_next` : Tsurf_next_next, T0_{N+1}
 - `solution`   : 
   + `implicit`       : 
   + `crank-nicolson` : 
@@ -20,20 +20,21 @@ Tsoil_next, G = soil_temperature!(Soil, Real; solution="implicit", method="appar
 """
 function soil_temperature!(soil::Soil, Tsurf_next::Real;
   solution="implicit", method="apparent-heat-capacity", ibeg::Int=1)
-  (; n, dt, Δz, z, z₊ₕ, Δz₊ₕ,
-    κ, cv, Tsoil, 
+  (; N, dt, Δz, z, z₊ₕ, Δz₊ₕ,
+    Tsoil, 
     κ₊ₕ, u, a, b, c, d, f) = soil
+  (; κ, cv) = soil.param
 
   # Thermal conductivity at interface (W/m/K)
-  # κ₊ₕ = zeros(1, n - 1)
-  @inbounds for i = 1:n-1
+  # κ₊ₕ = zeros(1, N - 1)
+  @inbounds for i = 1:N-1
     κ₊ₕ[i] = κ[i] * κ[i+1] * (z[i] - z[i+1]) /
              (κ[i] * (z₊ₕ[i] - z[i+1]) + κ[i+1] * (z[i] - z₊ₕ[i])) # Eq. 5.16
   end
 
   ## Set up tridiagonal matrix
   @inbounds if solution == "implicit"
-    for i = ibeg:n
+    for i = ibeg:N
       m = cv[i] * Δz[i] / dt
       if i == ibeg
         a[i] = 0
@@ -41,13 +42,13 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
         b[i] = m - c[i] + κ[i] / (0 - z[i])  # κ_(1/2) / dz_(1/2) = κ₁ / (0 - z₁)
         d[i] = m * Tsoil[i] + κ[i] / (0 - z[i]) * Tsurf_next
 
-      elseif i < n
+      elseif i < N
         a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
         c[i] = -κ₊ₕ[i] / Δz₊ₕ[i]
         b[i] = m - a[i] - c[i]
         d[i] = m * Tsoil[i]
 
-      elseif i == n
+      elseif i == N
         a[i] = -κ₊ₕ[i-1] / Δz₊ₕ[i-1]
         c[i] = 0
         b[i] = m - a[i]
@@ -56,13 +57,13 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
     end
 
   elseif solution == "crank-nicolson"
-    # --- Heat flux at time n (W/m2) of each layer
-    # f = zeros(n)
-    for i = ibeg:n-1
+    # --- Heat flux at time N (W/m2) of each layer
+    # f = zeros(N)
+    for i = ibeg:N-1
       f[i] = -κ₊ₕ[i] / Δz₊ₕ[i] * (Tsoil[i] - Tsoil[i+1]) # Eq. 5.15
     end
 
-    for i = ibeg:n
+    for i = ibeg:N
       m = cv[i] * Δz[i] / dt
       if i == ibeg
         a[i] = 0
@@ -70,13 +71,13 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
         b[i] = m - c[i] + κ[i] / (0 - z[i])
         d[i] = m * Tsoil[i] + κ[i] / (0 - z[i]) * Tsurf_next + 0.5 * f[i]
 
-      elseif i < n
+      elseif i < N
         a[i] = -0.5 * κ₊ₕ[i-1] / Δz₊ₕ[i-1]
         c[i] = -0.5 * κ₊ₕ[i] / Δz₊ₕ[i]
         b[i] = m - a[i] - c[i]
         d[i] = m * Tsoil[i] + 0.5 * (f[i] - f[i-1])
 
-      elseif i == n
+      elseif i == N
         a[i] = -0.5 * κ₊ₕ[i-1] / Δz₊ₕ[i-1]
         c[i] = 0
         b[i] = m - a[i]
@@ -103,7 +104,7 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
   end
 
   edif = 0.0 # Sum change in energy (W/m2)
-  @inbounds for i = ibeg:n
+  @inbounds for i = ibeg:N
     edif += cv[i] * Δz[i] * (u[i] - Tsoil[i]) / dt
   end
 

@@ -24,10 +24,12 @@ include("ψ_van_Genuchten.jl")
 include("Soil.jl")
 include("Soil_depth.jl")
 
+include("soil_properties.jl")
+include("soil_properties_thermal.jl")
+
 include("soil_moisture.jl")
 include("soil_moisture_Q0.jl")
 
-include("soil_thermal_properties.jl")
 include("soil_temperature.jl")
 include("soil_temperature_F0.jl")
 
@@ -49,7 +51,7 @@ export soil_moisture!, soil_moisture_Q0!
 export soil_temperature!, soil_temperature_F0!
 export TsoilEquation, TsoilEquation_partial
 export RichardsEquation, RichardsEquation_partial
-export soil_thermal_properties
+export soil_properties_thermal
 
 # HydroTools
 export sceua, GOF, of_KGE, of_NSE

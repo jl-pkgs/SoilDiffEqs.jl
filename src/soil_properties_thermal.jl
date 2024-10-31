@@ -1,5 +1,5 @@
 """
-    soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
+    soil_properties_thermal(dz::AbstractVector, Tsoil::AbstractVector,
         m_liq::AbstractVector, m_ice::AbstractVector;
         soil_type::Integer=1, method="excess-heat")
 
@@ -19,7 +19,7 @@
 - `κ` : thermal conductivity, [W/m/K]
 - `cv`: heat capacity, [J/m3/K]
 """
-function soil_thermal_properties(dz::AbstractVector, Tsoil::AbstractVector,
+function soil_properties_thermal(dz::AbstractVector, Tsoil::AbstractVector,
   m_liq::AbstractVector, m_ice::AbstractVector;
   soil_type::Integer=1, method="excess-heat")
 

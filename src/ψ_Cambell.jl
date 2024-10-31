@@ -34,6 +34,13 @@ param = (θ_sat = 0.25, ψ_sat = -25.0, b = 0.2, Ksat = 3.4e-03)
   θ, K, ∂θ∂ψ
 end
 
+
+"""
+    Cambell_K(θ, θ_sat, Ksat, b)
+"""
+@fastmath Cambell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real} =
+  Ksat * (θ / θ_sat)^(2 * b + 3)
+
 # Campbell 1974, Bonan 2019 Table 8.2
 """
     Cambell_ψ(θ, θ_sat, ψ_sat, b)
@@ -42,9 +49,3 @@ end
   ψ = ψ_sat * (θ / θ_sat)^(-b)
   max(ψ, ψ_sat)
 end
-
-"""
-    Cambell_K(θ, θ_sat, Ksat, b)
-"""
-@fastmath Cambell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real} =
-  Ksat * (θ / θ_sat)^(2 * b + 3)

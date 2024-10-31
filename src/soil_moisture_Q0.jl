@@ -1,7 +1,7 @@
 function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) where {
   FT<:Real,V<:AbstractVector{FT}}
 
-  (; n, dt, #Δz, Δz₊ₕ,
+  (; N, dt, #Δz, Δz₊ₕ,
     ψ,
     θ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
   param = soil.param_water
@@ -11,14 +11,12 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
   θ_prev .= θ # backup
   ψ_prev .= ψ
 
-  for i in 1:n
-    θ[i], K[i], Cap[i] = fun(ψ[i]; param)
-  end
+  update_θ!(soil, ψ_next)
   update_K₊ₕ!(soil)
 
   K0₊ₕ = K[1]
   # dz0₊ₕ = 0.5 * Δz[1]
-  @inbounds for i = 1:n
+  @inbounds for i = 1:N
     if i == 1
       a[i] = 0
       c[i] = -K₊ₕ[i] / Δz₊ₕ[i]
@@ -26,31 +24,29 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
       # d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K0₊ₕ / dz0₊ₕ * ψ0 + K0₊ₕ - K₊ₕ[i]
       b[i] = Cap[i] * Δz[i] / (0.5 * dt) - c[i]
       d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] - K₊ₕ[i] - Q0
-    elseif i < n
+    elseif i < N
       a[i] = -K₊ₕ[i-1] / Δz₊ₕ[i-1]
       c[i] = -K₊ₕ[i] / Δz₊ₕ[i]
       b[i] = Cap[i] * Δz[i] / (0.5 * dt) - a[i] - c[i]
       d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K₊ₕ[i-1] - K₊ₕ[i]
-    elseif i == n
-      a[i] = -K₊ₕ[n-1] / Δz₊ₕ[n-1]
+    elseif i == N
+      a[i] = -K₊ₕ[N-1] / Δz₊ₕ[N-1]
       c[i] = 0
       b[i] = Cap[i] * Δz[i] / (0.5 * dt) - a[i] - c[i]
-      d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K₊ₕ[n-1] - K[i]
+      d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K₊ₕ[N-1] - K[i]
     end
     d[i] -= sink[i]
   end
-  ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at n+1/2 time
+  ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1/2 time
 
   ## update: θ, K and Cap
-  for i in 1:n
-    θ[i], K[i], Cap[i] = fun(ψ_next[i]; param)
-  end
+  update_θ!(soil, ψ_next)
   update_K₊ₕ!(soil)
   K0₊ₕ = K[1] # 可以按照同样的方法，设置
 
   ## second round
   # Terms for tridiagonal matrix
-  @inbounds for i = 1:n
+  @inbounds for i = 1:N
     if i == 1
       a[i] = 0
       c[i] = -K₊ₕ[i] / (2 * Δz₊ₕ[i])
@@ -61,14 +57,14 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
       b[i] = Cap[i] * Δz[i] / dt - c[i]
       d[i] = Cap[i] * Δz[i] / dt * ψ[i] - Q0 +
              c[i] * (ψ[i] - ψ[i+1]) - K₊ₕ[i]
-    elseif i < n
+    elseif i < N
       a[i] = -K₊ₕ[i-1] / (2 * Δz₊ₕ[i-1])
       c[i] = -K₊ₕ[i] / (2 * Δz₊ₕ[i])
       b[i] = Cap[i] * Δz[i] / dt - a[i] - c[i]
       d[i] = Cap[i] * Δz[i] / dt * ψ[i] - a[i] * (ψ[i-1] - ψ[i]) +
              c[i] * (ψ[i] - ψ[i+1]) + K₊ₕ[i-1] - K₊ₕ[i]
     else
-      i == n
+      i == N
       a[i] = -K₊ₕ[i-1] / (2 * Δz₊ₕ[i-1])
       c[i] = 0
       b[i] = Cap[i] * Δz[i] / dt - a[i] - c[i]
@@ -76,17 +72,17 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT; fun=van_Genuchten) w
     end
     d[i] -= sink[i]
   end
-  ψ .= tridiagonal_solver(a, b, c, d) # Solve for ψ at n+1
+  ψ .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1
   ## 获取ψ，之后更新θ
-  # for i in 1:n
+  # for i in 1:N
   #   θ[i], K[i], Cap[i] = fun(ψ[i]; param)
   # end
 
   # --- Check water balance
   # Q0 = -K0₊ₕ / (2 * dz0₊ₕ) * ((ψ0 - ψ_n[1]) + (ψ0 - ψ[1])) - K0₊ₕ
-  QN = -K[n]
+  QN = -K[N]
   dθ = 0
-  for i = 1:n
+  for i = 1:N
     dθ += (θ[i] - θ_prev[i]) * Δz[i]
   end
 

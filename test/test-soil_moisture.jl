@@ -3,18 +3,18 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 function data_loader_soil()
   param_water = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
-  n = 150
-  Δz = fill(0.01, n)
+  N = 150
+  Δz = fill(0.01, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
-  θ = fill(0.1, n)
+  θ = fill(0.1, N)
   ψ = van_Genuchten_ψ.(θ; param=param_water)
   θ0 = 0.267
   ψ0 = van_Genuchten_ψ(θ0; param=param_water)
 
   dt = 5 # [s]
-  sink = ones(n) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
-  soil = Soil{Float64}(; n, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param_water)
+  sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
+  soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param_water)
   return soil
 end
 
@@ -44,7 +44,7 @@ function solve_bonan()
   # --- Time stepping loop: NTIM iterations with a time step of DT seconds
   for itim = 1:ntim
     hour = itim * (dt / 86400 * 24)
-    # @printf("hour = %8.3f\n", hour)
+    # @printf("hour = %8.3f\N", hour)
     # Calculate soil moisture
     Q0, QN, dθ, err = soil_moisture!(soil, sink, ψ0)
 
@@ -76,8 +76,8 @@ end
 
 # begin
 #   using Plots
-#   n = 150
-#   Δz = fill(0.01, n)
+#   N = 150
+#   Δz = fill(0.01, N)
 #   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
 #   gr(framestyle=:box)

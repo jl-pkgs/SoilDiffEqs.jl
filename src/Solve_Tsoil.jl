@@ -2,16 +2,16 @@ export model_Tsoil_sim, Tsoil_theta2param, of_MSE
 export solve_Tsoil_ODE, solve_Tsoil_Bonan
 
 function Tsoil_theta2param(theta)
-  n = length(theta) ÷ 2
-  κ = theta[1:n]
-  cv = theta[n+1:end]
+  N = length(theta) ÷ 2
+  κ = theta[1:N]
+  cv = theta[N+1:end]
   return κ, cv
 end
 
 function model_Tsoil_sim(soil, TS0, theta; method="Bonan", kw...)
   κ, cv = Tsoil_theta2param(theta)
-  soil.κ .= κ
-  soil.cv .= cv
+  soil.param.κ .= κ
+  soil.param.cv .= cv
 
   if method == "Bonan"
     ysim = solve_Tsoil_Bonan(soil, TS0;)
@@ -23,10 +23,10 @@ end
 
 
 function solve_Tsoil_Bonan(soil::Soil{FT}, TS0::AbstractVector{FT}) where {FT<:Real}
-  (; n, inds_obs, ibeg) = soil
+  (; N, inds_obs, ibeg) = soil
 
   ntime = length(TS0)
-  R = zeros(ntime, soil.n - ibeg + 1)
+  R = zeros(ntime, soil.N - ibeg + 1)
   R[1, :] .= soil.Tsoil[ibeg:end]
 
   for i = 2:ntime
@@ -47,7 +47,7 @@ solver = Rosenbrock23()
 solver = Rodas5(autodiff=false)  
 """
 function solve_Tsoil_ODE(soil, TS0; solver, reltol=1e-3, abstol=1e-3, verbose=false)
-  (; n, inds_obs, ibeg, dt) = soil
+  (; N, inds_obs, ibeg, dt) = soil
 
   ntime = length(TS0)
   u0 = soil.Tsoil[ibeg:end]
@@ -56,7 +56,7 @@ function solve_Tsoil_ODE(soil, TS0; solver, reltol=1e-3, abstol=1e-3, verbose=fa
   tspan = (0, dt)
   prob = ODEProblem(_TsoilEquation, u0, tspan, soil)
 
-  R = zeros(ntime, n - ibeg + 1)
+  R = zeros(ntime, N - ibeg + 1)
   R[1, :] .= soil.Tsoil[ibeg:end]
 
   for i = 2:ntime
