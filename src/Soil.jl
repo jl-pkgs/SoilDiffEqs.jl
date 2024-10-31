@@ -11,7 +11,7 @@ using Printf
 
   θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1], 2.0 cm/h
+  Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1]
   α::Vector{FT} = fill(0.01, N)        # [m-1]
   n::Vector{FT} = fill(2.0, N)         # [-]
   m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
@@ -91,14 +91,16 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   println(io, "-----------------------------")
 
   method = param.method
-  print_selected(io, "van_Genuchten", method)
+  print_selected(io, "van_Genuchten (6p)", method)
   print_var(io, param, :θ_sat)
   print_var(io, param, :θ_res)
   print_var(io, param, :Ksat; scale=1e-3)
   print_var(io, param, :α)
   print_var(io, param, :n)
   print_var(io, param, :m)
-  print_selected(io, "Cambell", method)
+  print_selected(io, "Cambell (4p)", method)
+  printstyled(io, " - θ_sat, Ksat \n", color=:blue)
+
   print_var(io, param, :ψ_sat)
   print_var(io, param, :b)
   return nothing
@@ -131,14 +133,14 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
 end
 
 function print_selected(io::IO, name::String, method::String)
-  if name == method
+  if name[1:5] == method[1:5]
     printstyled(io, "   [$name]\n", bold=true, color=:green)
   else
     printstyled(io, "   [$name]\n", bold=true)
   end
 end
 
-function print_var(io::IO, x, var; scale=nothing, digits=2)
+function print_var(io::IO, x, var; scale=nothing, digits=3)
   value = getfield(x, var)
   name = @sprintf("%-5s", string(var))
   printstyled(io, " - $name: ", color=:blue)

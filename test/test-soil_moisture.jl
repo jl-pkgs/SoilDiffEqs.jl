@@ -1,22 +1,12 @@
 using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
-function SoilParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
-  SoilParam(; N,
-    θ_sat=fill(θ_sat, N),
-    θ_res=fill(θ_res, N),
-    Ksat=fill(Ksat, N),
-    α=fill(α, N),
-    n=fill(n, N),
-    m=fill(m, N))
-end
-
 function data_loader_soil()
   N = 150
   _param = (θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
-  param = SoilParam(N, _param...)
+  param = Init_SoilWaterParam(N, _param...)
   param_water = ParamVanGenuchten(; _param...)
-  
+
   Δz = fill(0.01, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
