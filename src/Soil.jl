@@ -13,9 +13,9 @@ using Printf
   Δz::Vector{FT} = zeros(FT, n)
   Δz₊ₕ::Vector{FT} = zeros(FT, n)
 
+  z_cm::Vector{FT} = z * 100         # cm, 向下为负
   Δz_cm::Vector{FT} = Δz * 100
   Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
-  z_cm::Vector{FT} = z * 100         # cm, 向下为负
 
   # 水分
   θ::Vector{FT} = fill(0.1, n)       # θ [m3 m-3]
@@ -32,18 +32,28 @@ using Printf
   θ_prev::Vector{FT} = zeros(FT, n)  # backup of θ
   ψ_prev::Vector{FT} = zeros(FT, n)  # backup of ψ
 
-  # 参数
-  
+  ## Parameter: 土壤水力
+  θ_sat::Vector{FT} = fill(0.4, n)     # saturated water content, [m3 m-3]
+  θ_res::Vector{FT} = fill(0.1, n)     # residual water content, [m3 m-3]
+  Ksat::Vector{FT} = fill(2.0 / 3600, n) # saturated hydraulic conductivity, [cm s-1], 2.0 cm/h
+  α::Vector{FT} = fill(0.01, n)        # [m-1]
+  n::Vector{FT} = fill(2.0, n)         # [-]
+  m::Vector{FT} = fill(0.5, n)         # [-]，优化时的可选参数
+
+  ψ_sat::Vector{FT} = fill(-10.0, n)   # [cm]
+  b::Vector{FT} = fill(4.0, n)         # [-]
 
   # 温度
   Tsoil::Vector{FT} = fill(NaN, n)   # [°C]
-  κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
   κ₊ₕ::Vector{FT} = zeros(FT, n - 1)  # thermal conductivity at interface [W m-1 K-1]
-  cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
   F::Vector{FT} = zeros(FT, n)       # heat flux, [W m-2]
   TS0::FT = FT(NaN)                  # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
+
+  ## Parameter: 土壤热力
+  κ::Vector{FT} = zeros(FT, n)       # thermal conductivity [W m-1 K-1]
+  cv::Vector{FT} = zeros(FT, n)      # volumetric heat capacity [J m-3 K-1]
 
   # ODE求解临时变量
   u::Vector{FT} = fill(NaN, n)  # [°C], 为了从ibeg求解地温，定义的临时变量

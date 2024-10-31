@@ -1,4 +1,23 @@
-function update_K₊ₕ!(soil)
+# update θ, K, Cap
+function update_θ!(soil::Soil{T}, ψ::AbstractVector{T}; method="van_Genuchten") where {T<:Real}
+  (; ibeg, n, θ, K, Cap,
+    θ_sat, θ_res, Ksat, α, n, b) = soil
+
+  if method == "van_Genuchten"
+    for i in ibeg:n
+      m = 1 - 1 / n[i] # m，不参与参数优化
+      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_res[i], θ_sat[i], Ksat[i], α[i], n[i], m)
+      # θ[i], K[i], Cap[i] = van_Genuchten(ψ[i]; param)
+    end
+  elseif method == "Campbell"
+    for i in ibeg:n
+      θ[i], K[i], Cap[i] = Cambell(ψ[i], ψ_sat[i], θ_sat[i], Ksat[i], b[i])
+    end
+  end
+end
+
+# update K₊ₕ
+function update_K₊ₕ!(soil::Soil)
   (; n, ibeg, z, z₊ₕ, K, K₊ₕ) = soil
   for i = ibeg:n-1
     d1 = z[i] - z₊ₕ[i]
@@ -8,9 +27,10 @@ function update_K₊ₕ!(soil)
   end
 end
 
+
 # soil_moisture!(soil, sink, ψ0, param)
 function soil_moisture!(soil::Soil, sink::V, ψ0::T;
-  fun=van_Genuchten) where {T<:Real,V<:AbstractVector{T}}
+  method="van_Genuchten") where {T<:Real,V<:AbstractVector{T}}
 
   (; n, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
@@ -22,9 +42,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   θ_prev .= θ # backup
   ψ_prev .= ψ
 
-  for i in ibeg:n
-    θ[i], K[i], Cap[i] = fun(ψ[i]; param)
-  end
+  update_θ!(soil, ψ; method)
   update_K₊ₕ!(soil)
 
   K0₊ₕ = K[ibeg]
@@ -59,9 +77,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   # ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at n+1/2 time
 
   ## update: θ, K and Cap
-  for i in ibeg:n
-    θ[i], K[i], Cap[i] = fun(ψ_next[i]; param)
-  end
+  update_θ!(soil, ψ_next; method)
   update_K₊ₕ!(soil)
   K0₊ₕ = K[ibeg] # 可以按照同样的方法，设置
 
