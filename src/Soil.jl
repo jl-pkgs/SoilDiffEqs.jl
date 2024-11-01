@@ -4,11 +4,13 @@ using Printf
 
 
 # 参数优化过程中，可能需要优化的参数
+# 一个重要的经验教训，不要去优化`m`，NSE会下降0.2
 @with_kw mutable struct SoilParam{FT}
   ## Parameter: 土壤水力
   N::Int = 10
   method::String = "van_Genuchten"
   use_m::Bool = false
+  same_layer = false
 
   θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
@@ -85,21 +87,26 @@ end
 
 
 function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
+  (; use_m, same_layer) = param
   printstyled(io, "Parameters: \n", color=:blue, bold=true)
+  # println("[use_m = $use_m, same_layer = $same_layer]")
+
   println(io, "-----------------------------")
   print_var(io, param, :κ)
   print_var(io, param, :cv; scale=1e6)
   println(io, "-----------------------------")
 
   method = param.method
-  print_selected(io, "van_Genuchten (6p)", method)
+  subfix = same_layer ? " * 1" : " * N"
+  np = use_m ? 6 : 5
+  print_selected(io, "van_Genuchten ($(np)p$subfix)", method)
   print_var(io, param, :θ_sat)
   print_var(io, param, :θ_res)
   print_var(io, param, :Ksat; scale=1e-3)
   print_var(io, param, :α)
   print_var(io, param, :n)
-  print_var(io, param, :m)
-  print_selected(io, "Cambell (4p)", method)
+  use_m && print_var(io, param, :m; used=use_m)
+  print_selected(io, "Cambell (4p$subfix)", method)
   printstyled(io, " - θ_sat, Ksat \n", color=:blue)
 
   print_var(io, param, :ψ_sat)
@@ -141,10 +148,11 @@ function print_selected(io::IO, name::String, method::String)
   end
 end
 
-function print_var(io::IO, x, var; scale=nothing, digits=3)
+function print_var(io::IO, x, var; scale=nothing, digits=3, color=:blue, used=true)
   value = getfield(x, var)
   name = @sprintf("%-5s", string(var))
-  printstyled(io, " - $name: ", color=:blue)
+  _color = used ? color : :white
+  printstyled(io, " - $name: "; color=_color)
   if isnothing(scale)
     println(io, round.(value; digits))
   else

@@ -62,14 +62,15 @@ end
 
 
 
-function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T; use_m::Bool=true) where {T<:Real}
+function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T; use_m::Bool=false, same_layer=true, kw...) where {T<:Real}
   SoilParam(; N,
     θ_sat=fill(θ_sat, N),
     θ_res=fill(θ_res, N),
     Ksat=fill(Ksat, N),
     α=fill(α, N),
     n=fill(n, N),
-    m=fill(m, N), use_m)
+    m=fill(m, N), 
+    use_m, same_layer, kw...)
 end
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}

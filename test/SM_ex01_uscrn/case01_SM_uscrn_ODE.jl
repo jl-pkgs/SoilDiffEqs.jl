@@ -1,32 +1,9 @@
 using SoilDifferentialEquations, Test, Dates
-using Plots, Printf
 import RTableTools: fread
 using OrdinaryDiffEq, Ipaper
 using LazyArtifacts
 includet("main_optim.jl")
-gr(framestyle=:box)
 
-
-function plot_sim(i; ibeg, ysim=nothing)
-  band = vars_SM[i]
-  t = d[:, :time]
-  x = d[:, band]
-  k = i - ibeg + 1
-
-  time_min, time_max = minimum(t), maximum(t)
-  ticks = time_min:Dates.Day(7):time_max
-  xticks = ticks, format.(ticks, "mm-dd")
-
-  p = plot(title=string(band); xticks,
-    xrot=30, tickfonthalign=:center, tickfontvalign=:bottom)
-  plot!(p, t, x, label="OBS")
-  if k >= 1 && ysim !== nothing
-    # i2 = i - 1
-    # title = @sprintf("layer %d: depth = %d cm", i2, -z[i2] * 100)
-    plot!(p, t, ysim[:, k], label="SIM")
-  end
-  return p
-end
 
 
 begin
@@ -40,16 +17,19 @@ begin
   df.time = DateTime.(df.time, "yyyy-mm-ddTHH:MM:SSZ")
 end
 
-
-function print_res(theta)
-  ysim = model_sim(theta)
+function plot_result(theta; same_layer=true)
+  ysim = model_sim(theta; same_layer)
   plot([plot_sim(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
 end
 
 
 # 每次优化一个参数，可能结果更稳定
 begin
-  i = 6
+  # method = "ODE"
+  method = "Bonan"
+  same_layer = false
+
+  i = 3
   SITE = sites[i]
   d = df[df.site.==SITE, [:time; vars_SM]]
   # d = d[1:24*7*4, ]
@@ -61,23 +41,22 @@ begin
   θ0 = yobs_full[1, max(ibeg - 1, 1):end]
   θ_surf = yobs_full[:, ibeg-1]
 
-  soil = init_soil(; θ0, soil_type=7, ibeg)
+  soil = init_soil(; θ0, soil_type=7, ibeg, same_layer)
   lower, upper = get_bound(soil)
   # theta0 = soil.param_water |> Vector
   theta0 = param2theta(soil)
-  ysim = model_sim(theta0)
-  goal(theta0)
-  print_res(theta0)
+  ysim = model_sim(theta0; same_layer)
+  goal(theta0; same_layer)
 
-  # method = "ODE"
-  method = "Bonan"
-  f(theta) = goal(theta; method)
+  plot_result(theta0; same_layer)
+  f(theta) = goal(theta; method, same_layer, ibeg=1)
   @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
 end
 
-print_res(theta)
-UpdateSoilParam!(soil, theta)
-goal(theta)
+plot_result(theta; same_layer)
+UpdateSoilParam!(soil, theta);
+soil
+goal(theta; same_layer)
 
 # soil = init_soil(; θ0, soil_type=7, ibeg)
 # param = get_soilpar(theta)
