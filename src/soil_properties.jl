@@ -1,5 +1,6 @@
+
 # update θ, K, Cap
-function update_θ!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
+function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
   (; θ_sat, θ_res, Ksat, α, n, m, use_m, b, method) = soil.param
 
@@ -18,7 +19,7 @@ end
 
 
 # update K₊ₕ
-function update_K₊ₕ!(soil::Soil)
+function cal_K₊ₕ!(soil::Soil)
   (; N, ibeg, z, z₊ₕ, K, K₊ₕ) = soil
   @inbounds for i = ibeg:N-1
     d1 = z[i] - z₊ₕ[i]
@@ -29,7 +30,7 @@ function update_K₊ₕ!(soil::Soil)
 end
 
 
-function update_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
+function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, K) = soil
   (; θ_sat, θ_res, Ksat, m, b, method) = soil.param
 
@@ -45,8 +46,8 @@ function update_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
 end
 
 
-# update_ψ!(soil, θ)
-function update_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
+# cal_ψ!(soil, θ)
+function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, ψ) = soil
   (; θ_sat, θ_res, α, n, m, ψ_sat, b, method) = soil.param
   if method == "van_Genuchten"

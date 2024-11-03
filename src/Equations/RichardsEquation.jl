@@ -5,8 +5,8 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   z = soil.z_cm
 
   # need to update here
-  update_K!(soil, θ)
-  update_ψ!(soil, θ)
+  cal_K!(soil, θ)
+  cal_ψ!(soil, θ)
 
   if method == "ψ0"
     z_prev = ibeg == 1 ? 0 : z[ibeg-1]
@@ -15,7 +15,7 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
     # Q0 = Q0
   end
 
-  update_K₊ₕ!(soil)
+  cal_K₊ₕ!(soil)
   @inbounds for i in ibeg:N-1
     # K₊ₕ = (K[i] + K[i+1]) / 2
     Δz₊ₕ = z[i] - z[i+1]

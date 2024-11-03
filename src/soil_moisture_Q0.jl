@@ -10,8 +10,8 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
   θ_prev .= θ # backup
   ψ_prev .= ψ
 
-  update_θ!(soil, ψ)
-  update_K₊ₕ!(soil)
+  cal_θKCap!(soil, ψ)
+  cal_K₊ₕ!(soil)
 
   K0₊ₕ = K[1]
   # dz0₊ₕ = 0.5 * Δz[1]
@@ -39,8 +39,8 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
   ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1/2 time
 
   ## update: θ, K and Cap
-  update_θ!(soil, ψ_next)
-  update_K₊ₕ!(soil)
+  cal_θKCap!(soil, ψ_next)
+  cal_K₊ₕ!(soil)
   K0₊ₕ = K[1] # 可以按照同样的方法，设置
 
   ## second round
