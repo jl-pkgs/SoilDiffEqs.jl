@@ -18,13 +18,13 @@ using Printf
   α::Vector{FT} = fill(0.01, N)        # [m-1]
   n::Vector{FT} = fill(2.0, N)         # [-]
   m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
-  
+
   ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
   b::Vector{FT} = fill(4.0, N)         # [-]
 
   ## Parameter: 土壤热力
   κ::Vector{FT} = fill(2.0, N)       # thermal conductivity [W m-1 K-1]
-  cv::Vector{FT} = fill(2.0*1e6, N)      # volumetric heat capacity [J m-3 K-1]
+  cv::Vector{FT} = fill(2.0 * 1e6, N)      # volumetric heat capacity [J m-3 K-1]
 end
 
 
@@ -58,6 +58,11 @@ end
   θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ
   ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
 
+  # 地下水
+  zwt::FT = FT(0.0)                  # groundwater depth, [m]
+  wa::FT = FT(5.0)                   # water amount in aquifer, [m]，潜水含水层
+  Sy::Vector{FT} = fill(0.02, N)     # specific yield, [m3 m-3]
+
   ## Parameter: 土壤水力
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
   param::SoilParam{FT} = SoilParam{FT}(; N)
@@ -85,6 +90,22 @@ end
   timestep::Int = 0                  # 迭代次数
 end
 
+function Soil(Δz::Vector{FT}; kw...) where {FT}
+  N = length(Δz)
+  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, kw...)
+  # update K and ψ
+  cal_K!(soil)
+  cal_ψ!(soil)
+  return soil
+end
+
+# θ = fill(0.1, N)
+# ψ = van_Genuchten_ψ.(θ; param=param_water)
+# θ0 = 0.267
+# ψ0 = van_Genuchten_ψ(θ0; param=param_water)
+# dt = 5 # [s]
+# sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
 
 function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   (; use_m, same_layer) = param
@@ -127,12 +148,16 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :TS0)
 
   printstyled(io, "Soil Moisture: \n", color=:blue, bold=true)
-  print_var(io, x, :K)
+  print_var(io, x, :K, scale=1 / 3600) # [cm/s] to [cm h-1]
   print_var(io, x, :ψ)
   print_var(io, x, :θ)
   print_var(io, x, :sink)
   print_var(io, x, :θ0)
   print_var(io, x, :ψ0)
+
+  # groundwater
+  print_var(io, x, :zwt)
+  print_var(io, x, :wa)
 
   # printstyled(io, "param_water: ", color=:blue, bold=true)
   # show(io, x.param_water)

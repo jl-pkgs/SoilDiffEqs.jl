@@ -34,7 +34,7 @@ equations so that:
 
 # Example
 ```julia
-
+tridiagonal_solver!(a, b, c, d, e, f, u; ibeg)
 ```
 """
 function tridiagonal_solver!(a::V, b::V, c::V, d::V, e::V, f::V, u::V; ibeg=1) where {T<:Real,V<:AbstractVector{T}}

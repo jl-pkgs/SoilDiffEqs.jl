@@ -1,4 +1,29 @@
-# update θ, K, Cap
+"""
+  计算每一层的给水度
+
+Sy = θ_sat - θ(ψ_sat + zwt)
+
+前提条件是：每层土壤均接近饱和，才能得到这个公式，`ψ + z = ψ_sat + zwt`，即Q = 0。
+"""
+function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
+  (; N, Sy) = soil
+  (; θ_sat, θ_res, α, n, m, use_m, b, method) = soil.param
+
+  if method == "van_Genuchten"
+    _ψ_sat = 0.0 # !Note
+    for i = 1:N
+      _m = use_m ? m[i] : 1 - 1 / n[i] # 不参与参数优化
+      Sy[i] = θ_sat[i] - van_Genuchten_θ(_ψ_sat + zwt, θ_sat[i], θ_res[i], α[i], n[i], _m)
+    end
+  elseif method == "Campbell"
+    for i = 1:N
+      Sy[i] = θ_sat[i] - Cambell_θ(ψ_sat[i] + zwt, ψ_sat[i], θ_sat[i], b[i])
+    end
+  end
+  clamp!(Sy, 0, sy_max)
+end
+
+
 function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
   (; θ_sat, θ_res, Ksat, α, n, m, use_m, b, method) = soil.param
@@ -17,7 +42,6 @@ function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
 end
 
 
-# update K₊ₕ
 function cal_K₊ₕ!(soil::Soil)
   (; N, ibeg, z, z₊ₕ, K, K₊ₕ) = soil
   @inbounds for i = ibeg:N-1
@@ -28,7 +52,7 @@ function cal_K₊ₕ!(soil::Soil)
   end
 end
 
-
+cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
 function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, K) = soil
   (; θ_sat, θ_res, Ksat, m, b, method) = soil.param
@@ -45,7 +69,7 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
 end
 
 
-# cal_ψ!(soil, θ)
+cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
 function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, ψ) = soil
   (; θ_sat, θ_res, α, n, m, ψ_sat, b, method) = soil.param
@@ -87,4 +111,6 @@ function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
 end
 
 
+export specific_yield!
+export cal_K!, cal_ψ!, cal_θKCap!, cal_K₊ₕ!
 export Init_SoilWaterParam, Init_ψ0

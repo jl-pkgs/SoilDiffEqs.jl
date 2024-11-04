@@ -34,6 +34,12 @@ param = (θ_sat = 0.25, ψ_sat = -25.0, b = 0.2, Ksat = 3.4e-03)
   θ, K, ∂θ∂ψ
 end
 
+"""
+    Cambell_θ(ψ, ψ_sat, θ_sat, b)
+"""
+@inline function Cambell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+  return ψ < ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : ψ_sat # θ
+end
 
 """
     Cambell_K(θ, θ_sat, Ksat, b)

@@ -70,6 +70,16 @@ end
 
 
 """
+    van_Genuchten_θ(ψ, θ_sat, θ_res, α, n, m)
+"""
+function van_Genuchten_θ(ψ::T, θ_sat::T, θ_res::T, α::T, n::T, m::T) where {T<:Real}
+  # Effective saturation (Se) for specified matric potential (ψ)
+  Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
+  # Volumetric soil moisture (θ) for specified matric potential (ψ)
+  return θ_res + (θ_sat - θ_res) * Se # θ
+end
+
+"""
     van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
 """
 function van_Genuchten_K(θ::T, θ_sat::T, θ_res::T, Ksat::T, m::T) where {T<:Real}
