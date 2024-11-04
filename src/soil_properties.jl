@@ -1,4 +1,3 @@
-
 # update θ, K, Cap
 function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
@@ -70,9 +69,10 @@ function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T
     Ksat=fill(Ksat, N),
     α=fill(α, N),
     n=fill(n, N),
-    m=fill(m, N), 
+    m=fill(m, N),
     use_m, same_layer, kw...)
 end
+
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
   i = soil.ibeg # 默认采用第一层进行初始化

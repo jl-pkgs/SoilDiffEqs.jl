@@ -1,23 +1,25 @@
 module SoilDifferentialEquations
   
 # using OrdinaryDiffEq
-import HydroTools: θ_S, ρ_wat, ρ_ice, 
-  SAND, SILT, CLAY, 
-  λ_fus, tfrz, 
-  tridiagonal_solver, K0
 import HydroTools: sceua, GOF, of_KGE, of_NSE
-
 using Parameters
 using DiffEqBase
-of_MSE(yobs, ysim) = mean((yobs .- ysim) .^ 2)
 
+const ρ_wat = 1000.0                       # Density of water, [kg/m3]
+const ρ_ice = 917.0                        # Density of ice, [kg/m3]
+const λ_fus = 0.3337 * 1e6                 # Heat of fusion for water at 0℃, [J/kg]
+const K0 = 273.15                          # zero degree Celsius, [K]
+const tfrz = K0                            # freezing Temperature (K)
+
+of_MSE(yobs, ysim) = mean((yobs .- ysim) .^ 2)
 
 # 2.5x faster power method
 "Faster method for exponentiation"
 pow(x, y) = x^y
 # @fastmath pow(x::Real, y::Real) = exp(y * log(x))
 
-
+include("case_Bonan2019.jl")
+include("tridiagonal_solver.jl")
 include("ψ_Cambell.jl")
 include("ψ_van_Genuchten.jl")
 include("Soil.jl")
