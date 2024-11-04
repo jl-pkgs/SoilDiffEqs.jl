@@ -4,8 +4,7 @@ module SoilDifferentialEquations
 import HydroTools: θ_S, ρ_wat, ρ_ice, 
   SAND, SILT, CLAY, 
   λ_fus, tfrz, 
-  tridiagonal_solver,
-  K0, matric_potential
+  tridiagonal_solver, K0
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 
 using Parameters

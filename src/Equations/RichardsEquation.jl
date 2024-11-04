@@ -25,6 +25,20 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   Q0
 end
 
+"Update soil water content θ according to Q"
+function soil_Updateθ!(soil::Soil{T}, dt::Real; method="ψ0") where {T<:Real}
+  (; ibeg, N, θ, Q, ψ0, Q0, sink) = soil # Δz, z, 
+  Δz = p.Δz_cm                               # [cm]
+  Q0 = soil_WaterFlux!(p, θ; ψ0, Q0, method) # [cm/s]
+
+  # TODO: 
+  # 若某一层发生了饱和，则继续向下传导
+  # 若某一层的土壤水分全部耗干，则继续向下抽水
+  θ[ibeg] += -((Q0 - Q[ibeg]) + sink[ibeg]) * dt / Δz[ibeg]
+  @inbounds for i in ibeg+1:N
+    θ[i] += -((Q[i-1] - Q[i]) + sink[i]) * dt / Δz[i] # [m3 m-3]
+  end
+end
 
 """
 # Arguments
