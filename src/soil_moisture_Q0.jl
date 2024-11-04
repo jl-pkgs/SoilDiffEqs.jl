@@ -3,7 +3,8 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ,
-    θ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
+    θ, ψ_next, Cap, K, K₊ₕ, θ_prev, ψ_prev,
+    a, b, c, d, e, f) = soil
   Δz = soil.Δz_cm
   Δz₊ₕ = soil.Δz₊ₕ_cm
 
@@ -36,7 +37,10 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
     end
     d[i] -= sink[i]
   end
-  ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1/2 time
+
+  # Solve for ψ at N+1/2 time
+  tridiagonal_solver!(a, b, c, d, e, f, ψ_next)
+  # ψ_next .= tridiagonal_solver(a, b, c, d)
 
   ## update: θ, K and Cap
   cal_θKCap!(soil, ψ_next)
@@ -71,7 +75,10 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
     end
     d[i] -= sink[i]
   end
-  ψ .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1
+  # Solve for ψ at N+1
+  tridiagonal_solver!(a, b, c, d, e, f, ψ)
+  # ψ .= tridiagonal_solver(a, b, c, d)
+
   ## 获取ψ，之后更新θ
   # for i in 1:N
   #   θ[i], K[i], Cap[i] = fun(ψ[i]; param)

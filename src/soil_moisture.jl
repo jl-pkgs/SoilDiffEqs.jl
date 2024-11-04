@@ -3,7 +3,8 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:Abstract
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
-    θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, a, b, c, d) = soil
+    θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, 
+    a, b, c, d, e, f) = soil
   Δz = soil.Δz_cm
   Δz₊ₕ = soil.Δz₊ₕ_cm
 
@@ -37,11 +38,12 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:Abstract
     d[i] -= sink[i]
   end
 
-  _a = @view a[ibeg:end]
-  _b = @view b[ibeg:end]
-  _c = @view c[ibeg:end]
-  _d = @view d[ibeg:end]
-  ψ_next[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d)
+  # _a = @view a[ibeg:end]
+  # _b = @view b[ibeg:end]
+  # _c = @view c[ibeg:end]
+  # _d = @view d[ibeg:end]
+  # ψ_next[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d)
+  tridiagonal_solver!(a, b, c, d, e, f, ψ_next; ibeg)
   # ψ_next .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1/2 time
 
   ## update: θ, K and Cap
@@ -74,11 +76,12 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:Abstract
     end
     d[i] -= sink[i]
   end
-  _a = @view a[ibeg:end]
-  _b = @view b[ibeg:end]
-  _c = @view c[ibeg:end]
-  _d = @view d[ibeg:end]
-  ψ[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d)
+  tridiagonal_solver!(a, b, c, d, e, f, ψ; ibeg)
+  # _a = @view a[ibeg:end]
+  # _b = @view b[ibeg:end]
+  # _c = @view c[ibeg:end]
+  # _d = @view d[ibeg:end]
+  # ψ[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d)
   # ψ .= tridiagonal_solver(a, b, c, d) # Solve for ψ at N+1
 
   ## variables already updated by dot operation

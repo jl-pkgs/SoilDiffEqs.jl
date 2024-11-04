@@ -22,7 +22,8 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
   solution="implicit", method="apparent-heat-capacity", ibeg::Int=1)
   (; N, dt, Δz, z, z₊ₕ, Δz₊ₕ,
     Tsoil, 
-    κ₊ₕ, u, a, b, c, d, f) = soil
+    κ₊ₕ, u, 
+    a, b, c, d, e, f) = soil
   (; κ, cv) = soil.param
 
   # Thermal conductivity at interface (W/m/K)
@@ -86,11 +87,12 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
     end
   end
 
-  _a = @view a[ibeg:end]
-  _b = @view b[ibeg:end]
-  _c = @view c[ibeg:end]
-  _d = @view d[ibeg:end]
-  u[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d) # the updated Tsoil
+  tridiagonal_solver!(a, b, c, d, e, f, u; ibeg)
+  # _a = @view a[ibeg:end]
+  # _b = @view b[ibeg:end]
+  # _c = @view c[ibeg:end]
+  # _d = @view d[ibeg:end]
+  # u[ibeg:end] .= tridiagonal_solver(_a, _b, _c, _d) # the updated Tsoil
 
   # --- Derive energy flux into soil (W/m2)
   z_above = ibeg == 1 ? 0 : z[ibeg-1]
