@@ -1,16 +1,17 @@
-# ψ: 负
-# z: 向下为负
+"""
+边界条件隐含在`soil`中：ψ0, Q0
+"""
 function soil_moisture_BEPS(soil::Soil{FT}; method="ψ0") where {FT}
   kstep = soil.dt # 1 hour
   ∑t = 0.0
 
-  # TODO: 输入边界条件
   θ = soil.θ
+  (; ψ0, Q0) = soil
 
   while ∑t < kstep
-    Q0 = soil_WaterFlux!(soil, θ; method) # update Q
+    _Q0 = soil_WaterFlux!(soil, θ; ψ0, Q0, method) # update Q
     Qmax = maximum(abs.(soil.Q))
-    Qmax = max(Qmax, abs(Q0))
+    Qmax = max(Qmax, abs(_Q0))
 
     Δt = guess_step(Qmax) # this_step
     ∑t += Δt
