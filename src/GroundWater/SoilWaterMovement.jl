@@ -19,7 +19,7 @@ end
 
 # 根据补给，更新地下水水位
 function GW_UpdateRecharge!(soil::Soil{T}, wa, zwt, Δt, recharge) where {T<:Real}
-  (; z₊ₕ, Sy) = soil
+  (; N, z₊ₕ, Sy) = soil
   jwt = find_jwt(soil, zwt) # 不受地下水影响的第一层
   ∑ = recharge * Δt / 1000 # [mm s-1] to [m]
 
@@ -60,7 +60,7 @@ end
 
 # drainage：排出为负，同时更新土壤含水量θ
 function GW_UpdateDrainage!(soil::Soil{T}, θ::AbstractVector{T}, zwt, wa, Δt, drainage) where {T<:Real}
-  (; z₊ₕ, Δz, Sy) = soil
+  (; N, z₊ₕ, Δz, Sy) = soil
   jwt = find_jwt(soil, zwt)
   ∑ = -drainage * Δt / 1000 # 负值, [mm] to [m]
   wa = wa + ∑ * 1000
@@ -89,7 +89,7 @@ end
 
 # drainage < 0, [m s-1]
 function GW_Correctθ!(soil::Soil{T}, θ::AbstractVector{T}, zwt, wa, Δt, drainage) where {T<:Real}
-  (; Δz, Sy) = soil
+  (; N, Δz, Sy) = soil
   (; θ_sat) = soil.param
 
   jwt = find_jwt(soil, zwt)
