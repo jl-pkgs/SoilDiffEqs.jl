@@ -23,8 +23,8 @@ using Printf
   b::Vector{FT} = fill(4.0, N)         # [-]
 
   ## Parameter: 土壤热力
-  κ::Vector{FT} = fill(2.0, N)       # thermal conductivity [W m-1 K-1]
-  cv::Vector{FT} = fill(2.0 * 1e6, N)      # volumetric heat capacity [J m-3 K-1]
+  κ::Vector{FT} = fill(2.0, N)         # thermal conductivity [W m-1 K-1]
+  cv::Vector{FT} = fill(2.0 * 1e6, N)  # volumetric heat capacity [J m-3 K-1]
 end
 
 
@@ -34,7 +34,7 @@ end
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
   dt::Float64 = 3600                 # 时间步长, seconds
-  z::Vector{FT} = zeros(FT, N)       # cm, 向下为负
+  z::Vector{FT} = zeros(FT, N)       # m, 向下为负
   z₊ₕ::Vector{FT} = zeros(FT, N)
   Δz::Vector{FT} = zeros(FT, N)
   Δz₊ₕ::Vector{FT} = zeros(FT, N)
@@ -59,13 +59,12 @@ end
   ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
 
   # 地下水
-  zwt::FT = FT(0.0)                  # groundwater depth, [m]
-  wa::FT = FT(5.0)                   # water amount in aquifer, [m]，潜水含水层
+  zwt::FT = FT(0.0)                  # groundwater depth, [m], 为了与z单位一致
+  wa::FT = FT(5000.0)                # water amount in aquifer, [mm]，潜水含水层
+  uex::FT = FT(0.0)                  # 超出地表的水量, [mm], [kg m-2] 以地表径流的形式排放
+  recharge::FT = FT(0.0)             # recharge rate, [mm/s]
+  drainage::FT = FT(0.0)             # drainage rate, [mm/s]
   Sy::Vector{FT} = fill(0.02, N)     # specific yield, [m3 m-3]
-
-  ## Parameter: 土壤水力
-  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
-  param::SoilParam{FT} = SoilParam{FT}(; N)
 
   # 温度
   Tsoil::Vector{FT} = fill(NaN, N)   # [°C]
@@ -74,6 +73,10 @@ end
   TS0::FT = FT(NaN)                  # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
+
+  ## Parameter: [水力] + [热力]参数
+  param::SoilParam{FT} = SoilParam{FT}(; N)
+  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
 
   # ODE求解临时变量
   u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量

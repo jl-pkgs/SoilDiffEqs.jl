@@ -41,6 +41,8 @@ include("Solve_Tsoil.jl")
 include("Solve_SM.jl")
 include("soil_texture.jl")
 
+include("GroundWater/SoilWaterMovement.jl")
+
 export solve_Tsoil_Bonan
 
 dir_soil = "$(@__DIR__)/.." |> abspath

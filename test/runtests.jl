@@ -8,6 +8,8 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
   @test z == z2
 end
 
+include("test-GW.jl")
+
 include("test-soil_temperature.jl")
 include("test-soil_temperature_F0.jl")
 
