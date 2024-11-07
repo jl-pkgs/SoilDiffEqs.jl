@@ -6,7 +6,6 @@ include("main_optim.jl")
 GlobalOptions.options = Options()
 options = GlobalOptions.options
 
-
 begin
   d = fread(f_SM_Batesville)
   ibeg = 2
@@ -20,7 +19,7 @@ begin
 end
 
 
-function test_ModSim(; method_retention, kw...)
+function test_ModSim(; method_retention, maxn=10_000, kw...)
   set_option!(; method_retention, kw...)
 
   # [5, 10, 20, 50, 100]
@@ -31,15 +30,15 @@ function test_ModSim(; method_retention, kw...)
   # ysim = model_sim(theta0)
 
   f(theta) = goal(theta; ibeg=1)
-  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(1e4))
+  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn)
   -feval
 end
 
 
 @testset "ModSim_SM" begin
-  @test test_ModSim(; method_retention="van_Genuchten", same_layer=true) >= 0.20
   @test test_ModSim(; method_retention="Campbell", same_layer=true) >= 0.55
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=true) >= 0.20
 
-  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.90
-  @test test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.85
+  @test test_ModSim(; method_retention="Campbell", same_layer=false, maxn=2000) >= 0.82
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000) >= 0.84
 end

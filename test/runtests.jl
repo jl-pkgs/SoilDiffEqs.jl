@@ -19,4 +19,4 @@ include("test-soil_moisture_Q0.jl")
 include("test-solve_SM.jl")
 include("test-solve_Tsoil.jl")
 
-include("SM_ex01_uscrn/test_SM.jl")
+include("SM_ex01_uscrn/test-SM.jl")

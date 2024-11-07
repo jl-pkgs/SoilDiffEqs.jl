@@ -2,7 +2,7 @@ module GlobalOptions
 # 用 Dict 来存储参数
 using Parameters
 @with_kw mutable struct Options
-  method_retention::String = "Campbell"
+  method_retention::String = "Campbell" # "van_Genuchten", "Campbell"
   method_solve::String = "Bonan"
   same_layer::Bool = true
   ibeg::Int = 2
