@@ -235,6 +235,9 @@ function soilwater_zengdecker2009()
 
   # calculate qcharge for case jwt < N
   if jwt < N
+    j0 = min(1, jwt)
+    j1 = jwt + 1
+
     wh_zwt = 0.0  # since wh_zwt = -ψ_sat - ψE_zwt, where ψE_zwt = -ψ_sat
 
     # Recharge rate qcharge to groundwater (positive to aquifer)
@@ -242,8 +245,8 @@ function soilwater_zengdecker2009()
     # scs: this is the expression for unsaturated K
     _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
 
-    _ψ = max(ψmin, ψ[max(1, jwt)])
-    wh = _ψ - ψE[max(1, jwt)]  # 这里是向地下水的排泄，Zeng2009, Eq.14
+    _ψ = max(ψmin, ψ[j0])
+    wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
 
     if jwt == 0
       qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)

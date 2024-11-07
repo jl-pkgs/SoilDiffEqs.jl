@@ -20,26 +20,24 @@ pow(x, y) = x^y
 
 include("case_Bonan2019.jl")
 include("tridiagonal_solver.jl")
-include("ψ_Cambell.jl")
-include("ψ_van_Genuchten.jl")
+
 include("Soil.jl")
 include("Soil_depth.jl")
-
-include("soil_properties.jl")
-include("soil_properties_thermal.jl")
-
-include("soil_moisture.jl")
-include("soil_moisture_Q0.jl")
-
-include("soil_temperature.jl")
-include("soil_temperature_F0.jl")
-
-include("Equations/TsoilEquation.jl")
-include("Equations/RichardsEquation.jl")
-
-include("Solve_Tsoil.jl")
-include("Solve_SM.jl")
 include("soil_texture.jl")
+
+include("SoilMoisture/ψ_Cambell.jl")
+include("SoilMoisture/ψ_van_Genuchten.jl")
+include("SoilMoisture/soil_properties.jl")
+include("SoilMoisture/soil_moisture.jl")
+include("SoilMoisture/soil_moisture_Q0.jl")
+include("SoilMoisture/Solve_SM.jl")
+include("SoilMoisture/EquationRichards.jl")
+
+include("SoilTemperature/soil_properties_thermal.jl")
+include("SoilTemperature/soil_temperature.jl")
+include("SoilTemperature/soil_temperature_F0.jl")
+include("SoilTemperature/EquationTsoil.jl")
+include("SoilTemperature/Solve_Tsoil.jl")
 
 include("GroundWater/GroundWater.jl")
 
