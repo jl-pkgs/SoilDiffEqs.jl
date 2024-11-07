@@ -2,6 +2,19 @@ export SoilParam, Soil
 using Parameters
 using Printf
 
+export Soil, SoilParam, ParamVanGenuchten
+
+## 结构体形式的参数
+abstract type AbstractSoilParam{FT} end
+
+@with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
+  θ_sat::T = 0.287       # [m3 m-3]
+  θ_res::T = 0.075       # [m3 m-3]
+  Ksat::T = 34 / 3600    # [cm s-1]
+  α::T = 0.027
+  n::T = 3.96
+  m::T = 1.0 - 1.0 / n
+end
 
 # 参数优化过程中，可能需要优化的参数
 # 一个重要的经验教训，不要去优化`m`，NSE会下降0.2
