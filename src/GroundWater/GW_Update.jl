@@ -1,8 +1,5 @@
 ## 参考CoLM的方案，考虑地下水的补给与排泄，只考虑地下水垂直方向与土壤水的交互作用。
 # using SoilDifferentialEquations
-using UnPack
-export find_jwt, GW_UpdateRecharge!, GW_UpdateDrainage!, GW_Correctθ!
-
 # 从下至上，不受地下水影响的第一层
 function find_jwt(soil::Soil{T}, zwt::T) where {T<:Real}
   (; N, z₊ₕ) = soil # 注意z是负值

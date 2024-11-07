@@ -41,7 +41,7 @@ include("Solve_Tsoil.jl")
 include("Solve_SM.jl")
 include("soil_texture.jl")
 
-include("GroundWater/SoilWaterMovement.jl")
+include("GroundWater/GroundWater.jl")
 
 export solve_Tsoil_Bonan
 

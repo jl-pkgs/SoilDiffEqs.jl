@@ -26,10 +26,8 @@ dKdw = zeros(1:N)
 
 # Associate variables
 qcharge = soilhydrology_inst.qcharge_col
-zwt = soilhydrology_inst.zwt_col
 fracice = soilhydrology_inst.fracice_col
 icefrac = soilhydrology_inst.icefrac_col
-ψmin = soilstate_inst.ψmin_col
 θ_sat = soilstate_inst.θ_sat_col
 Ksat = soilstate_inst.hksat_col
 bsw = soilstate_inst.bsw_col
@@ -89,30 +87,7 @@ function soilwater_zengdecker2009()
 
   # ! 核心参考部分
   # Calculate the equilibrium water content based on the water table depth
-  for j = 1:N
-    if zwtmm <= zimm[j-1]
-      θE[j] = θ_sat[j]
-    elseif zimm[j-1] < zwtmm < zimm[j]
-      # 部分饱和
-      d1 = zwtmm - zimm[j-1] # 未饱和
-      d2 = zimm[j] - zwtmm   # 饱和
-      _θE = cal_θE(zwtmm, zimm[j-1], zwtmm, ψ_sat[j], bsw[j]; use_clamp=false)
-      θE[j] = (_θE * d1 + θ_sat[j] * d2) / (d1 + d2)
-      θE[j] = clamp(θE[j], 0, θ_sat[j])
-    else
-      # zwt > z₊ₕ[j], 地下水水位在这一层之下，这一层非饱和
-      θE[j] = cal_θE(zimm[j], zimm[j-1], zwtmm, ψ_sat[j], bsw[j])
-    end
-    ψE[j] = cal_ψ(θE[j], θ_sat[j], ψ_sat[j], bsw[j]; ψmin)
-  end
-
-  # If water table is below soil column calculate ψE for the 11th layer
-  if jwt == N
-    # 积分的过程在：z₊ₕ[N] ~ zwt，因此，需要注意，最后一层的θ_E、ψ_E代表的区间
-    j = N
-    θE[j+1] = cal_θE(zwtmm, zimm[j], ψ_sat[j], zwtmm, bsw[j])
-    ψE[j+1] = cal_ψ(θE[j+1], θ_sat[j], ψ_sat[j], bsw[j]; ψmin)
-  end
+  ψE = cal_θeψe!(θE, ψE, z, zwt, jwt; θ_sat, ψ_sat, bsw, ψmin)
 
   # Hydraulic conductivity and soil matric potential and their derivatives
   sdamp = 0.0
