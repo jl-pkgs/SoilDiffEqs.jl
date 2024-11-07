@@ -17,7 +17,7 @@ function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
     end
   elseif method == "Campbell"
     for i = 1:N
-      Sy[i] = θ_sat[i] - Cambell_θ(ψ_sat[i] + zwt, ψ_sat[i], θ_sat[i], b[i])
+      Sy[i] = θ_sat[i] - Campbell_θ(ψ_sat[i] + zwt, ψ_sat[i], θ_sat[i], b[i])
     end
   end
   clamp!(Sy, 0, sy_max)
@@ -36,7 +36,7 @@ function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
     end
   elseif method == "Campbell"
     @inbounds for i in ibeg:N
-      θ[i], K[i], Cap[i] = Cambell(ψ[i], ψ_sat[i], θ_sat[i], Ksat[i], b[i])
+      θ[i], K[i], Cap[i] = Campbell(ψ[i], ψ_sat[i], θ_sat[i], Ksat[i], b[i])
     end
   end
 end
@@ -63,7 +63,7 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
     end
   elseif method == "Campbell"
     @inbounds for i = ibeg:N
-      K[i] = Cambell_K(θ[i], θ_sat[i], Ksat[i], b[i])
+      K[i] = Campbell_K(θ[i], θ_sat[i], Ksat[i], b[i])
     end
   end
 end

@@ -1,9 +1,8 @@
-using SoilDifferentialEquations, Test, Dates
+using SoilDifferentialEquations, Test, Dates, Ipaper
 import RTableTools: fread
-using OrdinaryDiffEq, Ipaper
+# using OrdinaryDiffEq
 using LazyArtifacts
 includet("main_optim.jl")
-
 
 
 begin

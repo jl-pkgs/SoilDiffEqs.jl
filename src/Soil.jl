@@ -21,7 +21,7 @@ end
 @with_kw mutable struct SoilParam{FT}
   ## Parameter: 土壤水力
   N::Int = 10
-  method::String = "van_Genuchten"
+  method::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
   use_m::Bool = false
   same_layer = false
 
@@ -143,7 +143,7 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   print_var(io, param, :α)
   print_var(io, param, :n)
   use_m && print_var(io, param, :m; used=use_m)
-  print_selected(io, "Cambell (4p$subfix)", method)
+  print_selected(io, "Campbell (4p$subfix)", method)
   printstyled(io, " - θ_sat, Ksat \n", color=:blue)
 
   print_var(io, param, :ψ_sat)

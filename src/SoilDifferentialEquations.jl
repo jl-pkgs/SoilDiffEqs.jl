@@ -27,7 +27,7 @@ include("soil_texture.jl")
 
 
 include("SoilMoisture/ψ_van_Genuchten.jl")
-include("SoilMoisture/ψ_Cambell.jl")
+include("SoilMoisture/ψ_Campbell.jl")
 include("SoilMoisture/soil_properties.jl")
 include("SoilMoisture/soil_moisture.jl")
 include("SoilMoisture/soil_moisture_Q0.jl")

@@ -1,5 +1,5 @@
 """
-    Cambell(ψ, ψ_sat, θ_sat, Ksat, b)
+    Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 
 Campbell (1974) relationships
 
@@ -16,10 +16,10 @@ Campbell (1974) relationships
 # Examples
 ```julia
 param = (θ_sat = 0.25, ψ_sat = -25.0, b = 0.2, Ksat = 3.4e-03)
-θ, K, ∂θ∂ψ = Cambell(ψ, ψ_sat, θ_sat, Ksat, b)
+θ, K, ∂θ∂ψ = Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 ```
 """
-@fastmath function Cambell(ψ::T, ψ_sat::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
+@fastmath function Campbell(ψ::T, ψ_sat::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
   # @unpack ψ_sat, θ_sat, Ksat, b = param
 
   # Volumetric soil moisture (θ) for specified matric potential 
@@ -35,23 +35,23 @@ param = (θ_sat = 0.25, ψ_sat = -25.0, b = 0.2, Ksat = 3.4e-03)
 end
 
 """
-    Cambell_θ(ψ, ψ_sat, θ_sat, b)
+    Campbell_θ(ψ, ψ_sat, θ_sat, b)
 """
-@inline function Cambell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+@inline function Campbell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
   return ψ < ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : ψ_sat # θ
 end
 
 """
-    Cambell_K(θ, θ_sat, Ksat, b)
+    Campbell_K(θ, θ_sat, Ksat, b)
 """
-@fastmath Cambell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real} =
+@fastmath Campbell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real} =
   Ksat * (θ / θ_sat)^(2 * b + 3)
 
 # Campbell 1974, Bonan 2019 Table 8.2
 """
-    Cambell_ψ(θ, θ_sat, ψ_sat, b)
+    Campbell_ψ(θ, θ_sat, ψ_sat, b)
 """
-@fastmath function Cambell_ψ(θ::T, θ_sat::T, ψ_sat::T, b::T) where {T<:Real}
+@fastmath function Campbell_ψ(θ::T, θ_sat::T, ψ_sat::T, b::T) where {T<:Real}
   ψ = ψ_sat * (θ / θ_sat)^(-b)
   max(ψ, ψ_sat)
 end
