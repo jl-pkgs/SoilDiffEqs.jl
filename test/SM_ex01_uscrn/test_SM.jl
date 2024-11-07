@@ -1,0 +1,45 @@
+using SoilDifferentialEquations, Test, Dates
+using SoilDifferentialEquations.GlobalOptions
+import RTableTools: fread
+include("main_optim.jl")
+
+GlobalOptions.options = Options()
+options = GlobalOptions.options
+
+
+begin
+  d = fread(f_SM_Batesville)
+  ibeg = 2
+  yobs_full = d[:, 3:end] |> Matrix #|> drop_missing
+  yobs = yobs_full[:, max(ibeg - 1, 1):end]
+  θ0 = yobs_full[1, max(ibeg - 1, 1):end]
+  θ_surf = yobs_full[:, ibeg-1]
+
+  set_option!(; yobs, θ_surf, ibeg, same_layer=true)
+  options
+end
+
+
+function test_ModSim(; method_retention, kw...)
+  set_option!(; method_retention, kw...)
+
+  # [5, 10, 20, 50, 100]
+  soil = init_soil(; θ0, soil_type=7)
+  lower, upper = SM_paramBound(soil)
+  theta0 = SM_param2theta(soil)
+  goal(theta0)
+  # ysim = model_sim(theta0)
+
+  f(theta) = goal(theta; ibeg=1)
+  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(1e4))
+  -feval
+end
+
+
+@testset "ModSim_SM" begin
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=true) >= 0.20
+  @test test_ModSim(; method_retention="Campbell", same_layer=true) >= 0.55
+
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.90
+  @test test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.85
+end

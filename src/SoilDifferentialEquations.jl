@@ -42,10 +42,16 @@ include("SoilTemperature/Solve_Tsoil.jl")
 
 include("GroundWater/GroundWater.jl")
 
+include("GlobalOptions.jl")
+
 export solve_Tsoil_Bonan
 
 dir_soil = "$(@__DIR__)/.." |> abspath
 export dir_soil
+
+export f_SM_Batesville
+dir_root = @__DIR__
+f_SM_Batesville = "$(dir_root)/../data/SM_AR_Batesville_8_WNW_2024.csv" |> abspath
 
 export Soil
 export ParamVanGenuchten, van_Genuchten, van_Genuchten_K, van_Genuchten_ψ

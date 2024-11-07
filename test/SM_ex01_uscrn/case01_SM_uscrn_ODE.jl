@@ -1,3 +1,33 @@
+using Plots, Printf
+gr(framestyle=:box)
+
+function plot_sim(i; ibeg, ysim=nothing)
+  band = vars_SM[i]
+  t = d[:, :time]
+  x = d[:, band]
+  k = i - ibeg + 1
+
+  time_min, time_max = minimum(t), maximum(t)
+  ticks = time_min:Dates.Day(7):time_max
+  xticks = ticks, format.(ticks, "mm-dd")
+
+  p = plot(title=string(band); xticks,
+    xrot=30, tickfonthalign=:center, tickfontvalign=:bottom)
+  plot!(p, t, x, label="OBS")
+  if k >= 1 && ysim !== nothing
+    # i2 = i - 1
+    # title = @sprintf("layer %d: depth = %d cm", i2, -z[i2] * 100)
+    plot!(p, t, ysim[:, k], label="SIM")
+  end
+  return p
+end
+
+function plot_result(theta; same_layer=true)
+  ysim = model_sim(theta; same_layer)
+  plot([plot_sim(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+end
+
+
 using SoilDifferentialEquations, Test, Dates, Ipaper
 using LazyArtifacts
 import RTableTools: fread
@@ -16,13 +46,23 @@ begin
   df.time = DateTime.(df.time, "yyyy-mm-ddTHH:MM:SSZ")
 end
 
-function plot_result(theta; same_layer=true)
-  ysim = model_sim(theta; same_layer)
-  plot([plot_sim(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
+
+GlobalOptions.options = Options()
+options = GlobalOptions.options
+
+
+begin
+  d = fread(f_SM_Batesville)
+  ibeg = 2
+  yobs_full = d[:, 3:end] |> Matrix #|> drop_missing
+  yobs = yobs_full[:, max(ibeg - 1, 1):end]
+  θ0 = yobs_full[1, max(ibeg - 1, 1):end]
+  θ_surf = yobs_full[:, ibeg-1]
+
+  set_option!(; yobs, θ_surf, ibeg, same_layer=true)
+  options
 end
 
-
-# 每次优化一个参数，可能结果更稳定
 begin
   # method = "ODE"
   method = "Bonan"
@@ -45,28 +85,14 @@ begin
   # theta0 = soil.param_water |> Vector
   theta0 = SM_param2theta(soil)
   ysim = model_sim(theta0; same_layer)
-  goal(theta0; same_layer)
+  goal(theta0; same_layer, yobs)
 
   plot_result(theta0; same_layer)
   f(theta) = goal(theta; method, same_layer, ibeg=1)
   @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
 end
 
-plot_result(theta; same_layer)
-UpdateSoilParam!(soil, theta);
-soil
-goal(theta; same_layer)
-
-# soil = init_soil(; θ0, soil_type=7, ibeg)
-# param = get_soilpar(theta)
-# ysim = model_sim(theta; method)
-# plot([plot_SM(i; ibeg, ysim) for i in 1:length(vars_SM)]..., size=(1200, 600))
-# # goal(theta)
-
-# param = get_soilpar(theta)
-# ψ = van_Genuchten_ψ.(θ_surf; param)
-# θ2 = [van_Genuchten(x; param)[1] for x in ψ]
-# ψ = van_Genuchten_ψ.(θ_surf; param)
-# p1 = plot(θ_surf, label="θ_surf")
-# plot!(p1, θ2, label="reconstructed θ")
-# plot(p1, plot(ψ))
+# plot_result(theta; same_layer)
+# UpdateSoilParam!(soil, theta);
+# soil
+# goal(theta; same_layer)
