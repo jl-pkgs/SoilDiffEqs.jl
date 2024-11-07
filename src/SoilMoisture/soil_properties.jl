@@ -26,7 +26,7 @@ end
 
 function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
-  (; θ_sat, θ_res, Ksat, α, n, m, use_m, b, method) = soil.param
+  (; θ_sat, θ_res, ψ_sat, Ksat, α, n, m, use_m, b, method) = soil.param
 
   if method == "van_Genuchten"
     @inbounds for i in ibeg:N

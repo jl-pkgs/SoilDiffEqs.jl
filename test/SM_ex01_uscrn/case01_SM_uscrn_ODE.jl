@@ -1,7 +1,7 @@
 using SoilDifferentialEquations, Test, Dates, Ipaper
+using LazyArtifacts
 import RTableTools: fread
 # using OrdinaryDiffEq
-using LazyArtifacts
 includet("main_optim.jl")
 
 
@@ -41,9 +41,9 @@ begin
   θ_surf = yobs_full[:, ibeg-1]
 
   soil = init_soil(; θ0, soil_type=7, ibeg, same_layer)
-  lower, upper = get_bound(soil)
+  lower, upper = SM_paramBound(soil)
   # theta0 = soil.param_water |> Vector
-  theta0 = param2theta(soil)
+  theta0 = SM_param2theta(soil)
   ysim = model_sim(theta0; same_layer)
   goal(theta0; same_layer)
 

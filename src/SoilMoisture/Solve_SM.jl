@@ -1,8 +1,85 @@
-export model_SM_sim, SM_theta2param, of_MSE
-export solve_SM_ODE, solve_SM_Bonan
+export ModSim_SM, solve_SM_ODE, solve_SM_Bonan
+export SM_param2theta, SM_UpdateParam!, SM_paramBound
 
 
-function model_SM_sim(soil, θ_surf, theta; method="Bonan", kw...)
+function SM_param2theta(soil)
+  if soil.param.method == "Campbell"
+    (; θ_sat, Ksat, ψ_sat, b) = soil.param
+    if soil.param.same_layer
+      return [θ_sat[1], Ksat[1], ψ_sat[1], b[1]]
+    else
+      return [θ_sat; Ksat; ψ_sat; b]
+    end
+  elseif soil.param.method == "van_Genuchten"
+    (; θ_sat, θ_res, Ksat, α, n, m) = soil.param
+    if soil.param.same_layer
+      return [θ_sat[1], θ_res[1], Ksat[1], α[1], n[1], m[1]]
+    else
+      return [θ_sat; θ_res; Ksat; α; n; m]
+    end
+  end
+end
+
+
+function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
+  (; method) = soil.param
+  N = soil.N
+  if method == "Campbell"
+    if soil.param.same_layer
+      soil.param.θ_sat .= theta[1]
+      soil.param.Ksat .= theta[2]
+      soil.param.ψ_sat .= theta[3]
+      soil.param.b .= theta[4]
+    else
+      soil.param.θ_sat .= theta[1:N]
+      soil.param.Ksat .= theta[N+1:2N]
+      soil.param.ψ_sat .= theta[2N+1:3N]
+      soil.param.b .= theta[3N+1:4N]
+    end
+  elseif method == "van_Genuchten"
+    if soil.param.same_layer
+      soil.param.θ_sat .= theta[1]
+      soil.param.θ_res .= theta[2]
+      soil.param.Ksat .= theta[3]
+      soil.param.α .= theta[4]
+      soil.param.n .= theta[5]
+      soil.param.m .= theta[6]
+    else
+      soil.param.θ_sat .= theta[1:N]
+      soil.param.θ_res .= theta[N+1:2N]
+      soil.param.Ksat .= theta[2N+1:3N]
+      soil.param.α .= theta[3N+1:4N]
+      soil.param.n .= theta[4N+1:5N]
+      soil.param.m .= theta[5N+1:6N]
+    end
+  end
+  return nothing
+end
+
+
+function SM_paramBound(soil)
+  (; method) = soil.param
+  N = soil.N
+  if method == "van_Genuchten"
+    # θ_sat, θ_res, Ksat, α, n, m
+    LOWER = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05, 0.1]
+    UPPER = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00, 10.0]
+  elseif method == "Campbell"
+    # θ_sat, Ksat, ψ_sat, b
+    LOWER = [0.25, 0.002 / 3600, -100, 3.0]
+    UPPER = [0.50, 100.0 / 3600, -5.0, 15.0]
+  end
+
+  if soil.param.same_layer
+    return LOWER, UPPER
+  else
+    return repeat(LOWER; inner=N), repeat(UPPER; inner=N)
+  end
+end
+
+
+
+function ModSim_SM(soil, θ_surf; method="Bonan", kw...)
   if method == "Bonan"
     ysim = solve_SM_Bonan(soil, θ_surf;)
   elseif method == "ODE"

@@ -15,43 +15,48 @@ Campbell (1974) relationships
 
 # Examples
 ```julia
-param = (θ_sat = 0.25, ψ_sat = -25.0, b = 0.2, Ksat = 3.4e-03)
+θ_sat = 0.25
+ψ_sat = -25.0
+b = 0.2
+Ksat = 3.4e-03
 θ, K, ∂θ∂ψ = Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 ```
 """
 @fastmath function Campbell(ψ::T, ψ_sat::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
-  # @unpack ψ_sat, θ_sat, Ksat, b = param
-
-  # Volumetric soil moisture (θ) for specified matric potential 
-  θ = ψ < ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : ψ_sat
-
-  # Hydraulic conductivity (K) for specified matric potential
-  K = ψ < ψ_sat ? Ksat * (θ / θ_sat)^(2b + 3) : Ksat
-
-  # Cap = dθ/dψ
-  ∂θ∂ψ = ψ < ψ_sat ? -θ_sat / (b * ψ_sat) * (ψ / ψ_sat)^(-1 / b - 1) : ψ_sat
-
+  θ = Campbell_θ(ψ, ψ_sat, θ_sat, b)
+  K = Campbell_K(θ, θ_sat, Ksat, b)
+  ∂θ∂ψ = Campbell_∂θ∂ψ(ψ, ψ_sat, θ_sat, b)
   θ, K, ∂θ∂ψ
 end
 
 """
     Campbell_θ(ψ, ψ_sat, θ_sat, b)
 """
-@inline function Campbell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
-  return ψ < ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : ψ_sat # θ
+@inline @fastmath function Campbell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+  ψ <= ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : θ_sat
+end
+
+@inline @fastmath function Campbell_∂θ∂ψ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+  ψ <= ψ_sat ? -θ_sat / (b * ψ_sat) * (ψ / ψ_sat)^(-1 / b - 1) : 0.0
 end
 
 """
     Campbell_K(θ, θ_sat, Ksat, b)
 """
-@fastmath Campbell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real} =
-  Ksat * (θ / θ_sat)^(2 * b + 3)
+@inline @fastmath function Campbell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
+  se = clamp(θ / θ_sat, 0.0, 1.0)
+  Ksat * se^(2b + 3)
+end
 
 # Campbell 1974, Bonan 2019 Table 8.2
 """
     Campbell_ψ(θ, θ_sat, ψ_sat, b)
 """
-@fastmath function Campbell_ψ(θ::T, θ_sat::T, ψ_sat::T, b::T) where {T<:Real}
-  ψ = ψ_sat * (θ / θ_sat)^(-b)
-  max(ψ, ψ_sat)
+@inline @fastmath function Campbell_ψ(θ::T, θ_sat::T, ψ_sat::T, b::T) where {T<:Real}
+  se = clamp(θ / θ_sat, 0.0, 1.0)
+  ψ = ψ_sat * se^(-b)
+  min(ψ, ψ_sat) # ψ为负值
 end
+
+
+export Campbell, Campbell_ψ, Campbell_θ, Campbell_K

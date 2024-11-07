@@ -34,6 +34,19 @@ begin
   @test maximum(abs.(ysim_bonan[end, :] - ysim_ode[end, :])) <= 0.03
 end
 
+begin
+  # 4 hours
+  dt = 60 * 6
+  soil = data_loader_soil(; dt)
+  ntime = round(Int, 3600 * 4 / dt)
+  θ_surf = fill(0.267, ntime)
+  ysim_bonan = ModSim_SM(soil, θ_surf; method="Bonan")
+
+  soil = data_loader_soil(; dt)
+  ysim_ode = ModSim_SM(soil, θ_surf; method="Bonan", solver=Tsit5())
+  @test maximum(abs.(ysim_bonan[end, :] - ysim_ode[end, :])) <= 0.03
+end
+
 # begin
 #   function plot_sm(i)
 #     title = "Layer $i"
