@@ -21,44 +21,43 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   rmx = zeros(bounds.begc:bounds.endc, 1:N+1)
   zmm = zeros(bounds.begc:bounds.endc, 1:N+1)
   dzmm = zeros(bounds.begc:bounds.endc, 1:N+1)
-  den = 0.0
+  dz = 0.0
   dqidw0 = zeros(bounds.begc:bounds.endc, 1:N+1)
   dqidw1 = zeros(bounds.begc:bounds.endc, 1:N+1)
   dqodw1 = zeros(bounds.begc:bounds.endc, 1:N+1)
   dqodw2 = zeros(bounds.begc:bounds.endc, 1:N+1)
-  dsmpdw = zeros(bounds.begc:bounds.endc, 1:N+1)
+  dψdw = zeros(bounds.begc:bounds.endc, 1:N+1)
   num = 0.0
   qin = zeros(bounds.begc:bounds.endc, 1:N+1)
   qout = zeros(bounds.begc:bounds.endc, 1:N+1)
-  s_node = 0.0
+  se = 0.0
   s1 = 0.0
   s2 = 0.0
-  smp = zeros(bounds.begc:bounds.endc, 1:N)
+  ψ = zeros(bounds.begc:bounds.endc, 1:N)
   sdamp = 0.0
   pi = 0
   temp = zeros(bounds.begc:bounds.endc)
   jwt = zeros(Int, bounds.begc:bounds.endc)
-  smp1 = 0.0
-  dsmpdw1 = 0.0
+  ψ1 = 0.0
+  dψdw1 = 0.0
   wh = 0.0
   wh_zwt = 0.0
-  ka = 0.0
+  _K = 0.0
   dwat2 = zeros(bounds.begc:bounds.endc, 1:N+1)
-  dzq = 0.0
+  dψE = 0.0
   zimm = zeros(bounds.begc:bounds.endc, 0:N)
-  zq = zeros(bounds.begc:bounds.endc, 1:N+1)
-  θ_E = zeros(bounds.begc:bounds.endc, 1:N+1)
+  ψE = zeros(bounds.begc:bounds.endc, 1:N+1)
+  θE = zeros(bounds.begc:bounds.endc, 1:N+1)
   tempi = 0.0
   temp0 = 0.0
   voleq1 = 0.0
   zwtmm = zeros(bounds.begc:bounds.endc)
   imped = zeros(bounds.begc:bounds.endc, 1:N)
   vol_ice = zeros(bounds.begc:bounds.endc, 1:N)
-  z_mid = 0.0
   vwc_zwt = zeros(bounds.begc:bounds.endc)
   vwc_liq = zeros(bounds.begc:bounds.endc, 1:N+1)
-  smp_grad = zeros(bounds.begc:bounds.endc, 1:N+1)
-  dsmpds = 0.0
+  ψ_grad = zeros(bounds.begc:bounds.endc, 1:N+1)
+  dψds = 0.0
   dhkds = 0.0
   hktmp = 0.0
   nstep = 0
@@ -73,17 +72,17 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   fracice = soilhydrology_inst.fracice_col
   icefrac = soilhydrology_inst.icefrac_col
   hkdepth = soilhydrology_inst.hkdepth_col
-  smpmin = soilstate_inst.smpmin_col
+  ψE_min = soilstate_inst.ψmin_col
   θ_sat = soilstate_inst.θ_sat_col
   hksat = soilstate_inst.hksat_col
   bsw = soilstate_inst.bsw_col
   ψ_sat = soilstate_inst.ψ_sat_col
   eff_porosity = soilstate_inst.eff_porosity_col
-  smp_l = soilstate_inst.smp_l_col
+  ψ_l = soilstate_inst.ψ_l_col
   hk_l = soilstate_inst.hk_l_col
-  h2osoi_ice = waterstate_inst.h2osoi_ice_col
-  h2osoi_liq = waterstate_inst.h2osoi_liq_col
-  h2osoi_vol = waterstate_inst.h2osoi_vol_col
+  θ_ice = waterstate_inst.h2osoi_ice_col
+  θ_liq = waterstate_inst.h2osoi_liq_col
+  θ = waterstate_inst.h2osoi_vol_col
   qflx_deficit = waterflux_inst.qflx_deficit_col
   qflx_infl = waterflux_inst.qflx_infl_col
   qflx_rootsoi_col = waterflux_inst.qflx_rootsoi_col
@@ -102,9 +101,9 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       zmm[c, j] = z[c, j] * 1e3
       dzmm[c, j] = dz[c, j] * 1e3
       zimm[c, j] = zi[c, j] * 1e3
-      vol_ice[c, j] = min(θ_sat[c, j], h2osoi_ice[c, j] / (dz[c, j] * denice))
+      vol_ice[c, j] = min(θ_sat[c, j], θ_ice[c, j] / (dz[c, j] * denice))
       icefrac[c, j] = min(1.0, vol_ice[c, j] / θ_sat[c, j])
-      vwc_liq[c, j] = max(h2osoi_liq[c, j], 1.0e-6) / (dz[c, j] * denh2o)
+      vwc_liq[c, j] = max(θ_liq[c, j], 1.0e-6) / (dz[c, j] * denh2o)
     end
   end
 
@@ -113,7 +112,7 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     zimm[c, 0] = 0.0
     zwtmm[c] = zwt[c] * 1e3
   end
-  
+
   # Compute jwt index
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
@@ -129,53 +128,65 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       vwc_zwt[c] = vwc_liq[c, N]
       for j in N:nlevgrnd
         if zwt[c] <= zi[c, j]
-          smp1 = hfus * (tfrz - t_soisno[c, j]) / (grav * t_soisno[c, j]) * 1000.0
-          smp1 = max(ψ_sat[c, N], smp1)
-          vwc_zwt[c] = θ_sat[c, N] * (smp1 / ψ_sat[c, N])^(-1.0 / bsw[c, N])
-          vwc_zwt[c] = min(vwc_zwt[c], 0.5 * (θ_sat[c, N] + h2osoi_vol[c, N]))
+          ψ1 = hfus * (tfrz - t_soisno[c, j]) / (grav * t_soisno[c, j]) * 1000.0
+          ψ1 = max(ψ_sat[c, N], ψ1)
+          vwc_zwt[c] = θ_sat[c, N] * (ψ1 / ψ_sat[c, N])^(-1.0 / bsw[c, N])
+          vwc_zwt[c] = min(vwc_zwt[c], 0.5 * (θ_sat[c, N] + θ[c, N]))
           break
         end
       end
     end
   end
 
+  # ! 核心参考部分
   # Calculate the equilibrium water content based on the water table depth
   for j in 1:N
     for fc in 1:num_hydrologyc
+      B = bsw[c, j]
       c = filter_hydrologyc[fc]
+      C = ψ_sat[c, j] + zwtmm[c]
+
+      _Δz = zimm[c, j] - zimm[c, j-1]
+
       if zwtmm[c] <= zimm[c, j-1]
-        θ_E[c, j] = θ_sat[c, j]
-      elseif zwtmm[c] < zimm[c, j] && zwtmm[c] > zimm[c, j-1]
+        θE[c, j] = θ_sat[c, j]
+      elseif zimm[c, j-1] < zwtmm[c] < zimm[c, j] 
+        # 部分饱和
         tempi = 1.0
-        temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j-1]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-        voleq1 = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j-1]) * (tempi - temp0)
-        θ_E[c, j] = (voleq1 * (zwtmm[c] - zimm[c, j-1]) + θ_sat[c, j] * (zimm[c, j] - zwtmm[c])) / (zimm[c, j] - zimm[c, j-1])
-        θ_E[c, j] = min(θ_sat[c, j], θ_E[c, j])
-        θ_E[c, j] = max(θ_E[c, j], 0.0)
+        temp0 = ((C - zimm[c, j-1]) / ψ_sat[c, j])^(1 - 1 / B)
+        d1 = zwtmm[c] - zimm[c, j-1] # 未饱和
+        d2 = zimm[c, j] - zwtmm[c]   # 饱和
+
+        _θ_E = -ψ_sat[c, j] * θ_sat[c, j] / (1 - 1 / B) / d1 * (tempi - temp0)
+        θE[c, j] = (_θ_E * d1 + θ_sat[c, j] * d2) / _Δz
+        θE[c, j] = clamp(θE[c, j], 0, θ_sat[c, j])
       else
-        tempi = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-        temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j-1]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-        θ_E[c, j] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zimm[c, j] - zimm[c, j-1]) * (tempi - temp0)
-        θ_E[c, j] = max(θ_E[c, j], 0.0)
-        θ_E[c, j] = min(θ_sat[c, j], θ_E[c, j])
+        # zwt > z₊ₕ[j], 地下水水位在这一层之下，这一层非饱和
+        tempi = ((C - zimm[c, j]) / ψ_sat[c, j])^(1 - 1 / B)
+        temp0 = ((C - zimm[c, j-1]) / ψ_sat[c, j])^(1 - 1 / B)
+
+        θE[c, j] = -ψ_sat[c, j] * θ_sat[c, j] / (1 - 1 / B) / (_Δz) * (tempi - temp0) # Zeng 2009, Eq.9
+        θE[c, j] = clamp(θE[c, j], 0, θ_sat[c, j])
       end
-      zq[c, j] = -ψ_sat[c, j] * (max(θ_E[c, j] / θ_sat[c, j], 0.01))^(-bsw[c, j])
-      zq[c, j] = max(smpmin[c], zq[c, j])
+
+      ψE[c, j] = -ψ_sat[c, j] * (max(θE[c, j] / θ_sat[c, j], 0.01))^(-B) # 
+      ψE[c, j] = max(ψE_min[c], ψE[c, j])
     end
   end
 
-  # If water table is below soil column calculate zq for the 11th layer
+  # If water table is below soil column calculate ψE for the 11th layer
   j = N
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
     if jwt[c] == N
+      # 积分的过程在：z₊ₕ[N] ~ zwt，因此，需要注意，最后一层的θ_E、ψ_E代表的区间
       tempi = 1.0
       temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-      θ_E[c, j+1] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j]) * (tempi - temp0)
-      θ_E[c, j+1] = max(θ_E[c, j+1], 0.0)
-      θ_E[c, j+1] = min(θ_sat[c, j], θ_E[c, j+1])
-      zq[c, j+1] = -ψ_sat[c, j] * (max(θ_E[c, j+1] / θ_sat[c, j], 0.01))^(-bsw[c, j])
-      zq[c, j+1] = max(smpmin[c], zq[c, j+1])
+      θE[c, j+1] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j]) * (tempi - temp0) # 这里没有进行加权，人为
+      θE[c, j+1] = clamp(θE[c, j+1], 0.0, θ_sat[c, j])
+
+      ψE[c, j+1] = -ψ_sat[c, j] * (max(θE[c, j+1] / θ_sat[c, j], 0.01))^(-bsw[c, j])
+      ψE[c, j+1] = max(ψE_min[c], ψE[c, j+1])
     end
   end
 
@@ -185,7 +196,7 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     for fc in 1:num_hydrologyc
       c = filter_hydrologyc[fc]
       if origflag == 1
-        s1 = 0.5 * (h2osoi_vol[c, j] + h2osoi_vol[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
+        s1 = 0.5 * (θ[c, j] + θ[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
       else
         s1 = 0.5 * (vwc_liq[c, j] + vwc_liq[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
       end
@@ -198,20 +209,14 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       end
       hk[c, j] = imped[c, j] * s1 * s2
       dhkdw[c, j] = imped[c, j] * (2.0 * bsw[c, j] + 3.0) * s2 * (1.0 / (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
-      if origflag == 1
-        s_node = max(h2osoi_vol[c, j] / θ_sat[c, j], 0.01)
-      else
-        s_node = max(vwc_liq[c, j] / θ_sat[c, j], 0.01)
-      end
-      s_node = min(1.0, s_node)
-      smp[c, j] = -ψ_sat[c, j] * s_node^(-bsw[c, j])
-      smp[c, j] = max(smpmin[c], smp[c, j])
-      if origflag == 1
-        dsmpdw[c, j] = -bsw[c, j] * smp[c, j] / (s_node * θ_sat[c, j])
-      else
-        dsmpdw[c, j] = -bsw[c, j] * smp[c, j] / vwc_liq[c, j]
-      end
-      smp_l[c, j] = smp[c, j]
+
+      _θ = origflag == 1 ? θ[c, j] : vwc_liq[c, j]
+      se = clamp(_θ / θ_sat[c, j], 0.01, 1.0)
+      ψ[c, j] = -ψ_sat[c, j] * se^(-bsw[c, j])
+      ψ[c, j] = max(ψ[c, j], ψE_min[c])
+      dψdw[c, j] = -bsw[c, j] * ψ[c, j] / (_θ)
+      
+      ψ_l[c, j] = ψ[c, j]
       hk_l[c, j] = hk[c, j]
     end
   end
@@ -219,9 +224,9 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   # Aquifer (11th) layer
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
-    zmm[c, N+1] = 0.5 * (1e3 * zwt[c] + zmm[c, N])
+    zmm[c, N+1] = 0.5 * (1e3 * zwt[c] + zmm[c, N]) # 动态调整最后一层的深度，高明!
     if jwt[c] < N
-      dzmm[c, N+1] = dzmm[c, N]
+      dzmm[c, N+1] = dzmm[c, N] # 这里需要核对
     else
       dzmm[c, N+1] = (1e3 * zwt[c] - zmm[c, N])
     end
@@ -232,50 +237,18 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
     qin[c, j] = qflx_infl[c]
-    den = (zmm[c, j+1] - zmm[c, j])
-    dzq = (zq[c, j+1] - zq[c, j])
-    num = (smp[c, j+1] - smp[c, j]) - dzq
-    qout[c, j] = -hk[c, j] * num / den
-    dqodw1[c, j] = -(-hk[c, j] * dsmpdw[c, j] + num * dhkdw[c, j]) / den
-    dqodw2[c, j] = -(hk[c, j] * dsmpdw[c, j+1] + num * dhkdw[c, j]) / den
+    dz = (zmm[c, j+1] - zmm[c, j])
+    dψE = (ψE[c, j+1] - ψE[c, j])
+    num = (ψ[c, j+1] - ψ[c, j]) - dψE
+    qout[c, j] = -hk[c, j] * num / dz
+    dqodw1[c, j] = -(-hk[c, j] * dψdw[c, j] + num * dhkdw[c, j]) / dz
+    dqodw2[c, j] = -(hk[c, j] * dψdw[c, j+1] + num * dhkdw[c, j]) / dz
     rmx[c, j] = qin[c, j] - qout[c, j] - qflx_rootsoi_col[c, j]
     amx[c, j] = 0.0
     bmx[c, j] = dzmm[c, j] * (sdamp + 1.0 / dtime) + dqodw1[c, j]
     cmx[c, j] = dqodw2[c, j]
   end
 
-  # Associate variables
-  z = col.z
-  zi = col.zi
-  dz = col.dz
-  origflag = soilhydrology_inst.origflag
-  qcharge = soilhydrology_inst.qcharge_col
-  zwt = soilhydrology_inst.zwt_col
-  fracice = soilhydrology_inst.fracice_col
-  icefrac = soilhydrology_inst.icefrac_col
-  hkdepth = soilhydrology_inst.hkdepth_col
-  smpmin = soilstate_inst.smpmin_col
-  θ_sat = soilstate_inst.θ_sat_col
-  hksat = soilstate_inst.hksat_col
-  bsw = soilstate_inst.bsw_col
-  ψ_sat = soilstate_inst.ψ_sat_col
-  eff_porosity = soilstate_inst.eff_porosity_col
-  smp_l = soilstate_inst.smp_l_col
-  hk_l = soilstate_inst.hk_l_col
-  h2osoi_ice = waterstate_inst.h2osoi_ice_col
-  h2osoi_liq = waterstate_inst.h2osoi_liq_col
-  h2osoi_vol = waterstate_inst.h2osoi_vol_col
-  qflx_deficit = waterflux_inst.qflx_deficit_col
-  qflx_infl = waterflux_inst.qflx_infl_col
-  qflx_rootsoi_col = waterflux_inst.qflx_rootsoi_col
-  qflx_tran_veg_col = waterflux_inst.qflx_tran_veg_col
-  rootr_col = soilstate_inst.rootr_col
-  t_soisno = temperature_inst.t_soisno_col
-
-  # Get time step
-  nstep = get_nstep()
-  dtime = get_step_size()
-
   # Convert depths to mm
   for j in 1:N
     for fc in 1:num_hydrologyc
@@ -283,9 +256,9 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       zmm[c, j] = z[c, j] * 1e3
       dzmm[c, j] = dz[c, j] * 1e3
       zimm[c, j] = zi[c, j] * 1e3
-      vol_ice[c, j] = min(θ_sat[c, j], h2osoi_ice[c, j] / (dz[c, j] * denice))
+      vol_ice[c, j] = min(θ_sat[c, j], θ_ice[c, j] / (dz[c, j] * denice))
       icefrac[c, j] = min(1.0, vol_ice[c, j] / θ_sat[c, j])
-      vwc_liq[c, j] = max(h2osoi_liq[c, j], 1.0e-6) / (dz[c, j] * denh2o)
+      vwc_liq[c, j] = max(θ_liq[c, j], 1.0e-6) / (dz[c, j] * denh2o)
     end
   end
 
@@ -310,10 +283,10 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       vwc_zwt[c] = vwc_liq[c, N]
       for j in N:nlevgrnd
         if zwt[c] <= zi[c, j]
-          smp1 = hfus * (tfrz - t_soisno[c, j]) / (grav * t_soisno[c, j]) * 1000.0
-          smp1 = max(ψ_sat[c, N], smp1)
-          vwc_zwt[c] = θ_sat[c, N] * (smp1 / ψ_sat[c, N])^(-1.0 / bsw[c, N])
-          vwc_zwt[c] = min(vwc_zwt[c], 0.5 * (θ_sat[c, N] + h2osoi_vol[c, N]))
+          ψ1 = hfus * (tfrz - t_soisno[c, j]) / (grav * t_soisno[c, j]) * 1000.0
+          ψ1 = max(ψ_sat[c, N], ψ1)
+          vwc_zwt[c] = θ_sat[c, N] * (ψ1 / ψ_sat[c, N])^(-1.0 / bsw[c, N])
+          vwc_zwt[c] = min(vwc_zwt[c], 0.5 * (θ_sat[c, N] + θ[c, N]))
           break
         end
       end
@@ -325,38 +298,37 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     for fc in 1:num_hydrologyc
       c = filter_hydrologyc[fc]
       if zwtmm[c] <= zimm[c, j-1]
-        θ_E[c, j] = θ_sat[c, j]
+        θE[c, j] = θ_sat[c, j]
       elseif zwtmm[c] < zimm[c, j] && zwtmm[c] > zimm[c, j-1]
         tempi = 1.0
         temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j-1]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
         voleq1 = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j-1]) * (tempi - temp0)
-        θ_E[c, j] = (voleq1 * (zwtmm[c] - zimm[c, j-1]) + θ_sat[c, j] * (zimm[c, j] - zwtmm[c])) / (zimm[c, j] - zimm[c, j-1])
-        θ_E[c, j] = min(θ_sat[c, j], θ_E[c, j])
-        θ_E[c, j] = max(θ_E[c, j], 0.0)
+        θE[c, j] = (voleq1 * (zwtmm[c] - zimm[c, j-1]) + θ_sat[c, j] * (zimm[c, j] - zwtmm[c])) / (_Δz)
+        θE[c, j] = min(θ_sat[c, j], θE[c, j])
+        θE[c, j] = max(θE[c, j], 0.0)
       else
         tempi = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
         temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j-1]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-        θ_E[c, j] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zimm[c, j] - zimm[c, j-1]) * (tempi - temp0)
-        θ_E[c, j] = max(θ_E[c, j], 0.0)
-        θ_E[c, j] = min(θ_sat[c, j], θ_E[c, j])
+        θE[c, j] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (_Δz) * (tempi - temp0)
+        θE[c, j] = max(θE[c, j], 0.0)
+        θE[c, j] = min(θ_sat[c, j], θE[c, j])
       end
-      zq[c, j] = -ψ_sat[c, j] * (max(θ_E[c, j] / θ_sat[c, j], 0.01))^(-bsw[c, j])
-      zq[c, j] = max(smpmin[c], zq[c, j])
+      ψE[c, j] = -ψ_sat[c, j] * (max(θE[c, j] / θ_sat[c, j], 0.01))^(-bsw[c, j])
+      ψE[c, j] = max(ψE_min[c], ψE[c, j])
     end
   end
 
-  # If water table is below soil column calculate zq for the 11th layer
+  # If water table is below soil column calculate ψE for the 11th layer
   j = N
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
     if jwt[c] == N
       tempi = 1.0
       temp0 = ((ψ_sat[c, j] + zwtmm[c] - zimm[c, j]) / ψ_sat[c, j])^(1.0 - 1.0 / bsw[c, j])
-      θ_E[c, j+1] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j]) * (tempi - temp0)
-      θ_E[c, j+1] = max(θ_E[c, j+1], 0.0)
-      θ_E[c, j+1] = min(θ_sat[c, j], θ_E[c, j+1])
-      zq[c, j+1] = -ψ_sat[c, j] * (max(θ_E[c, j+1] / θ_sat[c, j], 0.01))^(-bsw[c, j])
-      zq[c, j+1] = max(smpmin[c], zq[c, j+1])
+      θE[c, j+1] = -ψ_sat[c, j] * θ_sat[c, j] / (1.0 - 1.0 / bsw[c, j]) / (zwtmm[c] - zimm[c, j]) * (tempi - temp0)
+      θE[c, j+1] = clamp(θE[c, j+1], 0.0, θ_sat[c, j])
+      ψE[c, j+1] = -ψ_sat[c, j] * (max(θE[c, j+1] / θ_sat[c, j], 0.01))^(-bsw[c, j])
+      ψE[c, j+1] = max(ψE_min[c], ψE[c, j+1])
     end
   end
 
@@ -366,7 +338,7 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     for fc in 1:num_hydrologyc
       c = filter_hydrologyc[fc]
       if origflag == 1
-        s1 = 0.5 * (h2osoi_vol[c, j] + h2osoi_vol[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
+        s1 = 0.5 * (θ[c, j] + θ[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
       else
         s1 = 0.5 * (vwc_liq[c, j] + vwc_liq[c, min(N, j + 1)]) / (0.5 * (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
       end
@@ -380,19 +352,20 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
       hk[c, j] = imped[c, j] * s1 * s2
       dhkdw[c, j] = imped[c, j] * (2.0 * bsw[c, j] + 3.0) * s2 * (1.0 / (θ_sat[c, j] + θ_sat[c, min(N, j + 1)]))
       if origflag == 1
-        s_node = max(h2osoi_vol[c, j] / θ_sat[c, j], 0.01)
+        se = max(θ[c, j] / θ_sat[c, j], 0.01)
       else
-        s_node = max(vwc_liq[c, j] / θ_sat[c, j], 0.01)
+        se = max(vwc_liq[c, j] / θ_sat[c, j], 0.01)
       end
-      s_node = min(1.0, s_node)
-      smp[c, j] = -ψ_sat[c, j] * s_node^(-bsw[c, j])
-      smp[c, j] = max(smpmin[c], smp[c, j])
+      se = min(1.0, se)
+      ψ[c, j] = -ψ_sat[c, j] * se^(-bsw[c, j])
+      ψ[c, j] = max(ψE_min[c], ψ[c, j])
+
       if origflag == 1
-        dsmpdw[c, j] = -bsw[c, j] * smp[c, j] / (s_node * θ_sat[c, j])
+        dψdw[c, j] = -bsw[c, j] * ψ[c, j] / (se * θ_sat[c, j])
       else
-        dsmpdw[c, j] = -bsw[c, j] * smp[c, j] / vwc_liq[c, j]
+        dψdw[c, j] = -bsw[c, j] * ψ[c, j] / vwc_liq[c, j]
       end
-      smp_l[c, j] = smp[c, j]
+      ψ_l[c, j] = ψ[c, j]
       hk_l[c, j] = hk[c, j]
     end
   end
@@ -413,12 +386,12 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
     qin[c, j] = qflx_infl[c]
-    den = (zmm[c, j+1] - zmm[c, j])
-    dzq = (zq[c, j+1] - zq[c, j])
-    num = (smp[c, j+1] - smp[c, j]) - dzq
-    qout[c, j] = -hk[c, j] * num / den
-    dqodw1[c, j] = -(-hk[c, j] * dsmpdw[c, j] + num * dhkdw[c, j]) / den
-    dqodw2[c, j] = -(hk[c, j] * dsmpdw[c, j+1] + num * dhkdw[c, j]) / den
+    dz = (zmm[c, j+1] - zmm[c, j])
+    dψE = (ψE[c, j+1] - ψE[c, j])
+    num = (ψ[c, j+1] - ψ[c, j]) - dψE
+    qout[c, j] = -hk[c, j] * num / dz
+    dqodw1[c, j] = -(-hk[c, j] * dψdw[c, j] + num * dhkdw[c, j]) / dz
+    dqodw2[c, j] = -(hk[c, j] * dψdw[c, j+1] + num * dhkdw[c, j]) / dz
     rmx[c, j] = qin[c, j] - qout[c, j] - qflx_rootsoi_col[c, j]
     amx[c, j] = 0.0
     bmx[c, j] = dzmm[c, j] * (sdamp + 1.0 / dtime) + dqodw1[c, j]
@@ -429,18 +402,19 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   for j in 2:N-1
     for fc in 1:num_hydrologyc
       c = filter_hydrologyc[fc]
-      den = (zmm[c, j] - zmm[c, j-1])
-      dzq = (zq[c, j] - zq[c, j-1])
-      num = (smp[c, j] - smp[c, j-1]) - dzq
-      qin[c, j] = -hk[c, j-1] * num / den
-      dqidw0[c, j] = -(-hk[c, j-1] * dsmpdw[c, j-1] + num * dhkdw[c, j-1]) / den
-      dqidw1[c, j] = -(hk[c, j-1] * dsmpdw[c, j] + num * dhkdw[c, j-1]) / den
-      den = (zmm[c, j+1] - zmm[c, j])
-      dzq = (zq[c, j+1] - zq[c, j])
-      num = (smp[c, j+1] - smp[c, j]) - dzq
-      qout[c, j] = -hk[c, j] * num / den
-      dqodw1[c, j] = -(-hk[c, j] * dsmpdw[c, j] + num * dhkdw[c, j]) / den
-      dqodw2[c, j] = -(hk[c, j] * dsmpdw[c, j+1] + num * dhkdw[c, j]) / den
+      dz = (zmm[c, j] - zmm[c, j-1])
+      dψE = (ψE[c, j] - ψE[c, j-1])
+      num = (ψ[c, j] - ψ[c, j-1]) - dψE
+      qin[c, j] = -hk[c, j-1] * num / dz
+      dqidw0[c, j] = -(-hk[c, j-1] * dψdw[c, j-1] + num * dhkdw[c, j-1]) / dz
+      dqidw1[c, j] = -(hk[c, j-1] * dψdw[c, j] + num * dhkdw[c, j-1]) / dz
+
+      dz = (zmm[c, j+1] - zmm[c, j])
+      dψE = (ψE[c, j+1] - ψE[c, j])
+      num = (ψ[c, j+1] - ψ[c, j]) - dψE
+      qout[c, j] = -hk[c, j] * num / dz
+      dqodw1[c, j] = -(-hk[c, j] * dψdw[c, j] + num * dhkdw[c, j]) / dz
+      dqodw2[c, j] = -(hk[c, j] * dψdw[c, j+1] + num * dhkdw[c, j]) / dz
       rmx[c, j] = qin[c, j] - qout[c, j] - qflx_rootsoi_col[c, j]
       amx[c, j] = -dqidw0[c, j]
       bmx[c, j] = dzmm[c, j] / dtime - dqidw1[c, j] + dqodw1[c, j]
@@ -449,17 +423,16 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
   end
 
   # Node j=N (bottom)
-
   j = N
   for fc in 1:num_hydrologyc
     c = filter_hydrologyc[fc]
     if j > jwt[c]  # water table is in soil column
-      den = (zmm[c, j] - zmm[c, j-1])
-      dzq = (zq[c, j] - zq[c, j-1])
-      num = (smp[c, j] - smp[c, j-1]) - dzq
-      qin[c, j] = -hk[c, j-1] * num / den
-      dqidw0[c, j] = -(-hk[c, j-1] * dsmpdw[c, j-1] + num * dhkdw[c, j-1]) / den
-      dqidw1[c, j] = -(hk[c, j-1] * dsmpdw[c, j] + num * dhkdw[c, j-1]) / den
+      dz = (zmm[c, j] - zmm[c, j-1])
+      dψE = (ψE[c, j] - ψE[c, j-1])
+      num = (ψ[c, j] - ψ[c, j-1]) - dψE
+      qin[c, j] = -hk[c, j-1] * num / dz
+      dqidw0[c, j] = -(-hk[c, j-1] * dψdw[c, j-1] + num * dhkdw[c, j-1]) / dz
+      dqidw1[c, j] = -(hk[c, j-1] * dψdw[c, j] + num * dhkdw[c, j-1]) / dz
       qout[c, j] = 0.0
       dqodw1[c, j] = 0.0
       rmx[c, j] = qin[c, j] - qout[c, j] - qflx_rootsoi_col[c, j]
@@ -476,42 +449,43 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
 
       # compute aquifer soil moisture as average of layer 10 and saturation
       if origflag == 1
-        s_node = max(0.5 * (1.0 + h2osoi_vol[c, j] / θ_sat[c, j]), 0.01)
+        se = max(0.5 * (1.0 + θ[c, j] / θ_sat[c, j]), 0.01)
       else
-        s_node = max(0.5 * ((vwc_zwt[c] + vwc_liq[c, j]) / θ_sat[c, j]), 0.01)
+        se = max(0.5 * ((vwc_zwt[c] + vwc_liq[c, j]) / θ_sat[c, j]), 0.01)
       end
-      s_node = min(1.0, s_node)
+      se = min(1.0, se)
 
-      # compute smp for aquifer layer
-      smp1 = -ψ_sat[c, j] * s_node^(-bsw[c, j])
-      smp1 = max(smpmin[c], smp1)
+      # compute ψ for aquifer layer
+      ψ1 = -ψ_sat[c, j] * se^(-bsw[c, j])
+      ψ1 = max(ψE_min[c], ψ1)
 
-      # compute dsmpdw for aquifer layer
-      dsmpdw1 = -bsw[c, j] * smp1 / (s_node * θ_sat[c, j])
+      # compute dψdw for aquifer layer
+      dψdw1 = -bsw[c, j] * ψ1 / (se * θ_sat[c, j])
 
       # first set up bottom layer of soil column
-      den = (zmm[c, j] - zmm[c, j-1])
-      dzq = (zq[c, j] - zq[c, j-1])
-      num = (smp[c, j] - smp[c, j-1]) - dzq
-      qin[c, j] = -hk[c, j-1] * num / den
-      dqidw0[c, j] = -(-hk[c, j-1] * dsmpdw[c, j-1] + num * dhkdw[c, j-1]) / den
-      dqidw1[c, j] = -(hk[c, j-1] * dsmpdw[c, j] + num * dhkdw[c, j-1]) / den
-      den = (zmm[c, j+1] - zmm[c, j])
-      dzq = (zq[c, j+1] - zq[c, j])
-      num = (smp1 - smp[c, j]) - dzq
-      qout[c, j] = -hk[c, j] * num / den
-      dqodw1[c, j] = -(-hk[c, j] * dsmpdw[c, j] + num * dhkdw[c, j]) / den
-      dqodw2[c, j] = -(hk[c, j] * dsmpdw1 + num * dhkdw[c, j]) / den
+      dz = (zmm[c, j] - zmm[c, j-1])
+      dψE = (ψE[c, j] - ψE[c, j-1])
+      num = (ψ[c, j] - ψ[c, j-1]) - dψE
+      qin[c, j] = -hk[c, j-1] * num / dz
+      dqidw0[c, j] = -(-hk[c, j-1] * dψdw[c, j-1] + num * dhkdw[c, j-1]) / dz
+      dqidw1[c, j] = -(hk[c, j-1] * dψdw[c, j] + num * dhkdw[c, j-1]) / dz
+      
+      dz = (zmm[c, j+1] - zmm[c, j])
+      dψE = (ψE[c, j+1] - ψE[c, j])
+      num = (ψ1 - ψ[c, j]) - dψE
+      qout[c, j] = -hk[c, j] * num / dz
+      dqodw1[c, j] = -(-hk[c, j] * dψdw[c, j] + num * dhkdw[c, j]) / dz
+      dqodw2[c, j] = -(hk[c, j] * dψdw1 + num * dhkdw[c, j]) / dz
 
       rmx[c, j] = qin[c, j] - qout[c, j] - qflx_rootsoi_col[c, j]
       amx[c, j] = -dqidw0[c, j]
       bmx[c, j] = dzmm[c, j] / dtime - dqidw1[c, j] + dqodw1[c, j]
       cmx[c, j] = dqodw2[c, j]
 
-      # next set up aquifer layer; den/num unchanged, qin=qout
+      # next set up aquifer layer; dz/num unchanged, qin=qout
       qin[c, j+1] = qout[c, j]
-      dqidw0[c, j+1] = -(-hk[c, j] * dsmpdw[c, j] + num * dhkdw[c, j]) / den
-      dqidw1[c, j+1] = -(hk[c, j] * dsmpdw1 + num * dhkdw[c, j]) / den
+      dqidw0[c, j+1] = -(-hk[c, j] * dψdw[c, j] + num * dhkdw[c, j]) / dz
+      dqidw1[c, j+1] = -(hk[c, j] * dψdw1 + num * dhkdw[c, j]) / dz
       qout[c, j+1] = 0.0  # zero-flow bottom boundary condition
       dqodw1[c, j+1] = 0.0  # zero-flow bottom boundary condition
       rmx[c, j+1] = qin[c, j+1] - qout[c, j+1]
@@ -534,32 +508,32 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     c = filter_hydrologyc[fc]
 
     for j in 1:N
-      h2osoi_liq[c, j] += dwat2[c, j] * dzmm[c, j]
+      θ_liq[c, j] += dwat2[c, j] * dzmm[c, j]
     end
 
+    j = jwt[c]
     # calculate qcharge for case jwt < N
     if jwt[c] < N
-      wh_zwt = 0.0  # since wh_zwt = -ψ_sat - zq_zwt, where zq_zwt = -ψ_sat
+      wh_zwt = 0.0  # since wh_zwt = -ψ_sat - ψE_zwt, where ψE_zwt = -ψ_sat
 
       # Recharge rate qcharge to groundwater (positive to aquifer)
-      s_node = max(h2osoi_vol[c, jwt[c]+1] / θ_sat[c, jwt[c]+1], 0.01)
-      s1 = min(1.0, s_node)
+      se = max(θ[c, jwt[c]+1] / θ_sat[c, jwt[c]+1], 0.01)
+      s1 = min(1.0, se)
 
       # scs: this is the expression for unsaturated hk
-      ka = imped[c, jwt[c]+1] * hksat[c, jwt[c]+1] * s1^(2.0 * bsw[c, jwt[c]+1] + 3.0)
+      _K = imped[c, jwt[c]+1] * hksat[c, jwt[c]+1] * s1^(2.0 * bsw[c, jwt[c]+1] + 3.0)
 
-      smp1 = max(smpmin[c], smp[c, max(1, jwt[c])])
-      wh = smp1 - zq[c, max(1, jwt[c])]
+      ψ1 = max(ψE_min[c], ψ[c, max(1, jwt[c])])
+      wh = ψ1 - ψE[c, max(1, jwt[c])]  # 这里是向地下水的排泄，Zeng2009, Eq.14
 
       if jwt[c] == 0
-        qcharge[c] = -ka * (wh_zwt - wh) / ((zwt[c] + 1.0e-3) * 1000.0)
+        qcharge[c] = -_K * (wh_zwt - wh) / ((zwt[c] + 1.0e-3) * 1000.0)
       else
-        qcharge[c] = -ka * (wh_zwt - wh) / ((zwt[c] - z[c, jwt[c]]) * 1000.0 * 2.0)
+        qcharge[c] = -_K * (wh_zwt - wh) / ((zwt[c] - z[c, jwt[c]]) * 1000.0 * 2.0)
       end
 
       # To limit qcharge (for the first several timesteps)
-      qcharge[c] = max(-10.0 / dtime, qcharge[c])
-      qcharge[c] = min(10.0 / dtime, qcharge[c])
+      qcharge[c] = max(qcharge[c], -10.0 / dtime, 10.0 / dtime)
     else
       # if water table is below soil column, compute qcharge from dwat2(11)
       qcharge[c] = dwat2[c, N+1] * dzmm[c, N+1] / dtime
@@ -571,8 +545,8 @@ function soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc,
     c = filter_hydrologyc[fc]
     qflx_deficit[c] = 0.0
     for j in 1:N
-      if h2osoi_liq[c, j] < 0.0
-        qflx_deficit[c] -= h2osoi_liq[c, j]
+      if θ_liq[c, j] < 0.0
+        qflx_deficit[c] -= θ_liq[c, j]
       end
     end
   end

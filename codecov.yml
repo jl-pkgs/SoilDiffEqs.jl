@@ -1,3 +1,4 @@
 ignore:
   - "src/GroundWater/GroundWaterTopModel.jl"
+  - "src/GroundWater/soilwater_zengdecker2009.jl"
   - "src/backup/*"
