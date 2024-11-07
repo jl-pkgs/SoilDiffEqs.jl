@@ -1,23 +1,11 @@
 ## 参考CoLM的方案，考虑地下水的补给与排泄，只考虑地下水垂直方向与土壤水的交互作用。
 # using SoilDifferentialEquations
 # 从下至上，不受地下水影响的第一层
-function find_jwt(soil::Soil{T}, zwt::T) where {T<:Real}
-  (; N, z₊ₕ) = soil # 注意z是负值
-  jwt = N
-  for i = 1:N
-    if zwt >= z₊ₕ[i]
-      jwt = i - 1
-      break
-    end
-  end
-  return jwt
-end
-
 
 # 根据补给，更新地下水水位
 function GW_UpdateRecharge!(soil::Soil{T}, wa, zwt, Δt, recharge) where {T<:Real}
   (; N, z₊ₕ, Sy) = soil
-  jwt = find_jwt(soil, zwt) # 不受地下水影响的第一层
+  jwt = find_jwt(z₊ₕ, zwt) # 不受地下水影响的第一层
   ∑ = recharge * Δt / 1000 # [mm s-1] to [m]
 
   wa = wa + ∑ * 1000 # [m]
@@ -58,7 +46,7 @@ end
 # drainage：排出为负，同时更新土壤含水量θ
 function GW_UpdateDrainage!(soil::Soil{T}, θ::AbstractVector{T}, zwt, wa, Δt, drainage) where {T<:Real}
   (; N, z₊ₕ, Δz, Sy) = soil
-  jwt = find_jwt(soil, zwt)
+  jwt = find_jwt(z₊ₕ, zwt)
   ∑ = -drainage * Δt / 1000 # 负值, [mm] to [m]
   wa = wa + ∑ * 1000
 
@@ -86,10 +74,10 @@ end
 
 # drainage < 0, [m s-1]
 function GW_Correctθ!(soil::Soil{T}, θ::AbstractVector{T}, zwt, wa, Δt, drainage) where {T<:Real}
-  (; N, Δz, Sy) = soil
+  (; N, Δz, z₊ₕ, Sy) = soil
   (; θ_sat) = soil.param
 
-  jwt = find_jwt(soil, zwt)
+  jwt = find_jwt(z₊ₕ, zwt)
   zwt = clamp(zwt, 0.0, 80.0) # 地下水水位在[0, 80m]
   # 强制限制水位，不考虑水量平衡是否合适？
 

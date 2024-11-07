@@ -5,6 +5,7 @@ begin
   dz = fill(0.02, N)
   θ = fill(0.3, N)
   soil = Soil(dz; θ)
+  z₊ₕ = soil.z₊ₕ
 
   wa = 4000.0 # [mm]
   zwt = -0.5
@@ -13,10 +14,10 @@ begin
 end
 
 @testset "find_jwt" begin
-  @test find_jwt(soil, -0.01) == 0
-  @test find_jwt(soil, -0.02) == 0
-  @test find_jwt(soil, -0.03) == 1
-  @test find_jwt(soil, -100.0) == N
+  @test find_jwt(z₊ₕ, -0.01) == 0
+  @test find_jwt(z₊ₕ, -0.02) == 0
+  @test find_jwt(z₊ₕ, -0.03) == 1
+  @test find_jwt(z₊ₕ, -100.0) == N
 end
 
 
@@ -37,8 +38,8 @@ end
 
 @testset "GW_UpdateDrainage!" begin
   θ = fill(0.3, N)
-  jwt = find_jwt(soil, -0.5)
-  jwt2 = find_jwt(soil, -1.0)
+  jwt = find_jwt(z₊ₕ, -0.5)
+  jwt2 = find_jwt(z₊ₕ, -1.0)
   r = GW_UpdateDrainage!(soil, θ, -0.5, 4000.0, Δt, 600 / 3600)
 
   @test r == (zwt=-1.0, wa=3990.0)

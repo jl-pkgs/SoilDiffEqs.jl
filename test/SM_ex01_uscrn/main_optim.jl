@@ -45,7 +45,14 @@ end
 function goal(theta; ibeg=1)
   yobs = options.yobs
   ysim = model_sim(theta)
-  obs = yobs[:, ibeg:end]
-  sim = ysim[:, ibeg:end]
-  -GOF(obs[:], sim[:]).NSE
+
+  ncol = size(yobs, 2)
+  n = ncol - ibeg + 1
+  ∑ = 0.0
+  map(i -> begin
+      obs = yobs[:, i]
+      sim = ysim[:, i]
+      ∑ += - GOF(obs, sim).NSE
+  end, ibeg:ncol)
+  ∑ / n # mean of NSE
 end
