@@ -17,12 +17,12 @@ K = zeros(1:N)
 qin = zeros(1:N+1)
 qout = zeros(1:N+1)
 
-dqidw0 = zeros(1:N+1)
-dqidw1 = zeros(1:N+1)
-dqodw1 = zeros(1:N+1)
-dqodw2 = zeros(1:N+1)
-dψdw = zeros(1:N+1)
-dKdw = zeros(1:N)
+dqidθ0 = zeros(1:N+1)
+dqidθ1 = zeros(1:N+1)
+dqodθ1 = zeros(1:N+1)
+dqodθ2 = zeros(1:N+1)
+dψdθ = zeros(1:N+1)
+dKdθ = zeros(1:N)
 
 # Associate variables
 qcharge = soilhydrology_inst.qcharge_col
@@ -39,12 +39,12 @@ K_l = soilstate_inst.hk_l_col
 θ = waterstate_inst.h2osoi_vol_col
 qflx_deficit = waterflux_inst.qflx_deficit_col
 qflx_infl = waterflux_inst.qflx_infl_col
-qflx_rootsoi_col = waterflux_inst.qflx_rootsoi_col
+ET = waterflux_inst.ET
 Tsoil = temperature_inst.t_soisno_col
 
 function soilwater_zengdecker2009()
   sdamp = 0.0
-  dψdw1 = 0.0
+  dψdθ1 = 0.0
   dθ = zeros(1:N+1)
   dψE = 0.0
   imped = zeros(1:N)
@@ -105,15 +105,15 @@ function soilwater_zengdecker2009()
     else
       imped[j] = 10.0^(-e_ice * (0.5 * (icefrac[j] + icefrac[min(N, j + 1)])))
     end
-    K[j] = imped[j] * se * s2
-    dKdw[j] = imped[j] * (2.0 * bsw[j] + 3.0) * s2 * (1.0 / (θ_sat[j] + θ_sat[min(N, j + 1)]))
+    K₊ₕ[j] = imped[j] * se * s2
+    dKdθ[j] = imped[j] * (2.0 * bsw[j] + 3.0) * s2 * (1.0 / (θ_sat[j] + θ_sat[min(N, j + 1)]))
 
     _θ = origflag == 1 ? θ[j] : vwc_liq[j]
     ψ[j] = cal_ψ(_θ[j], θ_sat[j], ψ_sat[j], bsw[j]; ψmin)
-    dψdw[j] = -bsw[j] * ψ[j] / (_θ)
+    dψdθ[j] = -bsw[j] * ψ[j] / (_θ)
 
     ψ_l[j] = ψ[j]
-    K_l[j] = K[j]
+    K_l[j] = K₊ₕ[j]
   end
 
   # Aquifer (11th) layer
@@ -125,104 +125,102 @@ function soilwater_zengdecker2009()
   end
 
   # Set up r, a, b, and c vectors for tridiagonal solution
-  j = 1
-  qin[j] = qflx_infl
-  dz = (zmm[j+1] - zmm[j])
-  dψE = (ψE[j+1] - ψE[j])
-  num = (ψ[j+1] - ψ[j]) - dψE
-  qout[j] = -K[j] * num / dz
-  dqodw1[j] = -(-K[j] * dψdw[j] + num * dKdw[j]) / dz
-  dqodw2[j] = -(K[j] * dψdw[j+1] + num * dKdw[j]) / dz
-  rmx[j] = qin[j] - qout[j] - qflx_rootsoi_col[j]
-  amx[j] = 0.0
-  bmx[j] = dzmm[j] * (sdamp + 1.0 / dtime) + dqodw1[j]
-  cmx[j] = dqodw2[j]
+  i = 1
+  qin[i] = qflx_infl
+  dz = (zmm[i+1] - zmm[i])
+  dψE = (ψE[i+1] - ψE[i])
+  dψ = (ψ[i+1] - ψ[i]) - dψE
+  qout[i] = -K₊ₕ[i] * dψ / dz
+  dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
+  dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
+  rmx[i] = qin[i] - qout[i] - ET[i]
+  amx[i] = 0.0
+  bmx[i] = dzmm[i] * (sdamp + 1.0 / dtime) + dqodθ1[i]
+  cmx[i] = dqodθ2[i]
 
   # Nodes j=2 to j=N-1
-  for j in 2:N-1
-    dz = (zmm[j] - zmm[j-1])
-    dψE = (ψE[j] - ψE[j-1])
-    num = (ψ[j] - ψ[j-1]) - dψE
-    qin[j] = -K[j-1] * num / dz
-    dqidw0[j] = -(-K[j-1] * dψdw[j-1] + num * dKdw[j-1]) / dz
-    dqidw1[j] = -(K[j-1] * dψdw[j] + num * dKdw[j-1]) / dz
+  for i in 2:N-1
+    dz = (zmm[i] - zmm[i-1])
+    dψ = ψ[i] - ψE[i] - (ψ[i-1] - ψE[i-1])
+    qin[i] = -K₊ₕ[i-1] * dψ / dz
+    dqidθ0[i] = -(-K₊ₕ[i-1] * dψdθ[i-1] + dψ * dKdθ[i-1]) / dz
+    dqidθ1[i] = -(K₊ₕ[i-1] * dψdθ[i] + dψ * dKdθ[i-1]) / dz
 
-    dz = (zmm[j+1] - zmm[j])
-    dψE = (ψE[j+1] - ψE[j])
-    num = (ψ[j+1] - ψ[j]) - dψE
-    qout[j] = -K[j] * num / dz
-    dqodw1[j] = -(-K[j] * dψdw[j] + num * dKdw[j]) / dz
-    dqodw2[j] = -(K[j] * dψdw[j+1] + num * dKdw[j]) / dz
-    rmx[j] = qin[j] - qout[j] - qflx_rootsoi_col[j]
-    amx[j] = -dqidw0[j]
-    bmx[j] = dzmm[j] / dtime - dqidw1[j] + dqodw1[j]
-    cmx[j] = dqodw2[j]
+    dz = (zmm[i+1] - zmm[i])
+    dψ = ψ[i+1] - ψE[i+1] - (ψ[i] - ψE[i])
+    qout[i] = -K₊ₕ[i] * dψ / dz
+    dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
+    dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
+
+    rmx[i] = qin[i] - qout[i] - ET[i]
+    amx[i] = -dqidθ0[i]
+    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    cmx[i] = dqodθ2[i]
   end
 
   # Node j=N (bottom)
-  j = N
-  if j > jwt  # water table is in soil column
-    dz = (zmm[j] - zmm[j-1])
-    dψE = (ψE[j] - ψE[j-1])
-    num = (ψ[j] - ψ[j-1]) - dψE
-    qin[j] = -K[j-1] * num / dz
-    dqidw0[j] = -(-K[j-1] * dψdw[j-1] + num * dKdw[j-1]) / dz
-    dqidw1[j] = -(K[j-1] * dψdw[j] + num * dKdw[j-1]) / dz
-    qout[j] = 0.0
-    dqodw1[j] = 0.0
-    rmx[j] = qin[j] - qout[j] - qflx_rootsoi_col[j]
-    amx[j] = -dqidw0[j]
-    bmx[j] = dzmm[j] / dtime - dqidw1[j] + dqodw1[j]
-    cmx[j] = 0.0
+  if jwt < N  # water table is in soil column
+    dz = (zmm[i] - zmm[i-1])
+    dψE = (ψE[i] - ψE[i-1])
+    dψ = (ψ[i] - ψ[i-1]) - dψE
+    qin[i] = -K₊ₕ[i-1] * dψ / dz
+    dqidθ0[i] = -(-K₊ₕ[i-1] * dψdθ[i-1] + dψ * dKdθ[i-1]) / dz
+    dqidθ1[i] = -(K₊ₕ[i-1] * dψdθ[i] + dψ * dKdθ[i-1]) / dz
+    qout[i] = 0.0
+    dqodθ1[i] = 0.0
+    rmx[i] = qin[i] - qout[i] - ET[i]
+    amx[i] = -dqidθ0[i]
+    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    cmx[i] = 0.0
 
     # next set up aquifer layer; hydrologically inactive
-    rmx[j+1] = 0.0
-    amx[j+1] = 0.0
-    bmx[j+1] = dzmm[j+1] / dtime
-    cmx[j+1] = 0.0
+    rmx[i+1] = 0.0
+    amx[i+1] = 0.0
+    bmx[i+1] = dzmm[i+1] / dtime
+    cmx[i+1] = 0.0
   else  # water table is below soil column
     # compute aquifer soil moisture as average of layer 10 and saturation
     if origflag == 1
-      se = 0.5 * (1.0 + θ[j] / θ_sat[j])
+      se = 0.5 * (1.0 + θ[i] / θ_sat[i])
     else
-      se = 0.5 * ((vwc_zwt + vwc_liq[j]) / θ_sat[j])
+      se = 0.5 * ((vwc_zwt + vwc_liq[i]) / θ_sat[i])
     end
     se = clamp(se, 0.01, 1.0)
 
     # compute for aquifer layer
-    _ψ = cal_ψ(se, ψ_sat[j], bsw[j]; ψmin)
-    dψdw1 = -bsw[j] * _ψ / (se * θ_sat[j])
+    _ψ = cal_ψ(se, ψ_sat[i], bsw[i]; ψmin)
+    dψdθ1 = -bsw[i] * _ψ / (se * θ_sat[i])
 
     # first set up bottom layer of soil column
-    dz = (zmm[j] - zmm[j-1])
-    dψE = (ψE[j] - ψE[j-1])
-    num = (ψ[j] - ψ[j-1]) - dψE
-    qin[j] = -K[j-1] * num / dz
-    dqidw0[j] = -(-K[j-1] * dψdw[j-1] + num * dKdw[j-1]) / dz
-    dqidw1[j] = -(K[j-1] * dψdw[j] + num * dKdw[j-1]) / dz
+    dz = (zmm[i] - zmm[i-1])
+    dψE = (ψE[i] - ψE[i-1])
+    dψ = (ψ[i] - ψ[i-1]) - dψE
+    qin[i] = -K₊ₕ[i-1] * dψ / dz
+    dqidθ0[i] = -(-K₊ₕ[i-1] * dψdθ[i-1] + dψ * dKdθ[i-1]) / dz
+    dqidθ1[i] = -(K₊ₕ[i-1] * dψdθ[i] + dψ * dKdθ[i-1]) / dz
 
-    dz = (zmm[j+1] - zmm[j])
-    dψE = (ψE[j+1] - ψE[j])
-    num = (_ψ - ψ[j]) - dψE
-    qout[j] = -K[j] * num / dz
-    dqodw1[j] = -(-K[j] * dψdw[j] + num * dKdw[j]) / dz
-    dqodw2[j] = -(K[j] * dψdw1 + num * dKdw[j]) / dz
+    dz = (zmm[i+1] - zmm[i])
+    dψE = (ψE[i+1] - ψE[i])
+    dψ = (_ψ - ψ[i]) - dψE
+    qout[i] = -K₊ₕ[i] * dψ / dz
+    dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
+    dqodθ2[i] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
 
-    rmx[j] = qin[j] - qout[j] - qflx_rootsoi_col[j]
-    amx[j] = -dqidw0[j]
-    bmx[j] = dzmm[j] / dtime - dqidw1[j] + dqodw1[j]
-    cmx[j] = dqodw2[j]
+    rmx[i] = qin[i] - qout[i] - ET[i]
+    amx[i] = -dqidθ0[i]
+    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    cmx[i] = dqodθ2[i]
 
     # next set up aquifer layer; dz/num unchanged, qin=qout
-    qin[j+1] = qout[j]
-    dqidw0[j+1] = -(-K[j] * dψdw[j] + num * dKdw[j]) / dz
-    dqidw1[j+1] = -(K[j] * dψdw1 + num * dKdw[j]) / dz
-    qout[j+1] = 0.0  # zero-flow bottom boundary condition
-    dqodw1[j+1] = 0.0  # zero-flow bottom boundary condition
-    rmx[j+1] = qin[j+1] - qout[j+1]
-    amx[j+1] = -dqidw0[j+1]
-    bmx[j+1] = dzmm[j+1] / dtime - dqidw1[j+1] + dqodw1[j+1]
-    cmx[j+1] = 0.0
+    qin[i+1] = qout[i]
+    dqidθ0[i+1] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
+    dqidθ1[i+1] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
+    qout[i+1] = 0.0  # zero-flow bottom boundary condition
+    dqodθ1[i+1] = 0.0  # zero-flow bottom boundary condition
+    rmx[i+1] = qin[i+1] - qout[i+1]
+    amx[i+1] = -dqidθ0[i+1]
+    bmx[i+1] = dzmm[i+1] / dtime - dqidθ1[i+1] + dqodθ1[i+1]
+    cmx[i+1] = 0.0
   end
 
   Tridiagonal(amx, bmx, cmx, rmx, dθ; jtop=1) # Solve for dθ
