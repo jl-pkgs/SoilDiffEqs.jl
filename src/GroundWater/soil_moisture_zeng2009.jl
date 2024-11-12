@@ -1,91 +1,9 @@
-## Note: 
-# 1. CLM5中蒸发为负值。
-# 2. z向下为负，地表为0。
-include("GroundWater.jl")
-
-zimm = zeros(0:N)
-zmm = zeros(1:N+1)
-dzmm = zeros(1:N+1)
-
-amx = zeros(1:N+1)
-bmx = zeros(1:N+1)
-cmx = zeros(1:N+1)
-rmx = zeros(1:N+1)
-
-ψ = zeros(1:N)
-K = zeros(1:N)
-ψE = zeros(1:N+1)
-θE = zeros(1:N+1)
-θ = waterstate_inst.h2osoi_vol_col
-
-qin = zeros(1:N+1)
-qout = zeros(1:N+1)
-
-dqidθ0 = zeros(1:N+1)
-dqidθ1 = zeros(1:N+1)
-dqodθ1 = zeros(1:N+1)
-dqodθ2 = zeros(1:N+1)
-dψdθ = zeros(1:N+1)
-dKdθ = zeros(1:N)
-
-# Associate variables
-qcharge = soilhydrology_inst.qcharge_col
-fracice = soilhydrology_inst.fracice_col
-icefrac = soilhydrology_inst.icefrac_col
-θ_sat = soilstate_inst.θ_sat_col
-Ksat = soilstate_inst.hksat_col
-bsw = soilstate_inst.bsw_col
-ψ_sat = soilstate_inst.ψ_sat_col
-ψ_l = soilstate_inst.ψ_l_col
-K_l = soilstate_inst.hk_l_col
-θ_ice = waterstate_inst.h2osoi_ice_col
-θ_liq = waterstate_inst.h2osoi_liq_col
-qflx_infl = waterflux_inst.qflx_infl_col
-ET = waterflux_inst.ET
-Tsoil = temperature_inst.t_soisno_col
-
-function soilwater_zengdecker2009()
-  sdamp = 0.0
-  dψdθ1 = 0.0
-  dθ = zeros(1:N+1)
-  dψE = 0.0
-  imped = zeros(1:N)
-
-  vwc_zwt = 0.0
-  vol_ice = zeros(1:N)
-  vwc_liq = zeros(1:N+1)
-
+function soil_moisture_zeng2009(soil::Soil{FT}) where {FT<:Real}
   dtime = get_step_size()
-
-  # Convert depths to mm
-  for j in 1:N
-    zmm[j] = z[j] * 1e3
-    dzmm[j] = dz[j] * 1e3
-    zimm[j] = zi[j] * 1e3
-
-    vol_ice[j] = min(θ_sat[j], θ_ice[j] / (dz[j] * ρ_ice))
-    icefrac[j] = min(1.0, vol_ice[j] / θ_sat[j])
-    vwc_liq[j] = max(θ_liq[j], 1.0e-6) / (dz[j] * ρ_h20)
-  end
-
-  zimm[0] = 0.0
-  zwtmm = zwt * 1e3
 
   # Compute jwt index
   jwt = find_jwt(zi, zwt)
   vwc_zwt = θ_sat[N]
-  if Tsoil[jwt+1] < tfrz
-    vwc_zwt = vwc_liq[N]
-    for j in N:nlevgrnd
-      if zwt <= zi[j]
-        _ψ = hfus * (tfrz - Tsoil[j]) / (grav * Tsoil[j]) * 1000.0
-        _ψ = max(ψ_sat[N], _ψ)
-        vwc_zwt = θ_sat[N] * (_ψ / ψ_sat[N])^(-1.0 / bsw[N])
-        vwc_zwt = min(vwc_zwt, 0.5 * (θ_sat[N] + θ[N]))
-        break
-      end
-    end
-  end
 
   # ! 核心参考部分
   # Calculate the equilibrium water content based on the water table depth
@@ -101,21 +19,12 @@ function soilwater_zengdecker2009()
     end
     se = min(1.0, se)
 
-    s2 = Ksat[j] * se^(2.0 * bsw[j] + 2.0)
-    if origflag == 1
-      imped[j] = (1.0 - 0.5 * (fracice[j] + fracice[min(N, j + 1)]))
-    else
-      imped[j] = 10.0^(-e_ice * (0.5 * (icefrac[j] + icefrac[min(N, j + 1)])))
-    end
-    K₊ₕ[j] = imped[j] * se * s2
+    # K₊ₕ[j] = imped[j] * se * s2
     dKdθ[j] = imped[j] * (2.0 * bsw[j] + 3.0) * s2 * (1.0 / (θ_sat[j] + θ_sat[min(N, j + 1)]))
 
     _θ = origflag == 1 ? θ[j] : vwc_liq[j]
     ψ[j] = cal_ψ(_θ[j], θ_sat[j], ψ_sat[j], bsw[j]; ψmin)
     dψdθ[j] = -bsw[j] * ψ[j] / (_θ)
-
-    ψ_l[j] = ψ[j]
-    K_l[j] = K₊ₕ[j]
   end
 
   # Aquifer (11th) layer
@@ -233,40 +142,40 @@ function soilwater_zengdecker2009()
   for j in 1:N
     θ_liq[j] += dθ[j] * dzmm[j]
   end
-
-  # calculate qcharge for case jwt < N
-  if jwt < N
-    j0 = min(1, jwt)
-    j1 = jwt + 1
-
-    wh_zwt = 0.0
-    # Recharge rate qcharge to groundwater (positive to aquifer)
-
-    se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
-    # scs: this is the expression for unsaturated K
-    _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
-
-    _ψ = max(ψmin, ψ[j0])
-    wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
-
-    if jwt == 0
-      qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)
-    else
-      qcharge = -_K * (wh_zwt - wh) / ((zwt - z[jwt]) * 1000.0 * 2.0)
-    end
-    # To limit qcharge (for the first several timesteps)
-    qcharge = max(qcharge, -10.0 / dtime, 10.0 / dtime)
-  else
-    # if water table is below soil column, compute qcharge from dθ(11)
-    qcharge = dθ[N+1] * dzmm[N+1] / dtime
-  end
-
-  # compute the water deficit and reset negative liquid water content
-  qflx_deficit = 0.0
-  for j in 1:N
-    if θ_liq[j] < 0.0
-      qflx_deficit -= θ_liq[j]
-    end
-  end
-
 end
+
+
+# # calculate qcharge for case jwt < N
+# if jwt < N
+#   j0 = min(1, jwt)
+#   j1 = jwt + 1
+
+#   wh_zwt = 0.0
+#   # Recharge rate qcharge to groundwater (positive to aquifer)
+
+#   se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
+#   # scs: this is the expression for unsaturated K
+#   _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
+
+#   _ψ = max(ψmin, ψ[j0])
+#   wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
+
+#   if jwt == 0
+#     qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)
+#   else
+#     qcharge = -_K * (wh_zwt - wh) / ((zwt - z[jwt]) * 1000.0 * 2.0)
+#   end
+#   # To limit qcharge (for the first several timesteps)
+#   qcharge = max(qcharge, -10.0 / dtime, 10.0 / dtime)
+# else
+#   # if water table is below soil column, compute qcharge from dθ(11)
+#   qcharge = dθ[N+1] * dzmm[N+1] / dtime
+# end
+
+# # compute the water deficit and reset negative liquid water content
+# qflx_deficit = 0.0
+# for j in 1:N
+#   if θ_liq[j] < 0.0
+#     qflx_deficit -= θ_liq[j]
+#   end
+# end

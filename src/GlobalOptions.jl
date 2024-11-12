@@ -7,7 +7,9 @@ using Parameters
   same_layer::Bool = true
   ibeg::Int = 2
   yobs::Union{Nothing, AbstractMatrix{Float64}} = nothing
-  θ_surf::Union{Nothing, Vector{Float64}} = nothing
+  
+  θ0::Union{Nothing, Vector{Float64}} = nothing     # 初始状态
+  θ_surf::Union{Nothing, Vector{Float64}} = nothing # 边界层条件
 end
 
 options = Options()
