@@ -36,11 +36,11 @@ function soil_Updateθ!(soil::Soil{T}, dt::Real; method="ψ0") where {T<:Real}
   # 若某一层发生了饱和，则继续向下传导
   # 若某一层的土壤水分全部耗干，则继续向下抽水
   θ[ibeg] += -((Q0 - Q[ibeg]) + sink[ibeg]) * dt / Δz[ibeg]
-  θ[ibeg] = clamp(θ[ibeg], θ_res[ibeg], θ_sat[ibeg])
+  # θ[ibeg] = clamp(θ[ibeg], θ_res[ibeg], θ_sat[ibeg])
 
   @inbounds for i in ibeg+1:N
     θ[i] += -((Q[i-1] - Q[i]) + sink[i]) * dt / Δz[i] # [m3 m-3]
-    θ[i] = clamp(θ[i], θ_res[i], θ_sat[i])
+    # θ[i] = clamp(θ[i], θ_res[i], θ_sat[i])
   end
 end
 

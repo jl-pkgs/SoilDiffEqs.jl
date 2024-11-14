@@ -18,6 +18,7 @@ end
 
 
 GlobalOptions.options = Options()
+options.same_layer = true
 options = GlobalOptions.options
 options.method_retention = "van_Genuchten"
 
