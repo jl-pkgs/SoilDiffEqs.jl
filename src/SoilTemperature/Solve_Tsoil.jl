@@ -8,29 +8,29 @@ function Tsoil_theta2param(theta)
   return κ, cv
 end
 
-function model_Tsoil_sim(soil, TS0, theta; method="Bonan", kw...)
+function model_Tsoil_sim(soil, Tsurf, theta; method="Bonan", kw...)
   κ, cv = Tsoil_theta2param(theta)
   soil.param.κ .= κ
   soil.param.cv .= cv
 
   if method == "Bonan"
-    ysim = solve_Tsoil_Bonan(soil, TS0;)
+    ysim = solve_Tsoil_Bonan(soil, Tsurf;)
   elseif method == "ODE"
-    ysim = solve_Tsoil_ODE(soil, TS0; kw...)
+    ysim = solve_Tsoil_ODE(soil, Tsurf; kw...)
   end
   ysim
 end
 
 
-function solve_Tsoil_Bonan(soil::Soil{FT}, TS0::AbstractVector{FT}) where {FT<:Real}
+function solve_Tsoil_Bonan(soil::Soil{FT}, Tsurf::AbstractVector{FT}) where {FT<:Real}
   (; N, inds_obs, ibeg) = soil
 
-  ntime = length(TS0)
+  ntime = length(Tsurf)
   R = zeros(ntime, soil.N - ibeg + 1)
   R[1, :] .= soil.Tsoil[ibeg:end]
 
   for i = 2:ntime
-    soil_temperature!(soil, TS0[i]; ibeg)
+    soil_temperature!(soil, Tsurf[i]; ibeg)
     R[i, :] .= soil.Tsoil[ibeg:end]
   end
 
@@ -40,16 +40,16 @@ end
 
 
 """
-    solve_Tsoil_ODE(soil, TS0; solver)
+    solve_Tsoil_ODE(soil, Tsurf; solver)
 
 solver = Tsit5()
 solver = Rosenbrock23()
 solver = Rodas5(autodiff=false)  
 """
-function solve_Tsoil_ODE(soil, TS0; solver, reltol=1e-3, abstol=1e-3, verbose=false)
+function solve_Tsoil_ODE(soil, Tsurf; solver, reltol=1e-3, abstol=1e-3, verbose=false)
   (; N, inds_obs, ibeg, dt) = soil
 
-  ntime = length(TS0)
+  ntime = length(Tsurf)
   u0 = soil.Tsoil[ibeg:end]
 
   _TsoilEquation(dT, T, p, t) = TsoilEquation_partial(dT, T, p, t; ibeg)
@@ -60,7 +60,7 @@ function solve_Tsoil_ODE(soil, TS0; solver, reltol=1e-3, abstol=1e-3, verbose=fa
   R[1, :] .= soil.Tsoil[ibeg:end]
 
   for i = 2:ntime
-    soil.TS0 = TS0[i]
+    soil.Tsurf = Tsurf[i]
     prob.u0 .= soil.Tsoil[ibeg:end]
 
     sol = solve(prob, solver; reltol, abstol, saveat=dt)

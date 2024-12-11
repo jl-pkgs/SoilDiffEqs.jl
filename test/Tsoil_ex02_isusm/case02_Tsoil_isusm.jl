@@ -19,7 +19,7 @@ begin
   yobs_full = Matrix(d[:, 4:end]) # 共有12层土壤数据
 
   set_seed(1)
-  TS0 = yobs_full[:, ibeg] # 从第10层开始
+  Tsurf = yobs_full[:, ibeg] # 从第10层开始
   Tsoil0 = approx(inds_obs, yobs_full[1, :], 1:nlayer)
 
   soil = init_soil(; soil_type=7)
@@ -27,8 +27,8 @@ begin
   # theta = theta0
 
   yobs = yobs_full[:, ibeg:end]
-  ysim = model_Tsoil_sim(soil, TS0, theta; method="ODE", solver)
-  # ysim = model_Tsoil_sim(soil, TS0, theta0; method="Bonan")
+  ysim = model_Tsoil_sim(soil, Tsurf, theta; method="ODE", solver)
+  # ysim = model_Tsoil_sim(soil, Tsurf, theta0; method="Bonan")
 end
 
 ## 结论是初始值很重要

@@ -33,7 +33,7 @@ function Tsoil_calib()
     yobs = yobs_full[:, ibeg:end]
 
     Tsoil0 = yobs_full[1, :]
-    TS0 = yobs_full[:, ibeg]
+    Tsurf = yobs_full[:, ibeg]
 
     soil = init_soil(; Tsoil0, soil_type=7)
     x0 = [soil.κ; soil.cv]
@@ -41,11 +41,11 @@ function Tsoil_calib()
     lower = [fill(0.1, nlayer); fill(0.1, nlayer) * 1e6]
     upper = [fill(10.0, nlayer); fill(5.0, nlayer) * 1e6]
 
-    f(theta) = goal(theta; yobs, Tsoil0, TS0, ibeg, kw_solver...)
+    f(theta) = goal(theta; yobs, Tsoil0, Tsurf, ibeg, kw_solver...)
     @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(5e4))
 
     soil = init_soil(; Tsoil0, soil_type=7)
-    ysim = model_Tsoil_sim(soil, TS0, theta; kw_solver...)
+    ysim = model_Tsoil_sim(soil, Tsurf, theta; kw_solver...)
     info[SITE] = -feval
   end
   info2 = DataFrame(; site=collect(keys(info)), NSE=collect(values(info)))
@@ -60,7 +60,7 @@ info2[info2.NSE.<0.9, :]
 # 一轮之后，温度发生了变化。
 # soil = init_soil(; soil_type=7, ibeg)
 # theta = [soil.κ; soil.cv]
-# ysim = model_Tsoil_sim(soil, TS0, theta; )
+# ysim = model_Tsoil_sim(soil, Tsurf, theta; )
 # _n = length(soil.inds_obs)
 # plot([plot_soil(i; ibeg) for i in 1:_n]..., size=(1200, 800))
 

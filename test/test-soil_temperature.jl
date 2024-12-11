@@ -1,7 +1,7 @@
 using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
-function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
+function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
   N = 120
   Δz = fill(0.025, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
@@ -13,7 +13,7 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  soil = Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, TS0, Tsoil, 
+  soil = Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, Tsurf, Tsoil, 
     param = SoilParam(; N, κ, cv))
   soil
 end
@@ -29,16 +29,16 @@ function solve_ode(reltol=1e-5, abstol=1e-5)
 end
 
 # solution = "crank-nicolson", "implicit"
-function solve_bonan(; TS0=20.0, solution="crank-nicolson")
+function solve_bonan(; Tsurf=20.0, solution="crank-nicolson")
   soil = init_soil()
   (; dt, Tsoil) = soil
 
   ts = tspan[1]:dt:tspan[2]
   ntime = length(ts)
-  length(TS0) == 1 && (TS0 = fill(TS0, ntime))
+  length(Tsurf) == 1 && (Tsurf = fill(Tsurf, ntime))
 
   for k in 1:ntime
-    soil_temperature!(soil, TS0[k]; solution) # Tsoil_next, G
+    soil_temperature!(soil, Tsurf[k]; solution) # Tsoil_next, G
   end
   Tsoil
 end

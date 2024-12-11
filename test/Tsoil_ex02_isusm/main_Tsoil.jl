@@ -23,7 +23,7 @@ nlayer = ceil(Int, 1.35/dz)
 z = [4, 12, 14, 16, 20, 24, 28, 32, 36, 42, 50, 52] * 25.4 / 1000 # inch -> mm -> m
 inds_obs = round.(Int, z / dz) # 取这些层的数据
 
-function init_soil(; TS0=20.0, dt=3600.0, soil_type=1, k=3)
+function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1, k=3)
   # Δz = fill(0.025, N)
   # Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
   N = length(Δz)
@@ -36,12 +36,12 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1, k=3)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice; soil_type)
   Soil{Float64}(; N, ibeg=inds_obs[k], inds_obs=inds_obs[k:end],
-    dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
+    dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, Tsurf, Tsoil)
 end
 
 function goal(theta; kw...)
   soil = init_soil(; soil_type=1)
-  ysim = model_Tsoil_sim(soil, TS0, theta; kw...)
+  ysim = model_Tsoil_sim(soil, Tsurf, theta; kw...)
 
   obs = yobs[:, 2:end][:]
   sim = ysim[:, 2:end][:]

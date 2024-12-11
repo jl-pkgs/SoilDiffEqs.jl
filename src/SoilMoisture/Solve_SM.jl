@@ -107,7 +107,7 @@ end
 
 
 """
-    solve_SM_ODE(soil, TS0; solver)
+    solve_SM_ODE(soil, Tsurf; solver)
 
 solver = Tsit5()
 solver = Rosenbrock23()

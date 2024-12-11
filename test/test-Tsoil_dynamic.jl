@@ -1,4 +1,4 @@
-function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
+function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
   N = 120
   Δz = fill(0.025, N)
   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
@@ -10,22 +10,22 @@ function init_soil(; TS0=20.0, dt=3600.0, soil_type=1)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_texture=soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, Tsurf, Tsoil)
 end
 
 
-function solve_Tsoil_ODE(TS0; reltol=1e-5, abstol=1e-5)
+function solve_Tsoil_ODE(Tsurf; reltol=1e-5, abstol=1e-5)
   soil = init_soil()
   # 每次在一个步长上进行求解
   tspan = (0, 3600)
   u0 = soil.Tsoil
   prob = ODEProblem(TsoilEquation, u0, tspan, soil)
 
-  ntime = length(TS0)
+  ntime = length(Tsurf)
   for i = 1:ntime
-    soil.TS0 = TS0[i]
+    soil.Tsurf = Tsurf[i]
     prob.u0 .= soil.Tsoil
-    # @assert prob.p.TS0 == TS0[i] # 确认
+    # @assert prob.p.Tsurf == Tsurf[i] # 确认
     sol = solve(prob, Tsit5(); reltol, abstol, saveat=3600)
     soil.Tsoil .= sol.u[end] # 更新这个时刻的结果
   end
@@ -34,22 +34,22 @@ function solve_Tsoil_ODE(TS0; reltol=1e-5, abstol=1e-5)
 end
 
 # solution = "crank-nicolson", "implicit"
-function solve_bonan(TS0; solution="crank-nicolson")
+function solve_bonan(Tsurf; solution="crank-nicolson")
   soil = init_soil()
   (; dt, Δz, κ, cv, Tsoil) = soil
 
-  ntime = length(TS0)
+  ntime = length(Tsurf)
   for k in 1:ntime
-    Tsoil_next, G = soil_temperature(Δz, dt, κ, cv, Tsoil, TS0[k]; solution)
+    Tsoil_next, G = soil_temperature(Δz, dt, κ, cv, Tsoil, Tsurf[k]; solution)
     Tsoil .= Tsoil_next
   end
   Tsoil
 end
 
-# TS0 = fill(23.0, nrow(d))
-TS0 = A[:, 1]
-@time Tsoil_bonan = solve_bonan(TS0);
-@time Tsoil_ode = solve_Tsoil_ODE(TS0);
+# Tsurf = fill(23.0, nrow(d))
+Tsurf = A[:, 1]
+@time Tsoil_bonan = solve_bonan(Tsurf);
+@time Tsoil_ode = solve_Tsoil_ODE(Tsurf);
 @test maximum(abs.(Tsoil_ode - Tsoil_bonan)) <= 0.35
 
 # @profview Tsoil_ode = solve_ode()

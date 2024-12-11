@@ -9,7 +9,7 @@ t = d.time
 A = Matrix(d[:, 2:end]) #|> drop_missing 
 
 ibeg = 2
-TS0 = A[:, ibeg]
+Tsurf = A[:, ibeg]
 yobs = A[:, ibeg:end]
 Tsoil0 = A[1, :]
 
@@ -23,9 +23,9 @@ begin
   # method = "ODE"
 
   if method == "Bonan"
-    ysim = solve_Tsoil_Bonan(soil, TS0)
+    ysim = solve_Tsoil_Bonan(soil, Tsurf)
   elseif method == "ODE"
-    ysim = solve_Tsoil_ODE(soil, TS0; solver)
+    ysim = solve_Tsoil_ODE(soil, Tsurf; solver)
   end
 
   plot(
@@ -45,7 +45,7 @@ begin
   @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(5 * 1e4))
 end
 
-ysim = model_Tsoil_sim(soil, TS0, theta;)
+ysim = model_Tsoil_sim(soil, Tsurf, theta;)
 
 # r = optimize(f, lower, upper, x0, Fminbox(inner_optimizer), options)
 # theta = r.minimizer

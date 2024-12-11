@@ -4,14 +4,14 @@
 - `ibeg`: 第一层土壤温度观测具有较大的误差，因此不使用第一层土壤温度
 """
 function soil_HeatFlux!(F::V, T::V, κ::V, z::V, z₊ₕ::V;
-  F0::FT=NaN, TS0::FT=NaN, method="TS0", ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT}}
+  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf", ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT}}
 
   N = length(T)
-  if method == "TS0"
+  if method == "Tsurf"
     if ibeg == 1
-      F0 = -κ[1] * (TS0 - T[1]) / (0 - z[1])
+      F0 = -κ[1] * (Tsurf - T[1]) / (0 - z[1])
     elseif ibeg > 1
-      F0 = -κ[ibeg] * (TS0 - T[ibeg]) / (z[ibeg-1] - z[ibeg])
+      F0 = -κ[ibeg] * (Tsurf - T[ibeg]) / (z[ibeg-1] - z[ibeg])
     end
   end
 
@@ -31,15 +31,15 @@ end
 """
 # Arguments
 - `method`: 
-  + `TS0` : TS0 boundary condition, 第一类边界条件
+  + `Tsurf` : Tsurf boundary condition, 第一类边界条件
   + `F0`  : F0 boundary condition, 第二类边界条件
 """
-function TsoilEquation(dT, T, soil::Soil, t; method="TS0", ibeg::Int=1)
+function TsoilEquation(dT, T, soil::Soil, t; method="Tsurf", ibeg::Int=1)
   soil.timestep += 1
-  # TODO: 根据t，更新TS0
-  (; N, Δz, z, z₊ₕ, F, TS0) = soil
+  # TODO: 根据t，更新Tsurf
+  (; N, Δz, z, z₊ₕ, F, Tsurf) = soil
   (; κ, cv) = soil.param
-  F0 = soil_HeatFlux!(F, T, κ, z, z₊ₕ; TS0, F0=soil.F0, method, ibeg)
+  F0 = soil_HeatFlux!(F, T, κ, z, z₊ₕ; Tsurf, F0=soil.F0, method, ibeg)
 
   dT[ibeg] = -(F0 - F[ibeg]) / (Δz[ibeg] * cv[ibeg])
   @inbounds for i in ibeg+1:N
@@ -47,7 +47,7 @@ function TsoilEquation(dT, T, soil::Soil, t; method="TS0", ibeg::Int=1)
   end
 end
 
-function TsoilEquation_partial(dT, T, p::Soil, t; method="TS0", ibeg::Int=1)
+function TsoilEquation_partial(dT, T, p::Soil, t; method="Tsurf", ibeg::Int=1)
   p.du[ibeg:end] .= dT
   p.u[ibeg:end] .= T
   TsoilEquation(p.du, p.u, p, t; method, ibeg)

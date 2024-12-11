@@ -20,7 +20,7 @@ function plot_soil(i; ibeg=2)
   plot!(t, ysim[:, i], label="SIM")
 end
 
-function init_soil(; Tsoil0, TS0=20.0, dt=3600.0, soil_type=1, ibeg=2)
+function init_soil(; Tsoil0, Tsurf=20.0, dt=3600.0, soil_type=1, ibeg=2)
   # Δz = fill(0.025, N)
   # Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
   N = length(Δz)
@@ -33,12 +33,12 @@ function init_soil(; Tsoil0, TS0=20.0, dt=3600.0, soil_type=1, ibeg=2)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, TS0, Tsoil, ibeg)
+  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, Tsurf, Tsoil, ibeg)
 end
 
-function goal(theta; yobs, Tsoil0, TS0, ibeg=2, kw...)
+function goal(theta; yobs, Tsoil0, Tsurf, ibeg=2, kw...)
   soil = init_soil(; Tsoil0, ibeg, soil_type=7)
-  ysim = model_Tsoil_sim(soil, TS0, theta; kw...)
+  ysim = model_Tsoil_sim(soil, Tsurf, theta; kw...)
 
   obs = yobs[:, 2:end]
   sim = ysim[:, 2:end]

@@ -83,7 +83,7 @@ end
   Tsoil::Vector{FT} = fill(NaN, N)   # [°C]
   κ₊ₕ::Vector{FT} = zeros(FT, N - 1)  # thermal conductivity at interface [W m-1 K-1]
   F::Vector{FT} = zeros(FT, N)       # heat flux, [W m-2]
-  TS0::FT = FT(NaN)                  # surface temperature, [°C]
+  Tsurf::FT = FT(NaN)                # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
 
@@ -161,7 +161,7 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
 
   printstyled(io, "Soil Temperature: \n", color=:blue, bold=true)
   print_var(io, x, :Tsoil)
-  print_var(io, x, :TS0)
+  print_var(io, x, :Tsurf)
 
   printstyled(io, "Soil Moisture: \n", color=:blue, bold=true)
   print_var(io, x, :K, scale=1 / 3600) # [cm/s] to [cm h-1]
