@@ -6,6 +6,7 @@ const SHR_CONST_G = 9.80665
 
 function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T, B::T; use_clamp=true) where {T<:Real}
   C = ψ_sat + zwt
+  Δz = z1 - z0
   u1 = ((C - z1) / ψ_sat)^(1 - 1 / B) # z1 = z[j]
   u0 = ((C - z0) / ψ_sat)^(1 - 1 / B) # z2 = z[j-1]
   θE = -ψ_sat[j] * θ_sat[j] / (1 - 1 / B) / Δz * (u1 - u0) # Zeng2009, Eq.9
