@@ -121,7 +121,7 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
 
   _Equation(dθ, θ, p, t) = RichardsEquation_partial(dθ, θ, p, t)
   tspan = (0, dt)
-  prob = ODEProblem(_Equation, u0, tspan, soil)
+  prob = _ODEProblem(_Equation, u0, tspan, soil)
 
   R = zeros(ntime, N - ibeg + 1)
   R[1, :] .= soil.θ[ibeg:end]
@@ -130,7 +130,7 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
     soil.θ0 = θ_surf[i]
     prob.u0 .= soil.θ[ibeg:end]
 
-    sol = solve(prob, solver; reltol, abstol, saveat=dt)
+    sol = _solve(prob, solver; reltol, abstol, saveat=dt)
     soil.θ[ibeg:end] .= sol.u[end] # 更新这个时刻的结果
     R[i, :] .= soil.θ[ibeg:end]
   end

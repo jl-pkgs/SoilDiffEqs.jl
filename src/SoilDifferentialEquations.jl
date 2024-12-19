@@ -3,7 +3,7 @@ module SoilDifferentialEquations
 # using OrdinaryDiffEq
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Parameters
-using DiffEqBase
+# using DiffEqBase
 
 const ρ_wat = 1000.0                       # Density of water, [kg/m3]
 const ρ_ice = 917.0                        # Density of ice, [kg/m3]
@@ -65,5 +65,9 @@ export soil_properties_thermal
 # HydroTools
 export sceua, GOF, of_KGE, of_NSE
 export soil_depth_init, θ_S, ρ_wat, K0
+
+function _ODEProblem end
+function _solve end
+
 
 end

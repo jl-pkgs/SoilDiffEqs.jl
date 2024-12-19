@@ -21,6 +21,7 @@ GlobalOptions.options = Options()
 options = GlobalOptions.options
 options.method_retention = "van_Genuchten"
 
+
 begin
   i = 3
   SITE = sites[i]
@@ -48,5 +49,4 @@ end
 
 plot_result(theta)
 # UpdateSoilParam!(soil, theta);
-# soil
 # goal(theta; same_layer)
