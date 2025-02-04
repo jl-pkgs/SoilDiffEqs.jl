@@ -36,8 +36,8 @@ end
 
 
 @testset "ModSim_SM" begin
-  @test test_ModSim(; method_retention="Campbell", same_layer=true) >= 0.32
-  @test test_ModSim(; method_retention="van_Genuchten", same_layer=true) >= 0.10
+  @test test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.32
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.10
 
   # @test test_ModSim(; method_retention="Campbell", same_layer=false, maxn=2000) >= 0.60
   # @test test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000) >= 0.65
