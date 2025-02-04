@@ -54,7 +54,7 @@ function goal(theta; ibeg=1)
   map(i -> begin
       obs = yobs[:, i]
       sim = ysim[:, i]
-      ∑ += - GOF(obs, sim).NSE
+      ∑ += - GOF(obs, sim).KGE
   end, ibeg:ncol)
   ∑ / n # mean of NSE
 end

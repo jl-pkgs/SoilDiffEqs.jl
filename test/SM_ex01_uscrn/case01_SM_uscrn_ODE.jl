@@ -48,5 +48,5 @@ begin
 end
 
 plot_result(theta)
-# UpdateSoilParam!(soil, theta);
-# goal(theta; same_layer)
+SM_UpdateParam!(soil, theta);
+goal(theta; same_layer)

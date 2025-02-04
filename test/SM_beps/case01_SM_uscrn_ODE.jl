@@ -58,8 +58,7 @@ begin
   @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
 end
 
-ysim = model_sim(theta0;)
+SM_UpdateParam!(soil, theta)
+ysim = model_sim(theta;)
 plot_result(ysim)
-# UpdateSoilParam!(soil, theta);
-# soil
 # goal(theta; same_layer)
