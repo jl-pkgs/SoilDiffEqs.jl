@@ -25,7 +25,7 @@ function plot_result(theta)
   plot([plot_sim(i; ysim) for i in 1:nlys]..., size=(1400, 800))
 end
 
-plot_result(theta)
+# plot_result(theta)
 ## 部分土壤层，观测存在错误
 
 # begin
