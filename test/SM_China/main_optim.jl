@@ -51,10 +51,11 @@ function goal(theta; ibeg=1)
   ncol = size(yobs, 2)
   n = ncol - ibeg + 1
   ∑ = 0.0
-  map(i -> begin
-      obs = yobs[:, i]
-      sim = ysim[:, i]
-      ∑ += - GOF(obs, sim).KGE
-  end, ibeg:ncol)
+
+  for i in ibeg:ncol
+    obs = @view yobs[:, i]
+    sim = @view ysim[:, i]
+    ∑ += -GOF(obs, sim).KGE
+  end
   ∑ / n # mean of NSE
 end

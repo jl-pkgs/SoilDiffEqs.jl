@@ -36,7 +36,8 @@ function van_Genuchten(ψ::T, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) 
   θ = θ_res + (θ_sat - θ_res) * Se
 
   # Hydraulic conductivity (K) for specified matric potential (ψ)
-  K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
+  diff = (1.0 - Se^(1 / m))
+  K = Se < 1 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
 
   # Specific moisture capacity (∂θ∂ψ) for specified matric potential (ψ)
   if ψ <= 0.0

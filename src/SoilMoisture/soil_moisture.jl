@@ -1,9 +1,10 @@
 # soil_moisture!(soil, sink, ψ0, param)
-function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:AbstractVector{T}}
+function soil_moisture!(soil::Soil, sink::V, ψ0::T;
+  debug::Bool=true) where {T<:Real,V<:AbstractVector{T}}
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
-    θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev, 
+    θ, Cap, K, ψ_next, K₊ₕ, θ_prev, ψ_prev,
     a, b, c, d, e, f) = soil
   Δz = soil.Δz_cm
   Δz₊ₕ = soil.Δz₊ₕ_cm
@@ -99,5 +100,6 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;) where {T<:Real,V<:Abstract
   end
 
   err = dθ - (QN - Q0) * dt
-  Q0, QN, dθ, err
+  debug && return Q0, QN, dθ, err
+  return nothing
 end

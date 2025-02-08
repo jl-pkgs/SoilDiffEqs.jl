@@ -97,8 +97,12 @@ function solve_SM_Bonan(soil::Soil{FT}, θ_surf::AbstractVector{FT}) where {FT<:
 
   for i = 2:ntime
     ψ0 = Init_ψ0(soil, θ_surf[i])
-    soil_moisture!(soil, sink, ψ0)
-    R[i, :] .= soil.θ[ibeg:end]
+    soil_moisture!(soil, sink, ψ0; debug=false)
+    
+    @inbounds for j in ibeg:N # copy θ
+      j2 = j - ibeg + 1
+      R[i, j2] = soil.θ[j]
+    end
   end
 
   inds = @. inds_obs - ibeg + 1

@@ -28,10 +28,12 @@ ysim = model_sim(theta0;)
 goal(theta0; ibeg=1)
 plot_result(theta0)
 
-begin
+
+## 测试与提速
+@profview_allocs begin
   # plot_result(theta0)
   f(theta) = goal(theta; ibeg=1)
-  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
+  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(1e3))
 end
 
 f_theta = "$(@__DIR__)/theta"
