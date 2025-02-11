@@ -68,7 +68,7 @@ end
   ψ0::FT = FT(0.0)                   # [cm]
   Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
   sink::Vector{FT} = fill(0.0, N)    # 蒸发项, [cm per unit time]
-  θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ
+  θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ  
   ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
 
   # 地下水

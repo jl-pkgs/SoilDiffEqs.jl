@@ -131,8 +131,8 @@ function runoff_xinanjiang(N::Int, dz_soisno::Vector{T},
     wsat_int = sum(eff_porosity[1:n_layer] .* dz_soisno[1:n_layer])
 
     # 计算中间变量 wtmp，并由此得到入渗量 infil
-    wtmp = (T(1) - w_int / wsat_int)^(T(1) / (btopo + T(1))) - watin / ((btopo + T(1)) * wsat_int)
-    infil = wsat_int - w_int - wsat_int * (max(0.0, wtmp))^(btopo + T(1))
+    wtmp = (1.0 - w_int / wsat_int)^(1.0 / (btopo + 1.0)) - watin / ((btopo + 1.0) * wsat_int)
+    infil = wsat_int - w_int - wsat_int * (max(0.0, wtmp))^(btopo + 1.0)
     infil = min(infil, watin)
 
     # 剩余水量作为地表径流 rsur（转换回 mm H₂O/s）
@@ -175,13 +175,13 @@ function runoff_simplevic(N::Int, dz_soisno::Vector{T},
     wsat_int = sum(eff_porosity[1:n_layer] .* dz_soisno[1:n_layer])
 
     # 计算土壤饱和分数（SoilSaturateFrac）
-    InfilExpFac = BVIC / (T(1) + BVIC)
-    SoilSaturateFrac = T(1) - (max(0.0, T(1) - (w_int / wsat_int)))^InfilExpFac
-    SoilSaturateFrac = max(0.0, min(T(1), SoilSaturateFrac))
+    InfilExpFac = BVIC / (1.0 + BVIC)
+    SoilSaturateFrac = 1.0 - (max(0.0, 1.0 - (w_int / wsat_int)))^InfilExpFac
+    SoilSaturateFrac = max(0.0, min(1.0, SoilSaturateFrac))
 
     # 计算最大水深和初始水深
-    WaterDepthMax = (T(1) + BVIC) * wsat_int
-    WaterDepthInit = WaterDepthMax * (T(1) - (T(1) - SoilSaturateFrac)^(T(1) / BVIC))
+    WaterDepthMax = (1.0 + BVIC) * wsat_int
+    WaterDepthInit = WaterDepthMax * (1.0 - (1.0 - SoilSaturateFrac)^(1.0 / BVIC))
 
     # 根据条件判断计算地表径流
     if WaterDepthMax <= 0.0
@@ -189,8 +189,8 @@ function runoff_simplevic(N::Int, dz_soisno::Vector{T},
     elseif (WaterDepthInit + watin) > WaterDepthMax
       Rs = watin - wsat_int + w_int
     else
-      InfilVarTmp = T(1) - ((WaterDepthInit + watin) / WaterDepthMax)
-      Rs = watin - wsat_int + w_int + wsat_int * (InfilVarTmp^(T(1) + BVIC))
+      InfilVarTmp = 1.0 - ((WaterDepthInit + watin) / WaterDepthMax)
+      Rs = watin - wsat_int + w_int + wsat_int * (InfilVarTmp^(1.0 + BVIC))
     end
 
     # 限制径流值在 [0, watin] 范围内
