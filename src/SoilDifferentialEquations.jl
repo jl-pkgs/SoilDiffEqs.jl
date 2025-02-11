@@ -34,7 +34,7 @@ include("SoilMoisture/soil_moisture_Q0.jl")
 include("SoilMoisture/soil_moisture_BEPS.jl")
 include("SoilMoisture/Solve_SM.jl")
 include("SoilMoisture/EquationRichards.jl")
-include("SoilMoisture/Equilibrium_θE.jl")
+include("SoilMoisture/Equilibrium.jl")
 
 include("SoilTemperature/soil_properties_thermal.jl")
 include("SoilTemperature/soil_temperature.jl")

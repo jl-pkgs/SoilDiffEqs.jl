@@ -8,7 +8,7 @@ function GW_UpdateRecharge!(soil::Soil{T}, wa, zwt, Δt, recharge) where {T<:Rea
   jwt = find_jwt(z₊ₕ, zwt) # 不受地下水影响的第一层
   ∑ = recharge * Δt / 1000 # [mm s-1] to [m]
 
-  wa = wa + ∑ * 1000 # [m]
+  wa = wa + ∑ * 1000 # [m] to [mm]
   uex = 0.0   # excess water to soil surface，多余的水产生地表径流
 
   # 这种排列，已经考虑了`jwt=N`的情况

@@ -7,24 +7,21 @@ function soil_moisture_zeng2009(soil::Soil{FT}) where {FT<:Real}
 
   # ! 核心参考部分
   # Calculate the equilibrium water content based on the water table depth
-  ψE = cal_θeψe!(θE, ψE, z, zwt, jwt; θ_sat, ψ_sat, bsw, ψmin)
+  ψE = cal_θeψe!(θE, ψE, z, zwt, jwt; θ_sat, ψ_sat, B, ψmin)
 
   # Hydraulic conductivity and soil matric potential and their derivatives
   sdamp = 0.0
   for j in 1:N
-    if origflag == 1
-      se = (θ[j] + θ[min(N, j + 1)]) / ((θ_sat[j] + θ_sat[min(N, j + 1)]))
-    else
-      se = (vwc_liq[j] + vwc_liq[min(N, j + 1)]) / ((θ_sat[j] + θ_sat[min(N, j + 1)]))
-    end
+    se = (θ[j] + θ[min(N, j + 1)]) / ((θ_sat[j] + θ_sat[min(N, j + 1)]))
     se = min(1.0, se)
 
+    s2 = Ksat[j] * se^(2.0 * B[j] + 2.0)
     # K₊ₕ[j] = imped[j] * se * s2
-    dKdθ[j] = imped[j] * (2.0 * bsw[j] + 3.0) * s2 * (1.0 / (θ_sat[j] + θ_sat[min(N, j + 1)]))
+    dKdθ[j] = (2.0 * B[j] + 3.0) * s2 * (1.0 / (θ_sat[j] + θ_sat[min(N, j + 1)]))
 
     _θ = origflag == 1 ? θ[j] : vwc_liq[j]
-    ψ[j] = cal_ψ(_θ[j], θ_sat[j], ψ_sat[j], bsw[j]; ψmin)
-    dψdθ[j] = -bsw[j] * ψ[j] / (_θ)
+    ψ[j] = cal_ψ(_θ[j], θ_sat[j], ψ_sat[j], B[j]; ψmin)
+    dψdθ[j] = -B[j] * ψ[j] / (_θ)
   end
 
   # Aquifer (11th) layer
@@ -101,8 +98,8 @@ function soil_moisture_zeng2009(soil::Soil{FT}) where {FT<:Real}
     se = clamp(se, 0.01, 1.0)
 
     # compute for aquifer layer
-    _ψ = cal_ψ(se, ψ_sat[i], bsw[i]; ψmin) # N+1层的ψ
-    dψdθ1 = -bsw[i] * _ψ / (se * θ_sat[i])
+    _ψ = cal_ψ(se, ψ_sat[i], B[i]; ψmin) # N+1层的ψ
+    dψdθ1 = -B[i] * _ψ / (se * θ_sat[i])
 
     # first set up bottom layer of soil column
     dz = (zmm[i] - zmm[i-1])
@@ -155,7 +152,7 @@ end
 
 #   se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
 #   # scs: this is the expression for unsaturated K
-#   _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
+#   _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * B[jwt+1] + 3.0)
 
 #   _ψ = max(ψmin, ψ[j0])
 #   wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
