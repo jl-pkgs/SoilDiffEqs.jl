@@ -10,13 +10,13 @@ using SoilDifferentialEquations.GlobalOptions
 # soil = init_soil()
 function init_soil(; θ0, dt=3600.0, soil_type=7)
   Δz = [5.0; repeat([10], 10)] ./ 100 # 厚度
-  z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
 
   (; method_retention, same_layer, ibeg) = options
   # dz = [2.5, 5, 5, 15, 45, 55]
   # z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100 # 第一层是虚拟的
   # Δz = cal_Δz(z)
-  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
   N = length(Δz)
 
   θ = fill(0.2, N)

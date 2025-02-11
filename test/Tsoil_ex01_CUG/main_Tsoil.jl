@@ -5,7 +5,7 @@ gr(framestyle=:box)
 # options = Optim.Options(show_trace=true)
 
 Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
-z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 # _z = [4, 12, 14, 16, 20, 24, 28, 32, 36, 42, 50, 52] * 25.4/1000 # inch to mm
 
 function plot_soil(i; ibeg=1)
@@ -20,7 +20,7 @@ function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1, ibeg=2)
   # Δz = fill(0.025, N)
   # Δz = [2.5, 5, 5, 5, 5, 35, 45, 115, 205] ./ 100
   N = length(Δz)
-  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   m_sat = θ_S[soil_type] * ρ_wat * Δz # kg/m2
   m_ice = 0 * m_sat

@@ -9,7 +9,7 @@ function data_loader_soil()
   param_water = ParamVanGenuchten(; _param...)
 
   Δz = fill(0.01, N)
-  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
   ψ = van_Genuchten_ψ.(θ; param=param_water)
@@ -67,7 +67,7 @@ end
 
 # N = 150
 # dz = ones(N)
-# z, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
+# z, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
 @time solution = solve_ode()
 @time θ = solve_bonan()
 

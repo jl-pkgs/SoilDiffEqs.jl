@@ -108,7 +108,7 @@ end
 
 function Soil(Δz::Vector{FT}; kw...) where {FT}
   N = length(Δz)
-  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, kw...)
   # update K and ψ
   cal_K!(soil)
@@ -217,7 +217,7 @@ end
 Soil depth initialization
 
 ```julia
-z, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
+z, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
 ```
 """
 function soil_depth_init(Δz::AbstractVector)
@@ -227,6 +227,7 @@ function soil_depth_init(Δz::AbstractVector)
 
   z = zeros(N)
   z₊ₕ = zeros(N)
+  z₋ₕ = zeros(N)
   dz₊ₕ = zeros(N)
 
   z₊ₕ[1] = -Δz[1]
@@ -246,7 +247,11 @@ function soil_depth_init(Δz::AbstractVector)
   end
   dz₊ₕ[N] = 0.5 * Δz[N]
 
-  (; z, z₊ₕ, dz₊ₕ)
+  ## 
+  z₋ₕ[1] = 0
+  z₋ₕ[2:end] = z₊ₕ[1:end-1]
+
+  (; z, z₋ₕ, z₊ₕ, dz₊ₕ)
 end
 
 
@@ -294,6 +299,6 @@ end
 export cal_Δz
 
 # Δz = [2, 4, 6, 10]
-# z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+# z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 # cal_Δz(z₊ₕ) == Δz
 # cal_Δz₊ₕ(z, z₊ₕ) == Δz₊ₕ

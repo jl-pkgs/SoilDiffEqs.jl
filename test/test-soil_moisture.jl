@@ -8,7 +8,7 @@ function data_loader_soil()
   param_water = ParamVanGenuchten(; _param...)
 
   Δz = fill(0.01, N)
-  z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
   ψ = van_Genuchten_ψ.(θ; param=param_water)
@@ -85,7 +85,7 @@ end
 #   using Plots
 #   N = 150
 #   Δz = fill(0.01, N)
-#   z, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+#   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
 #   gr(framestyle=:box)
 #   plot(θ, z; label="Bonan", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
