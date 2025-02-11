@@ -247,7 +247,7 @@ function soil_depth_init(Δz::AbstractVector)
   end
   dz₊ₕ[N] = 0.5 * Δz[N]
 
-  ## 
+  ## z₋ₕ
   z₋ₕ[1] = 0
   z₋ₕ[2:end] = z₊ₕ[1:end-1]
 
