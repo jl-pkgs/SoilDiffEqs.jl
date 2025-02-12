@@ -10,6 +10,7 @@ HydroTools = "179359cd-bac3-4aa1-bccd-287172463ab0"
 HypergeometricFunctions = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [weakdeps]
@@ -28,6 +29,7 @@ HydroTools = "0.1.7"
 HypergeometricFunctions = "0.3.27"
 Parameters = "0.12.3"
 Printf = "1.11.0"
+Reexport = "1.2.2"
 UnPack = "1.0.2"
 
 [extras]

@@ -123,16 +123,16 @@ function get_soilpar(soil_type::Int=1)
   soilparam = [
     # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹)
     0.38 0.068 0.008 1.09 0.2;   #  1,  Clay
-    0.36 0.070 0.005 1.09 0.02;  #  2,  Silty  clay
-    0.38 0.100 0.027 1.23 0.12;  #  3,  Sandy  clay
-    0.41 0.095 0.019 1.31 0.26;  #  4,  Clay   loam
-    0.43 0.089 0.010 1.23 0.07;  #  5,  Silty  clay loam
-    0.39 0.100 0.059 1.48 1.31;  #  6,  Sandy  clay loam
+    0.36 0.070 0.005 1.09 0.02;  #  2,  Silty clay
+    0.38 0.100 0.027 1.23 0.12;  #  3,  Sandy clay
+    0.41 0.095 0.019 1.31 0.26;  #  4,  Clay  loam
+    0.43 0.089 0.010 1.23 0.07;  #  5,  Silty clay loam
+    0.39 0.100 0.059 1.48 1.31;  #  6,  Sandy clay loam
     0.43 0.078 0.036 1.56 1.04;  #  7,  Loam
-    0.45 0.067 0.020 1.41 0.45;  #  8,  Silty  loam
-    0.41 0.065 0.075 1.89 4.42;  #  9,  Sandy  loam
-    0.41 0.065 0.075 1.89 4.42;  #  10, Silty, no   data in Bonan2019
-    0.41 0.057 0.124 2.28 14.59; #  11, Loamy  sand
+    0.45 0.067 0.020 1.41 0.45;  #  8,  Silty loam
+    0.41 0.065 0.075 1.89 4.42;  #  9,  Sandy loam
+    0.45 0.067 0.020 1.41 0.45;  #  10, Silty, nodata, used Sandy loam
+    0.41 0.057 0.124 2.28 14.59; #  11, Loamy sand
     0.43 0.045 0.145 2.68 29.7   #  12, Sand
   ]
   θ_sat, θ_res, α, n, Ksat = soilparam[soil_type, :]

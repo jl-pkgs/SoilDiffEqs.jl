@@ -3,7 +3,14 @@ module SoilDifferentialEquations
 # using OrdinaryDiffEq
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Parameters
+using Reexport
 # using DiffEqBase
+
+include("GlobalOptions.jl")
+@reexport using .GlobalOptions
+
+include("soil_texture.jl")
+@reexport import .USDA
 
 const ρ_wat = 1000.0                       # Density of water, [kg/m3]
 const ρ_ice = 917.0                        # Density of ice, [kg/m3]
@@ -23,8 +30,6 @@ include("tridiagonal_solver.jl")
 
 include("Soil.jl")
 # include("Soil_depth.jl")
-include("soil_texture.jl")
-
 
 include("SoilMoisture/ψ_van_Genuchten.jl")
 include("SoilMoisture/ψ_Campbell.jl")
@@ -43,8 +48,6 @@ include("SoilTemperature/EquationTsoil.jl")
 include("SoilTemperature/Solve_Tsoil.jl")
 
 include("GroundWater/GroundWater.jl")
-
-include("GlobalOptions.jl")
 
 export solve_Tsoil_Bonan
 

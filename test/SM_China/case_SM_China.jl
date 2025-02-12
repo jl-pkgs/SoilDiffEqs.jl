@@ -1,11 +1,8 @@
 using SoilDifferentialEquations
 using SoilDifferentialEquations.GlobalOptions
 
-GlobalOptions.options = Options()
-options = GlobalOptions.options
-options.method_retention = "van_Genuchten"
+set_option!(; method_retention="van_Genuchten", ibeg=2, same_layer=true)
 options
-
 
 include("main_optim.jl")
 include("main_plot.jl")

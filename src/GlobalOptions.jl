@@ -21,6 +21,7 @@ function set_option!(; kw...)
     # setindex!(options, value, key)
     # options[key] = value
   end
+  options
 end
 
 # 函数用于获取选项
@@ -28,5 +29,6 @@ function get_option(key)
   return options[key]
 end
 
-export Options, set_option!, get_option
+export Options, options, set_option!, get_option
+
 end

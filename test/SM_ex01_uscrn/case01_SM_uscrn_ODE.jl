@@ -16,11 +16,8 @@ begin
   df.time = DateTime.(df.time, "yyyy-mm-ddTHH:MM:SSZ")
 end
 
-
-GlobalOptions.options = Options()
-options = GlobalOptions.options
-options.method_retention = "van_Genuchten"
-
+set_option!(; method_retention="van_Genuchten", ibeg=2, same_layer=true)
+options
 
 begin
   i = 3
