@@ -6,14 +6,14 @@ export Soil
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
   dt::Float64 = 3600                 # 时间步长, seconds
-  z::Vector{FT} = zeros(FT, N)       # m, 向下为负
+  z::OffsetVector{FT} = zeros(FT, N + 1)   # m, 向下为负
+  Δz₊ₕ::OffsetVector{FT} = zeros(FT, N + 1)
   z₊ₕ::Vector{FT} = zeros(FT, N)
   Δz::Vector{FT} = zeros(FT, N)
-  Δz₊ₕ::Vector{FT} = zeros(FT, N)
 
-  z_cm::Vector{FT} = z * 100         # cm, 向下为负
+  z_cm::OffsetVector{FT} = z * 100         # cm, 向下为负
+  Δz₊ₕ_cm::OffsetVector{FT} = Δz₊ₕ * 100
   Δz_cm::Vector{FT} = Δz * 100
-  Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
 
   # 水分
   θ::Vector{FT} = fill(0.1, N)       # θ [m3 m-3]
@@ -112,6 +112,8 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   return nothing
 end
 
+using OffsetArrays
+
 """
     soil_depth_init(Δz::AbstractVector)
     
@@ -125,11 +127,10 @@ function soil_depth_init(Δz::AbstractVector)
   # Soil depth (m) at i+1/2 interface between layers i and i+1 (negative distance from surface)
   # z_{i+1/2}
   N = length(Δz)
-
-  z = zeros(N)
+  z = OffsetArray(zeros(N + 1), 0:N)
+  dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
   z₊ₕ = zeros(N)
   z₋ₕ = zeros(N)
-  dz₊ₕ = zeros(N)
 
   z₊ₕ[1] = -Δz[1]
   for i = 2:N
@@ -143,6 +144,7 @@ function soil_depth_init(Δz::AbstractVector)
   end
 
   # Thickness between between z(i) and z(i+1)
+  dz₊ₕ[0] = 0.5 * Δz[1]
   for i = 1:N-1
     dz₊ₕ[i] = z[i] - z[i+1]
   end
@@ -151,7 +153,6 @@ function soil_depth_init(Δz::AbstractVector)
   ## z₋ₕ
   z₋ₕ[1] = 0
   z₋ₕ[2:end] = z₊ₕ[1:end-1]
-
   (; z, z₋ₕ, z₊ₕ, dz₊ₕ)
 end
 

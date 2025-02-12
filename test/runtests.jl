@@ -4,8 +4,8 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
 @testset "soil_depth" begin
   z = -[1.25, 5, 10, 20, 50, 100.0]
   dz = cal_Δz(z)
-  z2, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
-  @test z == z2
+  z2, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
+  @test z2[1:6] == z
 end
 
 include("test-θE.jl")
@@ -17,7 +17,7 @@ include("test-soil_temperature_F0.jl")
 include("test-soil_moisture.jl")
 include("test-soil_moisture_Q0.jl")
 
-include("test-solve_SM.jl")
 include("test-solve_Tsoil.jl")
+include("test-solve_SM.jl")
 
 include("SM_ex01_uscrn/test-SM.jl")

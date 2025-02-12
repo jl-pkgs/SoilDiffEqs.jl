@@ -6,7 +6,6 @@ using SoilDifferentialEquations, Test
 function cal_θE(z₋ₕ, z₊ₕ, zwt, param; fun=cal_θE_campbell)
   N = length(z₋ₕ)
   θE = zeros(N)
-
   for i = 1:N
     z1 = z₊ₕ[i]
     z0 = z₋ₕ[i]

@@ -3,8 +3,9 @@
 
 - `ibeg`: 第一层土壤温度观测具有较大的误差，因此不使用第一层土壤温度
 """
-function soil_HeatFlux!(F::V, T::V, κ::V, z::V, z₊ₕ::V;
-  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf", ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT}}
+function soil_HeatFlux!(F::V, T::V, κ::V, z::OV, z₊ₕ::V;
+  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf", 
+  ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT},OV<:AbstractVector{FT}}
 
   N = length(T)
   if method == "Tsurf"

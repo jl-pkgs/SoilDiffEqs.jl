@@ -6,6 +6,7 @@ using Parameters
 using Reexport
 # using DiffEqBase
 using Printf
+using OffsetArrays
 
 include("GlobalOptions.jl")
 @reexport using .GlobalOptions

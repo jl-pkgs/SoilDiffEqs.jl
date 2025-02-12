@@ -1,19 +1,24 @@
 # 中间变量
-dKdθ
-dψdθ
-dqidθ0
-dqidθ1
-dqodθ1 
-dqodθ2 # ∂q0/∂θ2
-dzmm
 
 # ! 注意
 # - CoLM中，z向下为正
 function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ0, dqidθ1, dqodθ1, dqodθ2, dzmm) where {FT<:Real}
-  dtime = get_step_size()
-  jwt = find_jwt(zi, zwt)
+  (; N, dt, zwt, 
+    z₊ₕ, z_cm, Δz_cm, Δz₊ₕ_cm) = soil
+  
+  dKdθ = zeros(FT, N)
+  dψdθ = zeros(FT, N)
+  dqidθ0 = zeros(FT, N)
+  dqidθ1 = zeros(FT, N)
+  dqodθ1 = zeros(FT, N)
+  dqodθ2 = zeros(FT, N)
+  
+  # z_cm::Vector{FT} = z * 100         # cm, 向下为负
+  # Δz_cm::Vector{FT} = Δz * 100
+  # Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
+  jwt = find_jwt(z₊ₕ, zwt)
 
-  # ! 核心参考部分
+  ## 首先计算均衡水势
   # Calculate the equilibrium water content based on the water table depth
   ψE = cal_θeψe!(θE, ψE, z, zwt, jwt; θ_sat, ψ_sat, B, ψmin)
 
@@ -29,14 +34,6 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
     dψdθ[j] = -B[j] * ψ[j] / (_θ)                                               # CLM5, Eq. 7.85
   end
 
-  # Aquifer (11th) layer
-  zmm[N+1] = 0.5 * (1e3 * zwt + zmm[N]) # 动态调整最后一层的深度，高明! 中间位置
-  if jwt < N
-    dzmm[N+1] = dzmm[N] # 这里需要核对，没用到，无所谓
-  else
-    dzmm[N+1] = (1e3 * zwt - zmm[N])
-  end
-
   sdamp = 0.0 # extrapolates θ dependence of evaporation
 
   # Set up r, a, b, and c vectors for tridiagonal solution
@@ -50,7 +47,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
 
   rmx[i] = qin[i] - qout[i] - ET[i]
   amx[i] = 0.0
-  bmx[i] = dzmm[i] * (sdamp + 1.0 / dtime) + dqodθ1[i] # ! -dzmm[i]
+  bmx[i] = dzmm[i] * (sdamp + 1.0 / dt) + dqodθ1[i] # ! -dzmm[i]
   cmx[i] = dqodθ2[i]
 
   # Nodes j=2 to j=N-1
@@ -68,9 +65,17 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = dzmm[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = dqodθ2[i]
     rmx[i] = qin[i] - qout[i] - ET[i]
+  end
+
+  # Aquifer (11th) layer
+  zmm[N+1] = 0.5 * (1e3 * zwt + zmm[N]) # 动态调整最后一层的深度，高明! 中间位置
+  if jwt < N
+    dzmm[N+1] = dzmm[N] # 这里需要核对，没用到，无所谓
+  else
+    dzmm[N+1] = (1e3 * zwt - zmm[N])
   end
 
   # Node j=N (bottom)
@@ -85,13 +90,13 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
     dqodθ1[i] = 0.0
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = dzmm[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = 0.0
     rmx[i] = qin[i] - qout[i] - ET[i]
 
     # next set up aquifer layer; hydrologically inactive
     amx[i+1] = 0.0
-    bmx[i+1] = dzmm[i+1] / dtime
+    bmx[i+1] = dzmm[i+1] / dt
     cmx[i+1] = 0.0
     rmx[i+1] = 0.0
   else  # water table is below soil column
@@ -118,7 +123,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = dzmm[i] / dtime - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = dzmm[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = dqodθ2[i]
     rmx[i] = qin[i] - qout[i] - ET[i]
 
@@ -131,7 +136,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
     dqodθ1[i+1] = 0.0  # zero-flow bottom boundary condition
 
     amx[i+1] = -dqidθ0[i+1]
-    bmx[i+1] = dzmm[i+1] / dtime - dqidθ1[i+1] + dqodθ1[i+1]
+    bmx[i+1] = dzmm[i+1] / dt - dqidθ1[i+1] + dqodθ1[i+1]
     cmx[i+1] = 0.0
     rmx[i+1] = qin[i+1] - qout[i+1]
   end
