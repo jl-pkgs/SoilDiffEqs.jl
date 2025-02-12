@@ -3,7 +3,7 @@ const SHR_CONST_TKFRZ = 273.15
 const SHR_CONST_LATICE = 3.337e5
 const SHR_CONST_G = 9.80665
 
-
+## 采用更加智能的方式传递参数
 function cal_ψ(θ::T, θ_sat::T, ψ_sat::T, B::T; ψmin::T) where {T<:Real}
   se = max(θ / θ_sat, 0.01, 1.0)
   ψ = -ψ_sat * se^(-B)

@@ -7,6 +7,7 @@ using Reexport
 # using DiffEqBase
 using Printf
 using OffsetArrays
+using StructArrays
 
 include("GlobalOptions.jl")
 @reexport using .GlobalOptions

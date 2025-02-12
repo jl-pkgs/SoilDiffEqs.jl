@@ -49,7 +49,7 @@ export Soil
   ## Parameter: [水力] + [热力]参数
   param::SoilParam{FT} = SoilParam{FT}(; N)
   param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
-
+  
   # ODE求解临时变量
   u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量
   du::Vector{FT} = fill(NaN, N) # [°C]

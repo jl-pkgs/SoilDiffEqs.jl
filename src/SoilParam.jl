@@ -1,7 +1,6 @@
 export AbstractSoilParam, ParamVanGenuchten, ParamCampbell
 export SoilParam, get_soilpar
 
-
 abstract type AbstractSoilParam{FT} end
 
 @with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
@@ -89,13 +88,14 @@ end
 
 
 const TypeRetention = Union{Type{ParamVanGenuchten},Type{ParamCampbell}}
+
 function get_soilpar(soil_type::Int=1; type::TypeRetention=ParamVanGenuchten)
   get_soilpar(type, soil_type)
 end
 
-# function get_soilpar(theta::AbstractVector; type::{<:TypeRetention}=ParamVanGenuchten)
-#   get_soilpar(type, theta)
-# end
+function get_soilpar(theta::AbstractVector; type::TypeRetention=ParamVanGenuchten)
+  get_soilpar(type, theta)
+end
 
 # 参数优化过程中，可能需要优化的参数
 # 一个重要的经验教训，不要去优化`m`，NSE会下降0.2
@@ -105,23 +105,36 @@ end
   method::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
   use_m::Bool = false
   same_layer = false
-
+  
   θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
   Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1]
   α::Vector{FT} = fill(0.01, N)        # [m-1]
   n::Vector{FT} = fill(2.0, N)         # [-]
-  m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
+  m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数，不建议优化
 
   ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
   b::Vector{FT} = fill(4.0, N)         # [-]
-
+  
+  # soil moisture parameters
+  param::StructVector{<:AbstractSoilParam{FT}} = build_param(; method, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
   ## Parameter: 土壤热力
   κ::Vector{FT} = fill(2.0, N)         # thermal conductivity [W m-1 K-1]
   cv::Vector{FT} = fill(2.0 * 1e6, N)  # volumetric heat capacity [J m-3 K-1]
 end
 
+function build_param(; method::String="van_Genuchten",
+  θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
+  FT = eltype(θ_sat)
+  if method == "Campbell"
+    return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
+  elseif method == "van_Genuchten"
+    return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m)
+  end
+end
 
+# 使用`StructVector`参数的好处：
+# - 调用土壤水力函数时，可自动识别应调用的函数
 function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   (; use_m, same_layer) = param
   printstyled(io, "Parameters: \n", color=:blue, bold=true)
