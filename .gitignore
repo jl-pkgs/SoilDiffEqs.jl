@@ -11,3 +11,5 @@ examples
 data
 *.csv
 .vdoc.jl
+
+*debug*

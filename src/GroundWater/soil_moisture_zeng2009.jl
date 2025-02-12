@@ -9,7 +9,7 @@ dzmm
 
 # ! 注意
 # - CoLM中，z向下为正
-function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl) where {FT<:Real}
+function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ0, dqidθ1, dqodθ1, dqodθ2, dzmm) where {FT<:Real}
   dtime = get_step_size()
   jwt = find_jwt(zi, zwt)
 
@@ -143,39 +143,3 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl) where {FT<:Real}
     θ[j] += dθ[j] * dzmm[j]
   end
 end
-
-
-# # calculate qcharge for case jwt < N
-# if jwt < N
-#   j0 = min(1, jwt)
-#   j1 = jwt + 1
-
-#   wh_zwt = 0.0
-#   # Recharge rate qcharge to groundwater (positive to aquifer)
-
-#   se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
-#   # scs: this is the expression for unsaturated K
-#   _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * B[jwt+1] + 3.0)
-
-#   _ψ = max(ψmin, ψ[j0])
-#   wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
-
-#   if jwt == 0
-#     qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)
-#   else
-#     qcharge = -_K * (wh_zwt - wh) / ((zwt - z[jwt]) * 1000.0 * 2.0)
-#   end
-#   # To limit qcharge (for the first several timesteps)
-#   qcharge = max(qcharge, -10.0 / dtime, 10.0 / dtime)
-# else
-#   # if water table is below soil column, compute qcharge from dθ(11)
-#   qcharge = dθ[N+1] * dzmm[N+1] / dtime
-# end
-
-# # compute the water deficit and reset negative liquid water content
-# qflx_deficit = 0.0
-# for j in 1:N
-#   if θ_liq[j] < 0.0
-#     qflx_deficit -= θ_liq[j]
-#   end
-# end

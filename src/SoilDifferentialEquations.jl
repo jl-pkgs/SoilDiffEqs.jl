@@ -5,6 +5,7 @@ import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Parameters
 using Reexport
 # using DiffEqBase
+using Printf
 
 include("GlobalOptions.jl")
 @reexport using .GlobalOptions
@@ -28,6 +29,7 @@ pow(x, y) = x^y
 include("case_Bonan2019.jl")
 include("tridiagonal_solver.jl")
 
+include("SoilParam.jl")
 include("Soil.jl")
 # include("Soil_depth.jl")
 

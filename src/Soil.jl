@@ -1,45 +1,4 @@
-export SoilParam, Soil
-using Parameters
-using Printf
-
-export Soil, SoilParam, ParamVanGenuchten
-
-## 结构体形式的参数
-abstract type AbstractSoilParam{FT} end
-
-@with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
-  θ_sat::T = 0.287       # [m3 m-3]
-  θ_res::T = 0.075       # [m3 m-3]
-  Ksat::T = 34 / 3600    # [cm s-1]
-  α::T = 0.027
-  n::T = 3.96
-  m::T = 1.0 - 1.0 / n
-end
-
-# 参数优化过程中，可能需要优化的参数
-# 一个重要的经验教训，不要去优化`m`，NSE会下降0.2
-@with_kw mutable struct SoilParam{FT}
-  ## Parameter: 土壤水力
-  N::Int = 10
-  method::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
-  use_m::Bool = false
-  same_layer = false
-
-  θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
-  θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1]
-  α::Vector{FT} = fill(0.01, N)        # [m-1]
-  n::Vector{FT} = fill(2.0, N)         # [-]
-  m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数
-
-  ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
-  b::Vector{FT} = fill(4.0, N)         # [-]
-
-  ## Parameter: 土壤热力
-  κ::Vector{FT} = fill(2.0, N)         # thermal conductivity [W m-1 K-1]
-  cv::Vector{FT} = fill(2.0 * 1e6, N)  # volumetric heat capacity [J m-3 K-1]
-end
-
+export Soil
 
 @with_kw_noshow mutable struct Soil{FT}
   N::Int = 10                        # layers of soil
@@ -123,34 +82,6 @@ end
 # dt = 5 # [s]
 # sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
 
-function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
-  (; use_m, same_layer) = param
-  printstyled(io, "Parameters: \n", color=:blue, bold=true)
-  # println("[use_m = $use_m, same_layer = $same_layer]")
-
-  println(io, "-----------------------------")
-  print_var(io, param, :κ)
-  print_var(io, param, :cv; scale=1e6)
-  println(io, "-----------------------------")
-
-  method = param.method
-  subfix = same_layer ? " * 1" : " * N"
-  np = use_m ? 6 : 5
-  print_selected(io, "van_Genuchten ($(np)p$subfix)", method)
-  print_var(io, param, :θ_sat)
-  print_var(io, param, :θ_res)
-  print_var(io, param, :Ksat; scale=1e-3)
-  print_var(io, param, :α)
-  print_var(io, param, :n)
-  use_m && print_var(io, param, :m; used=use_m)
-  print_selected(io, "Campbell (4p$subfix)", method)
-  printstyled(io, " - θ_sat, Ksat \n", color=:blue)
-
-  print_var(io, param, :ψ_sat)
-  print_var(io, param, :b)
-  return nothing
-end
-
 
 function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   param = x.param
@@ -180,36 +111,6 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   show(io, param)
   return nothing
 end
-
-function print_selected(io::IO, name::String, method::String)
-  if name[1:5] == method[1:5]
-    printstyled(io, "   [$name]\n", bold=true, color=:green)
-  else
-    printstyled(io, "   [$name]\n", bold=true)
-  end
-end
-
-function print_var(io::IO, x, var; scale=nothing, digits=3, color=:blue, used=true)
-  value = getfield(x, var)
-  name = @sprintf("%-5s", string(var))
-  _color = used ? color : :white
-  printstyled(io, " - $name: "; color=_color)
-  if isnothing(scale)
-    println(io, round.(value; digits))
-  else
-    println(io, "$(round.(value/scale; digits)) * $scale")
-  end
-end
-
-function print_index(io::IO, inds; prefix="", color=:blue, underline=true)
-  if length(unique(diff(inds))) == 1
-    n = length(inds)
-    printstyled(io, "$prefix $(inds[1]):$(inds[end]) [n=$n] \n"; color, underline)
-  else
-    printstyled(io, "$prefix $inds \n"; color, underline)
-  end
-end
-
 
 """
     soil_depth_init(Δz::AbstractVector)
