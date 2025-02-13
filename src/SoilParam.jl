@@ -89,48 +89,111 @@ end
 
 const TypeRetention = Union{Type{ParamVanGenuchten},Type{ParamCampbell}}
 
-function get_soilpar(soil_type::Int=1; type::TypeRetention=ParamVanGenuchten)
-  get_soilpar(type, soil_type)
+function get_soilpar(soil_type::Int=1; method_retention::String="van_Genuchten")
+  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
+  method_retention == "Campbell" && (P = ParamCampbell)
+  get_soilpar(P, soil_type)
 end
 
-function get_soilpar(theta::AbstractVector; type::TypeRetention=ParamVanGenuchten)
-  get_soilpar(type, theta)
+function get_soilpar(theta::AbstractVector; method_retention::String="van_Genuchten")
+  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
+  method_retention == "Campbell" && (P = ParamCampbell)
+  get_soilpar(P, theta)
 end
 
 # 参数优化过程中，可能需要优化的参数
 # 一个重要的经验教训，不要去优化`m`，NSE会下降0.2
-@with_kw mutable struct SoilParam{FT}
+@with_kw mutable struct SoilParam{FT, P<:AbstractSoilParam{FT}}
   ## Parameter: 土壤水力
   N::Int = 10
-  method::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
+  method_retention::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
   use_m::Bool = false
   same_layer = false
 
-  θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
-  θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1]
-  α::Vector{FT} = fill(0.01, N)        # [m-1]
-  n::Vector{FT} = fill(2.0, N)         # [-]
-  m::Vector{FT} = fill(0.5, N)         # [-]，优化时的可选参数，不建议优化
+  θ_sat::Vector{FT} = fill(FT(0.4), N)     # saturated water content, [m3 m-3]
+  θ_res::Vector{FT} = fill(FT(0.1), N)     # residual water content, [m3 m-3]
+  Ksat::Vector{FT} = fill(FT(2.0 / 3600), N) # saturated hydraulic conductivity, [cm s-1]
+  α::Vector{FT} = fill(FT(0.01), N)        # [m-1]
+  n::Vector{FT} = fill(FT(2.0), N)         # [-]
+  m::Vector{FT} = fill(FT(0.5), N)         # [-]，优化时的可选参数，不建议优化
 
-  ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
-  b::Vector{FT} = fill(4.0, N)         # [-]
+  ψ_sat::Vector{FT} = fill(FT(-10.0), N)   # [cm]
+  b::Vector{FT} = fill(FT(4.0), N)         # [-]
 
   # soil moisture parameters
-  param::StructVector{<:AbstractSoilParam{FT}} = build_param(; method, use_m, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
+  param::StructVector{P} = build_param(; method_retention, use_m, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
   ## Parameter: 土壤热力
-  κ::Vector{FT} = fill(2.0, N)         # thermal conductivity [W m-1 K-1]
-  cv::Vector{FT} = fill(2.0 * 1e6, N)  # volumetric heat capacity [J m-3 K-1]
+  κ::Vector{FT} = fill(FT(2.0), N)         # thermal conductivity [W m-1 K-1]
+  cv::Vector{FT} = fill(FT(2.0 * 1e6), N)  # volumetric heat capacity [J m-3 K-1]
 end
 
-function build_param(; method::String="van_Genuchten", use_m::Bool=false,
+function SoilParam{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
+  if method_retention == "van_Genuchten"
+    P = ParamVanGenuchten{FT}
+  elseif method_retention == "Campbell"
+    P = ParamCampbell{FT}
+  end
+  return SoilParam{FT,P}(; method_retention, kw...)
+end
+
+function build_param(; method_retention::String="van_Genuchten", use_m::Bool=false,
   θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
   FT = eltype(θ_sat)
-  if method == "Campbell"
+  if method_retention == "Campbell"
     return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
-  elseif method == "van_Genuchten"
+  elseif method_retention == "van_Genuchten"
     _m = use_m ? m : FT(1) .- FT(1) ./ n
     return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m=_m)
+  end
+end
+
+
+function SoilParam(N::Int, par::ParamCampbell{T};
+  same_layer::Bool=true, kw...) where {T<:Real}
+  
+  (; θ_sat, ψ_sat, Ksat, b) = par
+  SoilParam{T,ParamCampbell{T}}(; N,
+    θ_sat=fill(θ_sat, N),
+    ψ_sat=fill(ψ_sat, N),
+    Ksat=fill(Ksat, N),
+    b=fill(b, N),
+    method_retention="Campbell", same_layer, kw...)
+end
+
+function SoilParam(N::Int, par::ParamVanGenuchten{T};
+  use_m::Bool=false, 
+  same_layer::Bool=true, kw...) where {T<:Real}
+  
+  (; θ_sat, θ_res, Ksat, α, n, m) = par
+  _m = use_m ? m : (1 - 1 / n)
+  SoilParam{T,ParamVanGenuchten{T}}(; N,
+    θ_sat=fill(θ_sat, N),
+    θ_res=fill(θ_res, N),
+    Ksat=fill(Ksat, N),
+    α=fill(α, N),
+    n=fill(n, N),
+    m=fill(_m, N),
+    method_retention="van_Genuchten", same_layer, use_m, kw...)
+end
+
+
+
+function Update_SoilParam_Param!(soilparam::SoilParam{T}) where {T<:Real}
+  (; method_retention, param, use_m) = soilparam
+  (; θ_sat, θ_res, Ksat, α, m, n, ψ_sat, b) = soilparam
+
+  if method_retention == "Campbell"
+    param.θ_sat .= θ_sat
+    param.Ksat .= Ksat
+    param.ψ_sat .= ψ_sat
+    param.b .= b
+  elseif method_retention == "van_Genuchten"
+    param.θ_sat .= θ_sat
+    param.θ_res .= θ_res
+    param.Ksat .= Ksat
+    param.α .= α
+    param.n .= n
+    param.m .= use_m ? m : (T(1) .- T(1) ./ n)
   end
 end
 
@@ -139,6 +202,8 @@ end
 function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   (; use_m, same_layer) = param
   printstyled(io, "Parameters: \n", color=:blue, bold=true)
+  println(typeof(param))
+  # println(P)
   # println("[use_m = $use_m, same_layer = $same_layer]")
 
   println(io, "-----------------------------")
@@ -146,17 +211,17 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   print_var(io, param, :cv; scale=1e6)
   println(io, "-----------------------------")
 
-  method = param.method
+  method_retention = param.method_retention
   subfix = same_layer ? " * 1" : " * N"
   np = use_m ? 6 : 5
-  print_selected(io, "van_Genuchten ($(np)p$subfix)", method)
+  print_selected(io, "van_Genuchten ($(np)p$subfix)", method_retention)
   print_var(io, param, :θ_sat)
   print_var(io, param, :θ_res)
   print_var(io, param, :Ksat; scale=1e-3)
   print_var(io, param, :α)
   print_var(io, param, :n)
   use_m && print_var(io, param, :m; used=use_m)
-  print_selected(io, "Campbell (4p$subfix)", method)
+  print_selected(io, "Campbell (4p$subfix)", method_retention)
   printstyled(io, " - θ_sat, Ksat \n", color=:blue)
 
   print_var(io, param, :ψ_sat)
@@ -165,8 +230,8 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
 end
 
 
-function print_selected(io::IO, name::String, method::String)
-  if name[1:5] == method[1:5]
+function print_selected(io::IO, name::String, method_retention::String)
+  if name[1:5] == method_retention[1:5]
     printstyled(io, "   [$name]\n", bold=true, color=:green)
   else
     printstyled(io, "   [$name]\n", bold=true)

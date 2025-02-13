@@ -29,7 +29,7 @@ Ksat = 3.4e-03
 θ, K, ∂θ∂ψ = Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 ```
 """
-@fastmath function Retention(ψ::T, par::ParamCampbell{T}) where {T<:Real}
+@fastmath function Retention_Campbell(ψ::T, par::ParamCampbell{T}) where {T<:Real}
   θ = Retention_θ(ψ, par)
   K = Retention_K(θ, par)
   ∂θ∂ψ = Retention_∂θ∂ψ(ψ, par)

@@ -19,10 +19,10 @@ function init_soil(; θ0, dt=3600.0, soil_type=7)
 
   θ = fill(0.2, N)
   θ[ibeg:end] .= θ0
-  param_water = get_soilpar(soil_type)
-  param = Init_SoilWaterParam(N, Vector(param_water)...;
-    use_m=false, method=method_retention, same_layer)
-  soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, param_water)
+  par = get_soilpar(soil_type)
+  param = Init_SoilWaterParam(N, Vector(par)...;
+    use_m=false, method_retention, same_layer)
+  soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param)
   soil.param.θ_sat .= 0.30
   soil.param.θ_res .= 0.03
   soil

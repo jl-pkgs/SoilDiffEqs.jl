@@ -1,6 +1,6 @@
 # soil_moisture!(soil, sink, ψ0, param)
-function soil_moisture!(soil::Soil, sink::V, ψ0::T;
-  debug::Bool=true) where {T<:Real,V<:AbstractVector{T}}
+function soil_moisture!(soil::Soil{T,P}, sink::V, ψ0::T;
+  debug::Bool=true) where {T<:Real, P<:AbstractSoilParam{T}, V<:AbstractVector{T}}
 
   (; N, dt, #Δz, Δz₊ₕ,
     ψ, ibeg,
@@ -18,23 +18,24 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   K0₊ₕ = K[ibeg]
   dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[ibeg-1]
   # dz0₊ₕ = 0.5 * Δz[1] # ? 
-
+  dt_half::T = 0.5 * dt
+  ∅ = T(0)
   @inbounds for i = ibeg:N
     if i == ibeg
-      a[i] = 0
+      a[i] = ∅
       c[i] = -K₊ₕ[i] / Δz₊ₕ[i]
-      b[i] = Cap[i] * Δz[i] / (0.5 * dt) + K0₊ₕ / dz0₊ₕ - c[i]
-      d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K0₊ₕ / dz0₊ₕ * ψ0 + K0₊ₕ - K₊ₕ[i]
+      b[i] = Cap[i] * Δz[i] / dt_half + K0₊ₕ / dz0₊ₕ - c[i]
+      d[i] = Cap[i] * Δz[i] / dt_half * ψ[i] + K0₊ₕ / dz0₊ₕ * ψ0 + K0₊ₕ - K₊ₕ[i]
     elseif i < N
       a[i] = -K₊ₕ[i-1] / Δz₊ₕ[i-1]
       c[i] = -K₊ₕ[i] / Δz₊ₕ[i]
-      b[i] = Cap[i] * Δz[i] / (0.5 * dt) - a[i] - c[i]
-      d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K₊ₕ[i-1] - K₊ₕ[i]
+      b[i] = Cap[i] * Δz[i] / dt_half - a[i] - c[i]
+      d[i] = Cap[i] * Δz[i] / dt_half * ψ[i] + K₊ₕ[i-1] - K₊ₕ[i]
     elseif i == N
       a[i] = -K₊ₕ[N-1] / Δz₊ₕ[N-1]
-      c[i] = 0
-      b[i] = Cap[i] * Δz[i] / (0.5 * dt) - a[i] - c[i]
-      d[i] = Cap[i] * Δz[i] / (0.5 * dt) * ψ[i] + K₊ₕ[N-1] - K[i]
+      c[i] = ∅
+      b[i] = Cap[i] * Δz[i] / dt_half - a[i] - c[i]
+      d[i] = Cap[i] * Δz[i] / dt_half * ψ[i] + K₊ₕ[N-1] - K[i]
     end
     d[i] -= sink[i]
   end
@@ -56,22 +57,22 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   # Terms for tridiagonal matrix
   @inbounds for i = ibeg:N
     if i == ibeg
-      a[i] = 0
-      c[i] = -K₊ₕ[i] / (2 * Δz₊ₕ[i])
+      a[i] = ∅
+      c[i] = -K₊ₕ[i] / (2Δz₊ₕ[i])
       b[i] = Cap[i] * Δz[i] / dt - c[i] + K0₊ₕ / (2 * dz0₊ₕ)
       d[i] = Cap[i] * Δz[i] / dt * ψ[i] +
              K0₊ₕ / (2 * dz0₊ₕ) * (2ψ0 - ψ[i]) +
              c[i] * (ψ[i] - ψ[i+1]) + K0₊ₕ - K₊ₕ[i]
     elseif i < N
-      a[i] = -K₊ₕ[i-1] / (2 * Δz₊ₕ[i-1])
-      c[i] = -K₊ₕ[i] / (2 * Δz₊ₕ[i])
+      a[i] = -K₊ₕ[i-1] / (2Δz₊ₕ[i-1])
+      c[i] = -K₊ₕ[i] / (2Δz₊ₕ[i])
       b[i] = Cap[i] * Δz[i] / dt - a[i] - c[i]
       d[i] = Cap[i] * Δz[i] / dt * ψ[i] - a[i] * (ψ[i-1] - ψ[i]) +
              c[i] * (ψ[i] - ψ[i+1]) + K₊ₕ[i-1] - K₊ₕ[i]
     else
       i == N
-      a[i] = -K₊ₕ[i-1] / (2 * Δz₊ₕ[i-1])
-      c[i] = 0
+      a[i] = -K₊ₕ[i-1] / (2Δz₊ₕ[i-1])
+      c[i] = ∅
       b[i] = Cap[i] * Δz[i] / dt - a[i] - c[i]
       d[i] = Cap[i] * Δz[i] / dt * ψ[i] - a[i] * (ψ[i-1] - ψ[i]) + K₊ₕ[i-1] - K[i]
     end

@@ -28,7 +28,7 @@ par = (soil_texture=2,
   Ksat = 0.0443 / 3600)
 ```
 """
-function Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+function Retention_VanGenuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, Ksat, α, n, m) = par
   # θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T
   # Effective saturation (Se) for specified matric potential (ψ)
@@ -36,12 +36,17 @@ function Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
 
   # Volumetric soil moisture (θ) for specified matric potential (ψ)
   θ = θ_res + (θ_sat - θ_res) * Se
-
   # Hydraulic conductivity (K) for specified matric potential (ψ)
   diff = (1.0 - Se^(1 / m))
   K = Se < 1 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
 
   # Specific moisture capacity (∂θ∂ψ) for specified matric potential (ψ)
+  ∂θ∂ψ = Retention_∂θ∂ψ(ψ, par)
+  θ, K, ∂θ∂ψ
+end
+
+@inline @fastmath function Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
   if ψ <= 0.0
     num = α * m * n * (θ_sat - θ_res) * (α * abs(ψ))^(n - 1)
     den = (1 + (α * abs(ψ))^n)^(m + 1)
@@ -49,7 +54,6 @@ function Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   else
     ∂θ∂ψ = 0.0
   end
-  θ, K, ∂θ∂ψ
 end
 
 function Retention_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
@@ -64,7 +68,8 @@ function Retention_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, Ksat, m) = par
   Se = (θ - θ_res) / (θ_sat - θ_res)
   Se = clamp(Se, 0.0, 1.0)
-  K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
+  diff = (1.0 - Se^(1 / m))
+  K = Se < 1 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
   return K
 end
 

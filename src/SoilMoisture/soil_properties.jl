@@ -7,10 +7,10 @@ Sy = θ_sat - θ(ψ_sat + zwt)
 """
 function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
   (; N, Sy) = soil
-  (; θ_sat, ψ_sat, method) = soil.param
-  (; param) = soil.param
+  (; θ_sat, ψ_sat, method_retention) = soil.param
+  param = soil.param.param
 
-  iszero_ψ = method == "van_Genuchten"
+  iszero_ψ = method_retention == "van_Genuchten"
   for i = 1:N
     _ψ_sat = iszero_ψ ? T(0) : ψ_sat[i]
     Sy[i] = θ_sat[i] - Retention_θ(_ψ_sat + zwt, param[i])
@@ -19,29 +19,41 @@ function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
 end
 
 
-function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
+function cal_θKCap!(soil::Soil{T,P}, param::StructVector{P}, 
+  ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
   (; ibeg, N, θ, K, Cap) = soil
-  (; param) = soil.param
+  
   @inbounds for i in ibeg:N
-    θ[i], K[i], Cap[i] = Retention(ψ[i], param[i])
+    par = param[i]
+    θ[i] = Retention_θ(ψ[i], par)
+    K[i] = Retention_K(θ[i], par)
+    Cap[i] = Retention_∂θ∂ψ(ψ[i], par)
   end
 end
 
+## Julia无法推测soil.param.param的类型
+function cal_θKCap!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
+  cal_θKCap!(soil, soil.param.param, ψ)
+end
 
-function cal_K₊ₕ!(soil::Soil)
-  (; N, ibeg, z, z₊ₕ, K, K₊ₕ) = soil
+@inline function K_interface(K1::T, K2::T, d1::T, d2::T)::T where {T<:Real}
+  # K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
+  return K1 * K2 * (d1 + d2) / (K1 * d2 + K2 * d1) # harmonic mean, # Eq. 5.16
+end
+
+function cal_K₊ₕ!(soil::Soil{T}) where {T<:Real}
+  (; N, ibeg, Δz, K) = soil
+  K₊ₕ::Vector{T} = soil.K₊ₕ
   @inbounds for i = ibeg:N-1
-    d1 = z[i] - z₊ₕ[i]
-    d2 = z₊ₕ[i] - z[i+1]
-    K₊ₕ[i] = K[i] * K[i+1] * (d1 + d2) / (K[i] * d2 + K[i+1] * d1) # Eq. 5.16, 
-    # K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
+    K₊ₕ[i] = K_interface(K[i], K[i+1], Δz[i], Δz[i+1])
   end
 end
 
 cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
-function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
+# cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real} = cal_K!(soil, soil.param.param, θ)
+function cal_K!(soil::Soil{T,P}, θ::AbstractVector{T}) where {T<:Real, P<:AbstractSoilParam{T}}
   (; N, ibeg, K) = soil
-  (; param) = soil.param
+  param = soil.param.param
   @inbounds for i = ibeg:N
     K[i] = Retention_K(θ[i], param[i])
   end
@@ -49,9 +61,10 @@ end
 
 
 cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
+
 function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, ψ) = soil
-  (; param) = soil.param
+  param = soil.param.param
   @inbounds for i = ibeg:N
     ψ[i] = Retention_ψ(θ[i], param[i])
   end
@@ -60,20 +73,10 @@ end
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
   i = soil.ibeg # 默认采用第一层进行初始化
-  (; param) = soil.param
+  param = soil.param.param
   return Retention_ψ(θ, param[i]) # ψ0
 end
 
-function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T; use_m::Bool=false, same_layer=true, kw...) where {T<:Real}
-  SoilParam(; N,
-    θ_sat=fill(θ_sat, N),
-    θ_res=fill(θ_res, N),
-    Ksat=fill(Ksat, N),
-    α=fill(α, N),
-    n=fill(n, N),
-    m=fill(m, N),
-    use_m, same_layer, kw...)
-end
 
 
 export specific_yield!

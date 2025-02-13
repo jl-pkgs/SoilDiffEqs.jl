@@ -5,20 +5,20 @@ function data_loader_soil()
   N = 150
   _param = (θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   soilparam = Init_SoilWaterParam(N, _param...; use_m=true)
-  param_water = ParamVanGenuchten(; _param...)
+  par = ParamVanGenuchten(; _param...)
 
   Δz = fill(0.01, N)
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
-  ψ = Retention_ψ.(θ; par=param_water)
+  ψ = Retention_ψ.(θ; par=par)
   θ0 = 0.267
-  ψ0 = Retention_ψ(θ0; par=param_water)
+  ψ0 = Retention_ψ(θ0; par=par)
 
   dt = 5 # [s]
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, 
-    param=soilparam, param_water)
+    param=soilparam)
   return soil
 end
 

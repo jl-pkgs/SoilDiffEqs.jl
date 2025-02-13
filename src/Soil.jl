@@ -1,18 +1,18 @@
 export Soil
 
-@with_kw_noshow mutable struct Soil{FT}
+@with_kw_noshow mutable struct Soil{FT,P<:AbstractSoilParam{FT}}
   N::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
   dt::Float64 = 3600                 # 时间步长, seconds
   z::OffsetVector{FT} = zeros(FT, N + 1)   # m, 向下为负
-  Δz₊ₕ::OffsetVector{FT} = zeros(FT, N + 1)
+  Δz₊ₕ::Vector{FT} = zeros(FT, N)
   z₊ₕ::Vector{FT} = zeros(FT, N)
   Δz::Vector{FT} = zeros(FT, N)
 
   z_cm::OffsetVector{FT} = z * 100         # cm, 向下为负
-  Δz₊ₕ_cm::OffsetVector{FT} = Δz₊ₕ * 100
+  Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
   Δz_cm::Vector{FT} = Δz * 100
 
   # 水分
@@ -47,9 +47,9 @@ export Soil
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
 
   ## Parameter: [水力] + [热力]参数
-  param::SoilParam{FT} = SoilParam{FT}(; N)
-  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
-  
+  method_retention::String = "van_Genuchten"  # "van_Genuchten" or "Campbell"
+  param::SoilParam{FT,P} = SoilParam{FT,P}(; N, method_retention)
+
   # ODE求解临时变量
   u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量
   du::Vector{FT} = fill(NaN, N) # [°C]
@@ -63,6 +63,15 @@ export Soil
   f::Vector{FT} = zeros(FT, N)
 
   timestep::Int = 0                  # 迭代次数
+end
+
+function Soil{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
+  if method_retention == "van_Genuchten"
+    P = ParamVanGenuchten{FT}
+  elseif method_retention == "Campbell"
+    P = ParamCampbell{FT}
+  end
+  Soil{FT,P}(; method_retention, kw...)
 end
 
 function Soil(Δz::Vector{FT}; kw...) where {FT}
@@ -106,8 +115,6 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :zwt)
   print_var(io, x, :wa)
 
-  # printstyled(io, "param_water: ", color=:blue, bold=true)
-  # show(io, x.param_water)
   show(io, param)
   return nothing
 end
@@ -128,7 +135,8 @@ function soil_depth_init(Δz::AbstractVector)
   # z_{i+1/2}
   N = length(Δz)
   z = OffsetArray(zeros(N + 1), 0:N)
-  dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
+  # dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
+  dz₊ₕ = zeros(N)
   z₊ₕ = zeros(N)
   z₋ₕ = zeros(N)
 
@@ -144,7 +152,7 @@ function soil_depth_init(Δz::AbstractVector)
   end
 
   # Thickness between between z(i) and z(i+1)
-  dz₊ₕ[0] = 0.5 * Δz[1]
+  # dz₊ₕ[0] = 0.5 * Δz[1]
   for i = 1:N-1
     dz₊ₕ[i] = z[i] - z[i+1]
   end
