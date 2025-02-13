@@ -1,14 +1,7 @@
 using SoilDifferentialEquations
-
-# solver = Tsit5()
-# solver = Rosenbrock23()
-# solver = Rodas5(autodiff=false)
 z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100# 第一层是虚拟的
 
-## TODO: 要想一种重复利用数据的方法
-# used a global variable: `options`
-# soil = init_soil()
-function init_soil(; θ0, dt=3600.0, soil_type=7, use_m=false)
+function init_soil(; θ0=0.3, dt=3600.0, soil_type=7, use_m=false)
   (; method_retention, same_layer, ibeg) = options
   # dz = [2.5, 5, 5, 15, 45, 55]
   z = -[1.25, 5, 10, 20, 50, 100.0] ./ 100 # 第一层是虚拟的
@@ -21,17 +14,17 @@ function init_soil(; θ0, dt=3600.0, soil_type=7, use_m=false)
   par = get_soilpar(soil_type; method_retention)
   param = SoilParam(N, par;
     use_m, method_retention, same_layer)
-  Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param)
+  Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, method_retention, param)
 end
+# soil = init_soil()
 
-soil_type = 7
-method_retention = "van_Genuchten"
-same_layer = false
-N = 10
-par = get_soilpar(soil_type; method_retention)
-param = SoilParam(N, par;
-  use_m=false, method_retention, same_layer)
-
+# soil_type = 7
+# method_retention = "van_Genuchten"
+# same_layer = false
+# N = 10
+# par = get_soilpar(soil_type; method_retention)
+# param = SoilParam(N, par;
+#   use_m=false, method_retention, same_layer)
 
 function model_sim(theta)
   soil = init_soil(; θ0, soil_type=8)

@@ -1,5 +1,5 @@
 """
-    van_Genuchten(ψ, θ_sat, θ_res, Ksat, α, n, m)
+    van_Genuchten(ψ::T, par::ParamVanGenuchten{T})
 
 van Genuchten (1980) relationships
 
@@ -28,56 +28,48 @@ param = (soil_texture=2,
   Ksat = 0.0443 / 3600)
 ```
 """
-function van_Genuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_res, θ_sat, Ksat, α, n, m) = par
+@inline function van_Genuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  θ = van_Genuchten_θ(ψ, par)
+  K = van_Genuchten_K(θ, par)
+  ∂θ∂ψ = van_Genuchten_∂θ∂ψ(ψ, par)
+  θ, K, ∂θ∂ψ
+end
+
+# @fastmath 
+function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
   # Effective saturation (Se) for specified matric potential (ψ)
-  Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
+  Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1.0
+  Se = clamp(Se, 0.0, 1.0)
 
   # Volumetric soil moisture (θ) for specified matric potential (ψ)
-  θ = θ_res + (θ_sat - θ_res) * Se
+  return θ_res + (θ_sat - θ_res) * Se # θ
+end
 
-  # Hydraulic conductivity (K) for specified matric potential (ψ)
-  diff = (1.0 - Se^(1 / m))
-  K = Se < 1 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
+# @fastmath 
+function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, Ksat, m) = par
+  Se = (θ - θ_res) / (θ_sat - θ_res)
+  Se = clamp(Se, 0.0, 1.0)
 
-  # Specific moisture capacity (∂θ∂ψ) for specified matric potential (ψ)
+  diff = (1.0 - Se^(1.0 / m))
+  K = Se < 1.0 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
+  return K
+end
+
+# @fastmath 
+function van_Genuchten_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
   if ψ <= 0.0
     num = α * m * n * (θ_sat - θ_res) * (α * abs(ψ))^(n - 1)
     den = (1 + (α * abs(ψ))^n)^(m + 1)
     ∂θ∂ψ = num / den
   else
-    ∂θ∂ψ = 0.0
+    ∂θ∂ψ = T(0.0)
   end
-  θ, K, ∂θ∂ψ
 end
 
-
-"""
-    van_Genuchten_θ(ψ, θ_sat, θ_res, α, n, m)
-"""
-function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_res, θ_sat, α, n, m) = par
-  # Effective saturation (Se) for specified matric potential (ψ)
-  Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
-  # Volumetric soil moisture (θ) for specified matric potential (ψ)
-  return θ_res + (θ_sat - θ_res) * Se # θ
-end
-
-"""
-    van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
-"""
-function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_res, θ_sat, Ksat, m) = par
-  Se = (θ - θ_res) / (θ_sat - θ_res)
-  Se = clamp(Se, 0.0, 1.0)
-  K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
-  return K
-end
-
-
-"""
-    van_Genuchten_ψ(θ, θ_sat, θ_res, α, n, m)
-"""
+# @fastmath 
 function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   if θ <= θ_res
@@ -89,7 +81,11 @@ function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   end
 end
 
-van_Genuchten_ψ(θ::T; par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ(θ, par)
+Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten(ψ, par)
+Retention_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_θ(ψ, par)
+Retention_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_K(θ, par)
+Retention_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ(θ, par)
+Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂θ∂ψ(ψ, par)
 
 # Special case for:
 # - `soil_texture = 1`: Haverkamp et al. (1977) sand

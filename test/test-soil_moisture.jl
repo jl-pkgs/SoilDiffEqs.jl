@@ -10,9 +10,9 @@ function data_loader_soil()
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
-  ψ = van_Genuchten_ψ.(θ; par)
+  ψ = Retention_ψ.(θ; par)
   θ0 = 0.267
-  ψ0 = van_Genuchten_ψ(θ0; par)
+  ψ0 = Retention_ψ(θ0; par)
 
   dt = 5 # [s]
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率

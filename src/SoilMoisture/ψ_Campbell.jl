@@ -1,5 +1,5 @@
 """
-    Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
+    Campbell(ψ::T, par::ParamCampbell{T})
 
 Campbell (1974) relationships
 
@@ -22,7 +22,7 @@ Ksat = 3.4e-03
 θ, K, ∂θ∂ψ = Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 ```
 """
-@fastmath function Campbell(ψ::T, par::ParamCampbell{T}) where {T<:Real}
+@inline function Campbell(ψ::T, par::ParamCampbell{T}) where {T<:Real}
   θ = Campbell_θ(ψ, par)
   K = Campbell_K(θ, par)
   ∂θ∂ψ = Campbell_∂θ∂ψ(ψ, par)
@@ -63,4 +63,17 @@ end
 end
 
 
+Retention(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell(ψ, par)
+Retention_K(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_K(θ, par)
+Retention_θ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_θ(ψ, par)
+Retention_ψ(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_ψ(θ, par)
+Retention_∂θ∂ψ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂θ∂ψ(ψ, par)
+
+Retention(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention(ψ, par)
+Retention_K(θ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_K(θ, par)
+Retention_θ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_θ(ψ, par)
+Retention_ψ(θ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_ψ(θ, par)
+Retention_∂θ∂ψ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂θ∂ψ(ψ, par)
+
 export Campbell, Campbell_ψ, Campbell_θ, Campbell_K
+export Retention, Retention_K, Retention_θ, Retention_ψ, Retention_∂θ∂ψ

@@ -1,6 +1,6 @@
 export Soil
 
-@with_kw_noshow mutable struct Soil{FT}
+@with_kw_noshow mutable struct Soil{FT, P<:AbstractSoilParam{FT}}
   N::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
@@ -47,8 +47,8 @@ export Soil
   G::FT = FT(NaN)                    # [W m-2]，土壤热通量
 
   ## Parameter: [水力] + [热力]参数
-  param::SoilParam{FT} = SoilParam{FT}(; N)
-  param_water::ParamVanGenuchten{FT} = ParamVanGenuchten{FT}()
+  method_retention::String = "van_Genuchten"
+  param::SoilParam{FT,P} = SoilParam{FT,P}(; N, method_retention)
   
   # ODE求解临时变量
   u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量
@@ -63,6 +63,15 @@ export Soil
   f::Vector{FT} = zeros(FT, N)
 
   timestep::Int = 0                  # 迭代次数
+end
+
+function Soil{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
+  if method_retention == "van_Genuchten"
+    P = ParamVanGenuchten{FT}
+  elseif method_retention == "Campbell"
+    P = ParamCampbell{FT}
+  end
+  Soil{FT,P}(; method_retention, kw...)
 end
 
 function Soil(Δz::Vector{FT}; kw...) where {FT}
