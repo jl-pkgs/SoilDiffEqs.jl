@@ -1,4 +1,4 @@
-using SoilDifferentialEquations, OrdinaryDiffEq, Test
+using SoilDifferentialEquations, Test
 # using RTableTools, Dates
 
 @testset "soil_depth" begin
@@ -17,7 +17,7 @@ include("test-soil_temperature_F0.jl")
 include("test-soil_moisture.jl")
 include("test-soil_moisture_Q0.jl")
 
+include("SM_ex01_uscrn/test-SM.jl")
+
 include("test-solve_Tsoil.jl")
 include("test-solve_SM.jl")
-
-include("SM_ex01_uscrn/test-SM.jl")

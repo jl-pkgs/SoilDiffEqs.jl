@@ -1,5 +1,4 @@
 using SoilDifferentialEquations
-using SoilDifferentialEquations.GlobalOptions
 
 # solver = Tsit5()
 # solver = Rosenbrock23()
@@ -19,12 +18,11 @@ function init_soil(; θ0, dt=3600.0, soil_type=7)
 
   θ = fill(0.2, N)
   θ[ibeg:end] .= θ0
-  param_water = get_soilpar(soil_type)
-  param = Init_SoilWaterParam(N, Vector(param_water)...;
-    use_m=false, method=method_retention, same_layer)
-  Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, param_water)
+  par = get_soilpar(soil_type; method_retention)
+  param = SoilParam(N, par;
+    use_m=false, method_retention, same_layer)
+  Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param)
 end
-
 
 function model_sim(theta)
   soil = init_soil(; θ0, soil_type=8)

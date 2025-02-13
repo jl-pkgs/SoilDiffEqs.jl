@@ -7,12 +7,12 @@ export Soil
 
   dt::Float64 = 3600                 # 时间步长, seconds
   z::OffsetVector{FT} = zeros(FT, N + 1)   # m, 向下为负
-  Δz₊ₕ::OffsetVector{FT} = zeros(FT, N + 1)
+  Δz₊ₕ::Vector{FT} = zeros(FT, N)
   z₊ₕ::Vector{FT} = zeros(FT, N)
   Δz::Vector{FT} = zeros(FT, N)
 
   z_cm::OffsetVector{FT} = z * 100         # cm, 向下为负
-  Δz₊ₕ_cm::OffsetVector{FT} = Δz₊ₕ * 100
+  Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
   Δz_cm::Vector{FT} = Δz * 100
 
   # 水分
@@ -128,7 +128,8 @@ function soil_depth_init(Δz::AbstractVector)
   # z_{i+1/2}
   N = length(Δz)
   z = OffsetArray(zeros(N + 1), 0:N)
-  dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
+  # dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
+  dz₊ₕ = zeros(N)
   z₊ₕ = zeros(N)
   z₋ₕ = zeros(N)
 
@@ -144,7 +145,7 @@ function soil_depth_init(Δz::AbstractVector)
   end
 
   # Thickness between between z(i) and z(i+1)
-  dz₊ₕ[0] = 0.5 * Δz[1]
+  # dz₊ₕ[0] = 0.5 * Δz[1]
   for i = 1:N-1
     dz₊ₕ[i] = z[i] - z[i+1]
   end

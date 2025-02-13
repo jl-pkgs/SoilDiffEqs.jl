@@ -3,14 +3,14 @@ export SM_param2theta, SM_UpdateParam!, SM_paramBound
 
 
 function SM_param2theta(soil)
-  if soil.param.method == "Campbell"
+  if soil.param.method_retention == "Campbell"
     (; θ_sat, Ksat, ψ_sat, b) = soil.param
     if soil.param.same_layer
       return [θ_sat[1], Ksat[1], ψ_sat[1], b[1]]
     else
       return [θ_sat; Ksat; ψ_sat; b]
     end
-  elseif soil.param.method == "van_Genuchten"
+  elseif soil.param.method_retention == "van_Genuchten"
     (; θ_sat, θ_res, Ksat, α, n, m) = soil.param
     if soil.param.same_layer
       return [θ_sat[1], θ_res[1], Ksat[1], α[1], n[1], m[1]]
@@ -22,9 +22,9 @@ end
 
 
 function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
-  (; method) = soil.param
+  (; method_retention) = soil.param
   N = soil.N
-  if method == "Campbell"
+  if method_retention == "Campbell"
     if soil.param.same_layer
       soil.param.θ_sat .= theta[1]
       soil.param.Ksat .= theta[2]
@@ -36,7 +36,7 @@ function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real
       soil.param.ψ_sat .= theta[2N+1:3N]
       soil.param.b .= theta[3N+1:4N]
     end
-  elseif method == "van_Genuchten"
+  elseif method_retention == "van_Genuchten"
     if soil.param.same_layer
       soil.param.θ_sat .= theta[1]
       soil.param.θ_res .= theta[2]
@@ -58,13 +58,13 @@ end
 
 
 function SM_paramBound(soil)
-  (; method) = soil.param
+  (; method_retention) = soil.param
   N = soil.N
-  if method == "van_Genuchten"
+  if method_retention == "van_Genuchten"
     # θ_sat, θ_res, Ksat, α, n, m
     LOWER = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05, 0.1]
     UPPER = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00, 10.0]
-  elseif method == "Campbell"
+  elseif method_retention == "Campbell"
     # θ_sat, Ksat, ψ_sat, b
     LOWER = [0.25, 0.002 / 3600, -100, 3.0]
     UPPER = [0.50, 100.0 / 3600, -5.0, 15.0]
