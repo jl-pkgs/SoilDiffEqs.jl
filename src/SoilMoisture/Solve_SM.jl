@@ -20,6 +20,24 @@ function SM_param2theta(soil)
   end
 end
 
+function Update_SoilParam_Param!(soilparam::SoilParam{T}) where {T<:Real}
+  (; method, param, use_m) = soilparam
+  (; θ_sat, θ_res, Ksat, α, m, n, ψ_sat, b) = soilparam
+
+  if method == "Campbell"
+    param.θ_sat .= θ_sat
+    param.Ksat .= Ksat
+    param.ψ_sat .= ψ_sat
+    param.b .= b
+  elseif method == "van_Genuchten"
+    param.θ_sat .= θ_sat
+    param.θ_res .= θ_res
+    param.Ksat .= Ksat
+    param.α .= α
+    param.n .= n
+    param.m .= use_m ? m : (T(1) .- T(1) ./ n)
+  end
+end
 
 function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
   (; method) = soil.param
@@ -53,6 +71,7 @@ function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real
       soil.param.m .= theta[5N+1:6N]
     end
   end
+  Update_SoilParam_Param!(soil.param)
   return nothing
 end
 
@@ -98,7 +117,7 @@ function solve_SM_Bonan(soil::Soil{FT}, θ_surf::AbstractVector{FT}) where {FT<:
   for i = 2:ntime
     ψ0 = Init_ψ0(soil, θ_surf[i])
     soil_moisture!(soil, sink, ψ0; debug=false)
-    
+
     @inbounds for j in ibeg:N # copy θ
       j2 = j - ibeg + 1
       R[i, j2] = soil.θ[j]

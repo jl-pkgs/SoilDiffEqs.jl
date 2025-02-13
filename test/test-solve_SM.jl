@@ -11,9 +11,9 @@ function data_loader_soil(; dt=60)
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
-  ψ = van_Genuchten_ψ.(θ; param=param_water)
+  ψ = Retention_ψ.(θ; par=param_water)
   θ0 = 0.267
-  ψ0 = van_Genuchten_ψ(θ0; param=param_water)
+  ψ0 = Retention_ψ(θ0; par=param_water)
 
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 3mm/d, 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param_water, param)

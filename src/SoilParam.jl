@@ -105,7 +105,7 @@ end
   method::String = "van_Genuchten"     # "van_Genuchten" or "Campbell"
   use_m::Bool = false
   same_layer = false
-  
+
   θ_sat::Vector{FT} = fill(0.4, N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(0.1, N)     # residual water content, [m3 m-3]
   Ksat::Vector{FT} = fill(2.0 / 3600, N) # saturated hydraulic conductivity, [cm s-1]
@@ -115,21 +115,22 @@ end
 
   ψ_sat::Vector{FT} = fill(-10.0, N)   # [cm]
   b::Vector{FT} = fill(4.0, N)         # [-]
-  
+
   # soil moisture parameters
-  param::StructVector{<:AbstractSoilParam{FT}} = build_param(; method, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
+  param::StructVector{<:AbstractSoilParam{FT}} = build_param(; method, use_m, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
   ## Parameter: 土壤热力
   κ::Vector{FT} = fill(2.0, N)         # thermal conductivity [W m-1 K-1]
   cv::Vector{FT} = fill(2.0 * 1e6, N)  # volumetric heat capacity [J m-3 K-1]
 end
 
-function build_param(; method::String="van_Genuchten",
+function build_param(; method::String="van_Genuchten", use_m::Bool=false,
   θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
   FT = eltype(θ_sat)
   if method == "Campbell"
     return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
   elseif method == "van_Genuchten"
-    return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m)
+    _m = use_m ? m : FT(1) .- FT(1) ./ n
+    return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m=_m)
   end
 end
 

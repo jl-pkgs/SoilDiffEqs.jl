@@ -7,18 +7,13 @@ Sy = θ_sat - θ(ψ_sat + zwt)
 """
 function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
   (; N, Sy) = soil
-  (; θ_sat, θ_res, α, n, m, use_m, b, method) = soil.param
+  (; θ_sat, ψ_sat, method) = soil.param
+  (; param) = soil.param
 
-  if method == "van_Genuchten"
-    _ψ_sat = 0.0 # !Note
-    for i = 1:N
-      _m = use_m ? m[i] : 1 - 1 / n[i] # 不参与参数优化
-      Sy[i] = θ_sat[i] - van_Genuchten_θ(_ψ_sat + zwt, θ_sat[i], θ_res[i], α[i], n[i], _m)
-    end
-  elseif method == "Campbell"
-    for i = 1:N
-      Sy[i] = θ_sat[i] - Campbell_θ(ψ_sat[i] + zwt, ψ_sat[i], θ_sat[i], b[i])
-    end
+  iszero_ψ = method == "van_Genuchten"
+  for i = 1:N
+    _ψ_sat = iszero_ψ ? T(0) : ψ_sat[i]
+    Sy[i] = θ_sat[i] - Retention_θ(_ψ_sat + zwt, param[i])
   end
   clamp!(Sy, 0, sy_max)
 end
@@ -26,18 +21,9 @@ end
 
 function cal_θKCap!(soil::Soil{T}, ψ::AbstractVector{T}) where {T<:Real}
   (; ibeg, N, θ, K, Cap) = soil
-  (; θ_sat, θ_res, ψ_sat, Ksat, α, n, m, use_m, b, method) = soil.param
-
-  if method == "van_Genuchten"
-    @inbounds for i in ibeg:N
-      # _m = m[i]
-      _m = use_m ? m[i] : 1 - 1 / n[i] # 不参与参数优化
-      θ[i], K[i], Cap[i] = van_Genuchten(ψ[i], θ_sat[i], θ_res[i], Ksat[i], α[i], n[i], _m)
-    end
-  elseif method == "Campbell"
-    @inbounds for i in ibeg:N
-      θ[i], K[i], Cap[i] = Campbell(ψ[i], ψ_sat[i], θ_sat[i], Ksat[i], b[i])
-    end
+  (; param) = soil.param
+  @inbounds for i in ibeg:N
+    θ[i], K[i], Cap[i] = Retention(ψ[i], param[i])
   end
 end
 
@@ -55,16 +41,9 @@ end
 cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
 function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, K) = soil
-  (; θ_sat, θ_res, Ksat, m, b, method) = soil.param
-
-  if method == "van_Genuchten"
-    @inbounds for i = ibeg:N
-      K[i] = van_Genuchten_K(θ[i], θ_sat[i], θ_res[i], Ksat[i], m[i])
-    end
-  elseif method == "Campbell"
-    @inbounds for i = ibeg:N
-      K[i] = Campbell_K(θ[i], θ_sat[i], Ksat[i], b[i])
-    end
+  (; param) = soil.param
+  @inbounds for i = ibeg:N
+    K[i] = Retention_K(θ[i], param[i])
   end
 end
 
@@ -72,19 +51,18 @@ end
 cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
 function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, ψ) = soil
-  (; θ_sat, θ_res, α, n, m, ψ_sat, b, method) = soil.param
-  if method == "van_Genuchten"
-    @inbounds for i = ibeg:N
-      ψ[i] = van_Genuchten_ψ(θ[i], θ_sat[i], θ_res[i], α[i], n[i], m[i])
-    end
-  elseif method == "Campbell"
-    @inbounds for i = ibeg:N
-      ψ[i] = Campbell_ψ(θ[i], θ_sat[i], ψ_sat[i], b[i])
-    end
+  (; param) = soil.param
+  @inbounds for i = ibeg:N
+    ψ[i] = Retention_ψ(θ[i], param[i])
   end
 end
 
 
+function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
+  i = soil.ibeg # 默认采用第一层进行初始化
+  (; param) = soil.param
+  return Retention_ψ(θ, param[i]) # ψ0
+end
 
 function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T; use_m::Bool=false, same_layer=true, kw...) where {T<:Real}
   SoilParam(; N,
@@ -95,19 +73,6 @@ function Init_SoilWaterParam(N, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T
     n=fill(n, N),
     m=fill(m, N),
     use_m, same_layer, kw...)
-end
-
-
-function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
-  i = soil.ibeg # 默认采用第一层进行初始化
-  (; θ_sat, θ_res, α, n, m, ψ_sat, b, method) = soil.param
-
-  if method == "van_Genuchten"
-    ψ0 = van_Genuchten_ψ(θ, θ_sat[i], θ_res[i], α[i], n[i], m[i])
-  elseif method == "Campbell"
-    ψ0 = Campbell_ψ(θ, θ_sat[i], ψ_sat[i], b[i])
-  end
-  return ψ0
 end
 
 
