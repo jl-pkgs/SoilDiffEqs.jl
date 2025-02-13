@@ -33,7 +33,7 @@ include("tridiagonal_solver.jl")
 
 include("SoilParam.jl")
 include("Soil.jl")
-include("SoilParamTable.jl")
+include("SoilMoisture/soil_ParamTable.jl")
 # include("Soil_depth.jl")
 
 include("SoilMoisture/ψ_van_Genuchten.jl")
