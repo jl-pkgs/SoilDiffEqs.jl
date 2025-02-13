@@ -19,10 +19,11 @@ function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
 end
 
 
-function cal_θKCap!(soil::Soil{T,P}, param::StructVector{P}, 
+function cal_θKCap!(soil::Soil{T,P}, 
   ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
   (; ibeg, N, θ, K, Cap) = soil
-  
+  param = soil.param.param
+
   @inbounds for i in ibeg:N
     par = param[i]
     θ[i] = Retention_θ(ψ[i], par)
@@ -32,9 +33,9 @@ function cal_θKCap!(soil::Soil{T,P}, param::StructVector{P},
 end
 
 ## Julia无法推测soil.param.param的类型
-function cal_θKCap!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
-  cal_θKCap!(soil, soil.param.param, ψ)
-end
+# function cal_θKCap!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real, P<:AbstractSoilParam{T}}
+#   cal_θKCap!(soil, soil.param.param, ψ)
+# end
 
 @inline function K_interface(K1::T, K2::T, d1::T, d2::T)::T where {T<:Real}
   # K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
@@ -50,7 +51,6 @@ function cal_K₊ₕ!(soil::Soil{T}) where {T<:Real}
 end
 
 cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
-# cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real} = cal_K!(soil, soil.param.param, θ)
 function cal_K!(soil::Soil{T,P}, θ::AbstractVector{T}) where {T<:Real, P<:AbstractSoilParam{T}}
   (; N, ibeg, K) = soil
   param = soil.param.param

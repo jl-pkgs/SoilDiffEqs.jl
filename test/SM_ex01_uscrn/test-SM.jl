@@ -16,10 +16,8 @@ begin
   options
 end
 
-
-function test_ModSim(; method_retention, maxn=2_000, kw...)
+function test_ModSim(; method_retention, maxn=10_000, kw...)
   set_option!(; method_retention, kw...)
-
   # [5, 10, 20, 50, 100]
   soil = init_soil(; θ0, soil_type=7)
   lower, upper = SM_paramBound(soil)
@@ -32,15 +30,15 @@ function test_ModSim(; method_retention, maxn=2_000, kw...)
   -feval
 end
 
-
-# @testset "ModSim_SM" 
-@profview begin
-  printstyled("[ModSim_SM]: Campbell ... \n", color=:blue, bold=true)
-  test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.32
-  # printstyled("[ModSim_SM]: van Genuchten ... \n", color=:blue, bold=true)
-  
-  # @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.10
-  # @test test_ModSim(; method_retention="Campbell", same_layer=false, maxn=2000) >= 0.60
-  # @test test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000) >= 0.65
+# @profview_allocs @profview
+@testset "ModSim_SM" begin
+  test_ModSim(; method_retention="Campbell", maxn=4_000, same_layer=false) >= 0.65
+  test_ModSim(; method_retention="van_Genuchten", maxn=4_000, same_layer=false) >= 0.30
 end
+
+# printstyled("[ModSim_SM]: Campbell ... \n", color=:blue, bold=true)
+# printstyled("[ModSim_SM]: van Genuchten ... \n", color=:blue, bold=true)
+
+# @test test_ModSim(; method_retention="Campbell", same_layer=false, maxn=2000) >= 0.60
+# @test test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000) >= 0.65
 # @profview test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000)

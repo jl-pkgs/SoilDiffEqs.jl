@@ -1,5 +1,5 @@
 module SoilDifferentialEquations
-  
+
 # using OrdinaryDiffEq
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Parameters
@@ -33,6 +33,7 @@ include("tridiagonal_solver.jl")
 
 include("SoilParam.jl")
 include("Soil.jl")
+include("SoilParamTable.jl")
 # include("Soil_depth.jl")
 
 include("SoilMoisture/ψ_van_Genuchten.jl")

@@ -3,17 +3,16 @@ using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 function data_loader_soil(; dt=60)
   N = 150
-  _param = (θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
-  param = Init_SoilWaterParam(N, _param...; use_m=true)
-  par = ParamVanGenuchten(; _param...)
+  par = ParamVanGenuchten(; θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
+  param = SoilParam(N, par; use_m=true)
 
   Δz = fill(0.01, N)
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
   θ = fill(0.1, N)
-  ψ = Retention_ψ.(θ; par=par)
+  ψ = Retention_ψ.(θ; par)
   θ0 = 0.267
-  ψ0 = Retention_ψ(θ0; par=par)
+  ψ0 = Retention_ψ(θ0; par)
 
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 3mm/d, 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param)

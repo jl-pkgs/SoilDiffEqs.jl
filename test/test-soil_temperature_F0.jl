@@ -14,8 +14,9 @@ function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
   F0 = -10.0 # [W m-2]
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, Tsurf, Tsoil, F0, 
-    param = SoilParam(; N, κ, cv))
+  FT = Float64
+  Soil{FT}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, Tsurf, Tsoil, F0, 
+    param = SoilParam{FT}(; N, κ, cv))
 end
 
 function solve_ode(reltol=1e-5, abstol=1e-5)

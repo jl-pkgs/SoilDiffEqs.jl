@@ -45,14 +45,14 @@ function Retention_VanGenuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real
   θ, K, ∂θ∂ψ
 end
 
-@inline @fastmath function Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+@fastmath function Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   if ψ <= 0.0
     num = α * m * n * (θ_sat - θ_res) * (α * abs(ψ))^(n - 1)
     den = (1 + (α * abs(ψ))^n)^(m + 1)
     ∂θ∂ψ = num / den
   else
-    ∂θ∂ψ = 0.0
+    ∂θ∂ψ = T(0.0)
   end
 end
 

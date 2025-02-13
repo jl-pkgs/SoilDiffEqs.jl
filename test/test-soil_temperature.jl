@@ -13,8 +13,9 @@ function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice;
     soil_type, method="apparent-heat-capacity")
-  soil = Soil{Float64}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, Tsurf, Tsoil, 
-    param = SoilParam(; N, κ, cv))
+  FT = Float64
+  soil = Soil{FT}(; N, dt, z, z₊ₕ, Δz, Δz₊ₕ, Tsurf, Tsoil, 
+    param = SoilParam{FT}(; N, κ, cv))
   soil
 end
 

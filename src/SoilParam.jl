@@ -1,9 +1,10 @@
 export AbstractSoilParam, ParamVanGenuchten, ParamCampbell
 export SoilParam, get_soilpar
 
-abstract type AbstractSoilParam{FT} end
+using Parameters
+abstract type AbstractSoilParam{T<:Real} end
 
-@with_kw mutable struct ParamVanGenuchten{T} <: AbstractSoilParam{T}
+@with_kw mutable struct ParamVanGenuchten{T<:Real} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   θ_res::T = 0.075       # [m3 m-3]
   Ksat::T = 34 / 3600    # [cm s-1]
@@ -12,7 +13,7 @@ abstract type AbstractSoilParam{FT} end
   m::T = 1.0 - 1.0 / n
 end
 
-@with_kw mutable struct ParamCampbell{T} <: AbstractSoilParam{T}
+@with_kw mutable struct ParamCampbell{T<:Real} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   # θ_res::T = 0.075     # [m3 m-3]
   ψ_sat::T = -10.0       # [cm]
@@ -20,85 +21,15 @@ end
   b::T = 4.0             # [-]
 end
 
-
-function Base.Vector(x::ParamVanGenuchten)
-  (; θ_sat, θ_res, Ksat, α, n, m) = x
-  [θ_sat, θ_res, Ksat, α, n, m]
-end
-function Base.Vector(x::ParamCampbell)
-  (; θ_sat, ψ_sat, Ksat, b) = x
-  [θ_sat, ψ_sat, Ksat, b]
-end
-Base.collect(x::AbstractSoilParam) = Vector(x)
-
-
-function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1)
-  # Bonan 2019, Table 8.3
-  soilparam = [
-    # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹)
-    0.38 0.068 0.008 1.09 0.2;   #  1, 11, Clay
-    0.36 0.070 0.005 1.09 0.02;  #  2, 10, Silty clay
-    0.38 0.100 0.027 1.23 0.12;  #  3,  9, Sandy clay
-    0.41 0.095 0.019 1.31 0.26;  #  4,  8, Clay  loa
-    0.43 0.089 0.010 1.23 0.07;  #  5,  7, Silty clay loam
-    0.39 0.100 0.059 1.48 1.31;  #  6,  6, Sandy clay loam
-    0.43 0.078 0.036 1.56 1.04;  #  7,  5, Loam
-    0.45 0.067 0.020 1.41 0.45;  #  8,  4, Silty loam
-    0.41 0.065 0.075 1.89 4.42;  #  9,  3, Sandy loam
-    0.45 0.067 0.020 1.41 0.45;  #  10, NA, Silty, nodata, used Silty loam
-    0.41 0.057 0.124 2.28 14.59; #  11, 2, Loamy sand
-    0.43 0.045 0.145 2.68 29.7   #  12, 1, Sand
-  ]
-  θ_sat, θ_res, α, n, Ksat = soilparam[soil_type, :]
-  Ksat = Ksat / 3600 # [cm h-1] to [cm s-1]
-  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
-end
-
-function get_soilpar(::Type{ParamVanGenuchten}, theta::AbstractVector)
-  θ_sat, θ_res, Ksat, α, n = theta[1:5]
-  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
-end
-
-function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
-  # Bonan 2019, Table 8.3
-  soilparam = [
-    # θ_sat, ψ_sat (cm), b, Ksat (cm h⁻¹)
-    0.482 -40.5 11.4 0.46;  # 11, Clay
-    0.492 -49.0 10.4 0.37;  # 10, Silty clay
-    0.426 -15.3 10.4 0.78;  # 9, Sandy clay
-    0.476 -63.0 8.52 0.88;  # 8, Clay loam
-    0.477 -35.6 7.75 0.61;  # 7, Silty clay loam
-    0.420 -29.9 7.12 2.27;  # 6, Sandy clay loam
-    0.451 -47.8 5.39 2.50;  # 5, Loam
-    0.485 -78.6 5.30 2.59;  # 4, Silty loam
-    0.435 -21.8 4.90 12.48; # 3, Sandy loam
-    0.485 -78.6 5.30 2.59;  # NA, Silty, nodata, used Silty loam (4)
-    0.410 -9.0 4.38 56.28;  # 2, Loamy sand
-    0.395 -12.1 4.05 63.36  # 1, Sand
-  ]
-  θ_sat, ψ_sat, b, Ksat = soilparam[soil_type, :]
-  Ksat = Ksat / 3600 # [cm h-1] to [cm s-1]
-  ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
-end
-
-function get_soilpar(::Type{ParamCampbell}, theta::AbstractVector)
-  θ_sat, ψ_sat, b, Ksat = theta[1:4]
-  ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
-end
-
-
-const TypeRetention = Union{Type{ParamVanGenuchten},Type{ParamCampbell}}
-
-function get_soilpar(soil_type::Int=1; method_retention::String="van_Genuchten")
-  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
-  method_retention == "Campbell" && (P = ParamCampbell)
-  get_soilpar(P, soil_type)
-end
-
-function get_soilpar(theta::AbstractVector; method_retention::String="van_Genuchten")
-  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
-  method_retention == "Campbell" && (P = ParamCampbell)
-  get_soilpar(P, theta)
+function build_param(; method_retention::String="van_Genuchten", use_m::Bool=false,
+  θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
+  T = eltype(θ_sat)
+  if method_retention == "van_Genuchten"
+    _m = use_m ? m : T(1) .- T(1) ./ n
+    return ParamVanGenuchten{T}.(θ_sat, θ_res, Ksat, α, n, _m)
+  elseif method_retention == "Campbell"
+    return ParamCampbell{T}.(θ_sat, ψ_sat, Ksat, b)
+  end
 end
 
 # 参数优化过程中，可能需要优化的参数
@@ -121,7 +52,7 @@ end
   b::Vector{FT} = fill(FT(4.0), N)         # [-]
 
   # soil moisture parameters
-  param::StructVector{P} = build_param(; method_retention, use_m, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
+  param::Vector{P} = build_param(; method_retention, use_m, θ_sat, θ_res, Ksat, α, n, m, ψ_sat, b)
   ## Parameter: 土壤热力
   κ::Vector{FT} = fill(FT(2.0), N)         # thermal conductivity [W m-1 K-1]
   cv::Vector{FT} = fill(FT(2.0 * 1e6), N)  # volumetric heat capacity [J m-3 K-1]
@@ -136,16 +67,16 @@ function SoilParam{FT}(; method_retention::String="van_Genuchten", kw...) where 
   return SoilParam{FT,P}(; method_retention, kw...)
 end
 
-function build_param(; method_retention::String="van_Genuchten", use_m::Bool=false,
-  θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
-  FT = eltype(θ_sat)
-  if method_retention == "Campbell"
-    return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
-  elseif method_retention == "van_Genuchten"
-    _m = use_m ? m : FT(1) .- FT(1) ./ n
-    return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m=_m)
-  end
-end
+# function build_param(; method_retention::String="van_Genuchten", use_m::Bool=false,
+#   θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
+#   FT = eltype(θ_sat)
+#   if method_retention == "Campbell"
+#     return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
+#   elseif method_retention == "van_Genuchten"
+#     _m = use_m ? m : FT(1) .- FT(1) ./ n
+#     return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m=_m)
+#   end
+# end
 
 
 function SoilParam(N::Int, par::ParamCampbell{T};
@@ -163,7 +94,7 @@ end
 function SoilParam(N::Int, par::ParamVanGenuchten{T};
   use_m::Bool=false, 
   same_layer::Bool=true, kw...) where {T<:Real}
-  
+
   (; θ_sat, θ_res, Ksat, α, n, m) = par
   _m = use_m ? m : (1 - 1 / n)
   SoilParam{T,ParamVanGenuchten{T}}(; N,
@@ -179,21 +110,27 @@ end
 
 
 function Update_SoilParam_Param!(soilparam::SoilParam{T}) where {T<:Real}
-  (; method_retention, param, use_m) = soilparam
+  (; N, method_retention, param, use_m) = soilparam
   (; θ_sat, θ_res, Ksat, α, m, n, ψ_sat, b) = soilparam
 
   if method_retention == "Campbell"
-    param.θ_sat .= θ_sat
-    param.Ksat .= Ksat
-    param.ψ_sat .= ψ_sat
-    param.b .= b
+    for i in 1:N
+      par = param[i]
+      par.θ_sat = θ_sat[i]
+      par.Ksat = Ksat[i]
+      par.ψ_sat = ψ_sat[i]
+      par.b = b[i]
+    end
   elseif method_retention == "van_Genuchten"
-    param.θ_sat .= θ_sat
-    param.θ_res .= θ_res
-    param.Ksat .= Ksat
-    param.α .= α
-    param.n .= n
-    param.m .= use_m ? m : (T(1) .- T(1) ./ n)
+    for i in 1:N
+      par = param[i]
+      par.θ_sat = θ_sat[i]
+      par.θ_res = θ_res[i]
+      par.Ksat = Ksat[i]
+      par.α = α[i]
+      par.n = n[i]
+      par.m = use_m ? m[i] : (T(1) .- T(1) ./ n[i])
+    end
   end
 end
 
