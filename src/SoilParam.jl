@@ -67,17 +67,6 @@ function SoilParam{FT}(; method_retention::String="van_Genuchten", kw...) where 
   return SoilParam{FT,P}(; method_retention, kw...)
 end
 
-# function build_param(; method_retention::String="van_Genuchten", use_m::Bool=false,
-#   θ_sat::V, θ_res::V, Ksat::V, α::V, n::V, m::V, ψ_sat::V, b::V) where {V<:AbstractVector{<:Real}}
-#   FT = eltype(θ_sat)
-#   if method_retention == "Campbell"
-#     return StructArray{ParamCampbell{FT}}(; θ_sat, ψ_sat, Ksat, b)
-#   elseif method_retention == "van_Genuchten"
-#     _m = use_m ? m : FT(1) .- FT(1) ./ n
-#     return StructArray{ParamVanGenuchten{FT}}(; θ_sat, θ_res, Ksat, α, n, m=_m)
-#   end
-# end
-
 
 function SoilParam(N::Int, par::ParamCampbell{T};
   same_layer::Bool=true, kw...) where {T<:Real}
