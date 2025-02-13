@@ -28,7 +28,8 @@ param = (soil_texture=2,
   Ksat = 0.0443 / 3600)
 ```
 """
-function van_Genuchten(ψ::T, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) where {T<:Real}
+function van_Genuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, Ksat, α, n, m) = par
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
 
@@ -50,16 +51,12 @@ function van_Genuchten(ψ::T, θ_sat::T, θ_res::T, Ksat::T, α::T, n::T, m::T) 
   θ, K, ∂θ∂ψ
 end
 
-function van_Genuchten(ψ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  @unpack θ_res, θ_sat, Ksat, α, n, m = param
-  van_Genuchten(ψ, θ_sat, θ_res, Ksat, α, n, m)
-end
-
 
 """
     van_Genuchten_θ(ψ, θ_sat, θ_res, α, n, m)
 """
-function van_Genuchten_θ(ψ::T, θ_sat::T, θ_res::T, α::T, n::T, m::T) where {T<:Real}
+function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1
   # Volumetric soil moisture (θ) for specified matric potential (ψ)
@@ -69,25 +66,20 @@ end
 """
     van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
 """
-function van_Genuchten_K(θ::T, θ_sat::T, θ_res::T, Ksat::T, m::T) where {T<:Real}
+function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, Ksat, m) = par
   Se = (θ - θ_res) / (θ_sat - θ_res)
   Se = clamp(Se, 0.0, 1.0)
   K = Se < 1 ? Ksat * sqrt(Se) * (1 - (1 - Se^(1 / m))^m)^2 : Ksat
   return K
 end
 
-# Function to calculate hydraulic conductivity from water content
-function van_Genuchten_K(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_sat, θ_res, Ksat, m) = param
-  van_Genuchten_K(θ, θ_sat, θ_res, Ksat, m)
-end
-
 
 """
     van_Genuchten_ψ(θ, θ_sat, θ_res, α, n, m)
 """
-function van_Genuchten_ψ(θ::T, θ_sat::T, θ_res::T, α::T, n::T, m::T) where {T<:Real}
-  # (; θ_sat, θ_res, α, n, m) = param
+function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
   if θ <= θ_res
     return T(-Inf)  # Return a very high positive number indicating very dry conditions
   elseif θ >= θ_sat
@@ -97,11 +89,7 @@ function van_Genuchten_ψ(θ::T, θ_sat::T, θ_res::T, α::T, n::T, m::T) where 
   end
 end
 
-# Function to calculate pressure head psi from water content
-function van_Genuchten_ψ(θ::T; param::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_sat, θ_res, α, n, m) = param
-  van_Genuchten_ψ(θ, θ_sat, θ_res, α, n, m)
-end
+van_Genuchten_ψ(θ::T; par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ(θ, par)
 
 # Special case for:
 # - `soil_texture = 1`: Haverkamp et al. (1977) sand

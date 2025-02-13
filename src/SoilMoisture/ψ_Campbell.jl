@@ -22,28 +22,31 @@ Ksat = 3.4e-03
 θ, K, ∂θ∂ψ = Campbell(ψ, ψ_sat, θ_sat, Ksat, b)
 ```
 """
-@fastmath function Campbell(ψ::T, ψ_sat::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
-  θ = Campbell_θ(ψ, ψ_sat, θ_sat, b)
-  K = Campbell_K(θ, θ_sat, Ksat, b)
-  ∂θ∂ψ = Campbell_∂θ∂ψ(ψ, ψ_sat, θ_sat, b)
+@fastmath function Campbell(ψ::T, par::ParamCampbell{T}) where {T<:Real}
+  θ = Campbell_θ(ψ, par)
+  K = Campbell_K(θ, par)
+  ∂θ∂ψ = Campbell_∂θ∂ψ(ψ, par)
   θ, K, ∂θ∂ψ
 end
 
 """
     Campbell_θ(ψ, ψ_sat, θ_sat, b)
 """
-@inline @fastmath function Campbell_θ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+@inline @fastmath function Campbell_θ(ψ::T, par::ParamCampbell{T}) where {T<:Real}
+  (; ψ_sat, θ_sat, b) = par
   ψ <= ψ_sat ? θ_sat * (ψ / ψ_sat)^(-1 / b) : θ_sat
 end
 
-@inline @fastmath function Campbell_∂θ∂ψ(ψ::T, ψ_sat::T, θ_sat::T, b::T) where {T<:Real}
+@inline @fastmath function Campbell_∂θ∂ψ(ψ::T, par::ParamCampbell{T}) where {T<:Real}
+  (; ψ_sat, θ_sat, b) = par
   ψ <= ψ_sat ? -θ_sat / (b * ψ_sat) * (ψ / ψ_sat)^(-1 / b - 1) : 0.0
 end
 
 """
     Campbell_K(θ, θ_sat, Ksat, b)
 """
-@inline @fastmath function Campbell_K(θ::T, θ_sat::T, Ksat::T, b::T) where {T<:Real}
+@inline @fastmath function Campbell_K(θ::T, par::ParamCampbell{T}) where {T<:Real}
+  (; θ_sat, Ksat, b) = par
   se = clamp(θ / θ_sat, 0.0, 1.0)
   Ksat * se^(2b + 3)
 end
@@ -52,7 +55,8 @@ end
 """
     Campbell_ψ(θ, θ_sat, ψ_sat, b)
 """
-@inline @fastmath function Campbell_ψ(θ::T, θ_sat::T, ψ_sat::T, b::T) where {T<:Real}
+@inline @fastmath function Campbell_ψ(θ::T, par::ParamCampbell{T}) where {T<:Real}
+  (; θ_sat, ψ_sat, b) = par
   se = clamp(θ / θ_sat, 0.0, 1.0)
   ψ = ψ_sat * se^(-b)
   min(ψ, ψ_sat) # ψ为负值

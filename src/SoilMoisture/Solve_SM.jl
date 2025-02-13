@@ -59,6 +59,8 @@ function SM_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real
       soil.param.m .= _m
     end
   end
+  ## 传递soil.param.param
+  Update_SoilParam_Param!(soil.param)
   return nothing
 end
 

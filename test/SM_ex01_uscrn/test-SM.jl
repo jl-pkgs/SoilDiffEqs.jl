@@ -31,7 +31,7 @@ function test_ModSim(; method_retention, maxn=4_000, use_m=false, kw...)
   -feval
 end
 
-# test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=4_000, use_m=false)
+test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=4_000, use_m=false)
 # # npar = 30
 # # Iteration =   0, nEvals = 305, Best Cost = 1.08955
 # # Iteration =   1, nEvals = 724, Best Cost = 1.08955
@@ -44,7 +44,7 @@ end
 # # Iteration =   8, nEvals = 4434, Best Cost = -0.37321
 # #   21.189072 seconds (3.77 M allocations: 5.693 GiB, 3.15% gc time)
 
-# test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=4_000, use_m=true)
+test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=4_000, use_m=true)
 # # Iteration =   0, nEvals = 365, Best Cost = -0.01120
 # # Iteration =   1, nEvals = 863, Best Cost = -0.01120
 # # Iteration =   2, nEvals = 1457, Best Cost = -0.01120
