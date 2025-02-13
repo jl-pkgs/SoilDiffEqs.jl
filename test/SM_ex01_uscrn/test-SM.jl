@@ -3,8 +3,6 @@ using SoilDifferentialEquations.GlobalOptions
 import RTableTools: fread
 include("main_optim.jl")
 
-GlobalOptions.options = Options()
-options = GlobalOptions.options
 
 begin
   d = fread(f_SM_Batesville)
@@ -36,9 +34,11 @@ end
 
 
 @testset "ModSim_SM" begin
+  printstyled("[ModSim_SM]: Campbell \n", color=:blue, bold=true)
   @test test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.32
-  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.10
 
+  printstyled("[ModSim_SM]: van Genuchten \n", color=:blue, bold=true)
+  @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.10
   # @test test_ModSim(; method_retention="Campbell", same_layer=false, maxn=2000) >= 0.60
   # @test test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=5000) >= 0.65
 end

@@ -104,7 +104,7 @@ function ModSim_SM(soil, θ_surf; method="Bonan", kw...)
   elseif method == "ODE"
     ysim = solve_SM_ODE(soil, θ_surf; kw...)
   end
-  ysim
+  return ysim
 end
 
 

@@ -23,13 +23,16 @@ end
 begin
   # 4 hours
   dt = 60 * 6
-  soil = data_loader_soil(; dt)
   ntime = round(Int, 3600 * 4 / dt)
   θ_surf = fill(0.267, ntime)
-  ysim_bonan = solve_SM_Bonan(soil, θ_surf)
 
+  printstyled("Bonan solver\n", color=:blue, bold=true)
   soil = data_loader_soil(; dt)
-  ysim_ode = solve_SM_ODE(soil, θ_surf; solver=Tsit5())
+  @time ysim_bonan = solve_SM_Bonan(soil, θ_surf)
+  
+  printstyled("ODE solver\n", color=:blue, bold=true)
+  soil = data_loader_soil(; dt)
+  @time ysim_ode = solve_SM_ODE(soil, θ_surf; solver=Tsit5())
 
   @test maximum(abs.(ysim_bonan[end, :] - ysim_ode[end, :])) <= 0.03
 end
