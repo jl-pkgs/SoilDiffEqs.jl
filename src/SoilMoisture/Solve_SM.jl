@@ -70,16 +70,16 @@ function SM_paramBound(soil)
   N = soil.N
   if method_retention == "van_Genuchten"
     # θ_sat, θ_res, Ksat, α, n, m
-    LOWER = [0.25, 0.03, 0.002 / 3600, 0.002, 1.05] #, 0.1]
-    UPPER = [0.50, 0.20, 60.0 / 3600, 0.300, 4.00] #, 10.0]
+    LOWER = [0.25, 0.03, 0.002, 0.002, 1.05] #, 0.1]
+    UPPER = [0.50, 0.20, 60.0, 0.300, 4.00] #, 10.0]
     if use_m
       LOWER = [LOWER; 0.1]
       UPPER = [UPPER; 10.0]
     end
   elseif method_retention == "Campbell"
     # θ_sat, Ksat, ψ_sat, b
-    LOWER = [0.25, 0.002 / 3600, -100, 3.0]
-    UPPER = [0.50, 100.0 / 3600, -5.0, 15.0]
+    LOWER = [0.25, 0.002, -100, 3.0]
+    UPPER = [0.50, 100.0, -5.0, 15.0]
   end
 
   if same_layer

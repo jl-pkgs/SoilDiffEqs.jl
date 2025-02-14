@@ -28,19 +28,6 @@ Retention_∂ψ∂θ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retenti
 Retention_∂K∂Se(Se::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂K∂Se(Se, par)
 
 
-function K_interface(K1::T, K2::T, z1::T, z2::T) where {T<:Real}
-  # K₊ₕ[i] = (K[i] + K[i+1]) / 2 # can be improved, weighted by z
-  K1 * K2 * (z1 + z2) / (K1 * z2 + K2 * z1) # Eq. 5.16, 
-end
-
-function cal_K₊ₕ!(soil::Soil)
-  (; N, ibeg, Δz, K, K₊ₕ) = soil
-  @inbounds for i = ibeg:N-1
-    K₊ₕ[i] = K_interface(K[i], K[i+1], Δz[i], Δz[i+1])
-  end
-end
-
-
 """
   计算每一层的给水度
 
@@ -57,28 +44,42 @@ function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
     _ψ_sat = iszero_ψ ? 0.0 : θ_sat[i] # !Note
     Sy[i] = θ_sat[i] - Retention_θ(_ψ_sat + zwt, param[i])
   end
-  clamp!(Sy, 0, sy_max)
+  clamp!(Sy, 0.0, sy_max)
 end
 
-
-function cal_θKCap!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
-  (; ibeg, N, θ, K, Cap) = soil
-  param = soil.param.param
+function cal_∂θ∂ψ!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
+  (; ibeg, N, ∂θ∂ψ) = soil
+  (; param) = soil.param
   @inbounds for i in ibeg:N
-    par = param[i]
-    # θ[i] = Retention_θ(ψ[i], par)
-    # K[i] = Retention_K(θ[i], par)
-    # Cap[i] = Retention_∂θ∂ψ(ψ[i], par)
-    θ[i], K[i], Cap[i] = Retention(ψ[i], par)
+    ∂θ∂ψ[i] = Retention_∂θ∂ψ(ψ[i], param[i])
   end
 end
 
+# 算术平均、调和平均
+mean_arithmetic(K1::T, K2::T, d1::T, d2::T) where {T<:Real} = (K1 * d1 + K2 * d2) / (d1 + d2)
+mean_harmonic(K1::T, K2::T, d1::T, d2::T) where {T<:Real} = K1 * K2 * (d1 + d2) / (K1 * d2 + K2 * d1)
+
+# 一并更新K和K₊ₕ
 cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
 function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
-  (; N, ibeg, K) = soil
+  (; N, ibeg, K, K₊ₕ, Δz) = soil
   (; param) = soil.param
+  
   @inbounds for i = ibeg:N
     K[i] = Retention_K(θ[i], param[i])
+  end
+  @inbounds for i = ibeg:N-1
+    K₊ₕ[i] = mean_arithmetic(K[i], K[i+1], Δz[i], Δz[i+1])
+    # K₊ₕ[i] = mean_harmonic(K[i], K[i+1], Δz[i], Δz[i+1])
+  end
+end
+
+
+function cal_θ!(soil::Soil, ψ::AbstractVector{T}) where {T<:Real}
+  (; N, ibeg, θ) = soil
+  (; param) = soil.param
+  @inbounds for i = ibeg:N
+    θ[i] = Retention_θ(ψ[i], param[i])
   end
 end
 

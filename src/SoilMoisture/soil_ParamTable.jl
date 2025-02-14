@@ -30,7 +30,6 @@ function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1)
     0.43 0.045 0.145 2.68 29.7   #  12, 1, Sand
   ]
   θ_sat, θ_res, α, n, Ksat = soilparam[soil_type, :]
-  Ksat = Ksat / 3600 # [cm h-1] to [cm s-1]
   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 end
 
@@ -57,7 +56,6 @@ function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
     0.395 -12.1 4.05 63.36  # 12, 1, Sand
   ]
   θ_sat, ψ_sat, b, Ksat = soilparam[soil_type, :]
-  Ksat = Ksat / 3600 # [cm h-1] to [cm s-1]
   ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
 end
 

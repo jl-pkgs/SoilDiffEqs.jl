@@ -2,10 +2,11 @@
 # ! 注意
 # - CoLM中，z向下为正
 function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl) where {FT<:Real}
-  (; N, dt, zwt,
+  (; N, zwt,
     z₊ₕ, z_cm, Δz_cm, Δz₊ₕ_cm) = soil
   param = soil.param.param
   (; θ_sat) = soil.param
+  dt = soil.dt / 3600 # [s] -> [h]
 
   dKdθ = zeros(FT, N)
   dψdθ = zeros(FT, N)

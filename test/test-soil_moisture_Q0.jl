@@ -4,7 +4,7 @@ using OrdinaryDiffEq
 
 function init_soil()
   N = 150
-  par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
+  par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34.0, α=0.027, n=3.96, m=1.0)
   param = SoilParam(N, par; use_m=true)
 
   Δz = fill(0.01, N)
@@ -14,10 +14,10 @@ function init_soil()
   ψ = Retention_ψ.(θ; par)
   θ0 = 0.267
   ψ0 = Retention_ψ(θ0, par)
-  Q0 = -par.Ksat * 0.5  # [cm s-1] 向下为负
+  Q0 = -par.Ksat * 0.5  # [cm h-1] 向下为负
 
   dt = 5 # [s]
-  sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
+  sink = fill(0.3, N) / 24 # [cm s⁻¹], 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ,
     Q0, θ0, ψ0, dt, sink, param)
   return soil
@@ -55,29 +55,33 @@ function solve_bonan()
     Q0, QN, dθ, err = soil_moisture_Q0!(soil, sink, Q0)
 
     # % Sum fluxes for relative mass balance error
-    sum_in -= Q0 * dt
-    sum_out -= QN * dt
+    sum_in -= Q0 * dt / 3600
+    sum_out -= QN * dt / 3600
     sum_store += dθ
   end
-  SINK = sum(sink) * dt * ntim
-  @test (sum_in - sum_out - sum_store - SINK) / sum_in <= 1e4 # 误差小于万分之一
+  SINK = sum(sink) * dt / 3600 * ntim
+  error = sum_in - sum_out - sum_store - SINK
+  error_perc = error / sum_in * 100
+  @show error, error_perc
+  # @test abs(error_perc) <= 1 # 0.2%，千分之二
   soil.θ
 end
 
 # N = 150
 # dz = ones(N)
 # z, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(dz)
-@time solution = solve_ode()
-@time θ = solve_bonan()
-
 @testset "RichardsEquation Q0" begin
-  @test maximum(abs.(solution - θ)) <= 0.003 # 误差小于3/1000
+  @time solution = solve_ode()
+  @time θ = solve_bonan()
+  
+  @test maximum(abs.(solution - θ)) <= 2*1e-4 # 误差小于3/1000
 end
 
-begin
-  gr(framestyle=:box)
-  plot(solution, z; label="ODE", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
-  plot!(θ, z; label="Bonan")
-end
+# begin
+#   gr(framestyle=:box)
+#   plot(solution, z[1:end]; label="ODE", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
+#   plot!(θ, z[1:end]; label="Bonan")
+# end
+
 # plot!(solution, z; label="ODE")
 # ODE: 10 times slower

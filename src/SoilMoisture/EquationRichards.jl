@@ -1,3 +1,6 @@
+export soil_WaterFlux!
+
+
 function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   ψ0::T=NaN, Q0::T=NaN, method="ψ0") where {T<:Real}
 
@@ -10,12 +13,11 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
 
   if method == "ψ0"
     z_prev = ibeg == 1 ? 0 : z[ibeg-1]
-    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z_prev - z[ibeg]) + 1) # [cm/s]
+    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z_prev - z[ibeg]) + 1) # [cm h-1]
   elseif method == "Q0"
     # Q0 = Q0
   end
 
-  cal_K₊ₕ!(soil)
   @inbounds for i in ibeg:N-1
     # K₊ₕ = (K[i] + K[i+1]) / 2
     Δz₊ₕ = z[i] - z[i+1]
@@ -25,11 +27,13 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   Q0
 end
 
+# dt: in hours
 "Update soil water content θ according to Q"
 function soil_Updateθ!(soil::Soil{T}, dt::Real; method="ψ0") where {T<:Real}
+  dt = dt / 3600.0 # [s] -> [h]
   (; ibeg, N, θ, Q, ψ0, Q0, sink) = soil # Δz, z, 
   Δz = soil.Δz_cm                               # [cm]
-  Q0 = soil_WaterFlux!(soil, θ; ψ0, Q0, method) # [cm/s]
+  Q0 = soil_WaterFlux!(soil, θ; ψ0, Q0, method) # [cm h-1]
   (; θ_sat, θ_res) = soil.param
 
   # TODO: 
@@ -49,16 +53,20 @@ end
 - `method`: 
   + `ψ0`: ψ0 boundary condition, 第一类边界条件
   + `Q0`: Q0 boundary condition, 第二类边界条件
+> dθ: actually is dθ/dt
 """
 function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil{T}, t; method="ψ0") where {T<:Real}
   p.timestep += 1
+  # mod(p.timestep, 1000) == 0 && println("timestep = ", p.timestep)
+  
   (; ibeg, N, Q, ψ0, Q0, sink) = p # Δz, z, 
   Δz = p.Δz_cm
   Q0 = soil_WaterFlux!(p, θ; ψ0, Q0, method)
 
-  dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg]
+  dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg] / 3600.0
   @inbounds for i in ibeg+1:N
-    dθ[i] = -(Q[i-1] - Q[i]) / Δz[i] - sink[i] / Δz[i]
+    _dθ = -(Q[i-1] - Q[i]) / Δz[i] - sink[i] / Δz[i] # [m3 m-3] / h-1
+    dθ[i] = _dθ / 3600.0 # [m3 m-3] / s-1
   end
 end
 

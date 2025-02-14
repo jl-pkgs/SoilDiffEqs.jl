@@ -5,8 +5,8 @@ export Soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
-  dt::Float64 = 3600                 # 时间步长, seconds
-  z::OffsetVector{FT} = zeros(FT, N + 1)   # m, 向下为负
+  dt::Float64 = 3600.0               # 时间步长, seconds
+  z::OffsetVector{FT} = zeros(FT, N + 1) # m, 向下为负
   Δz₊ₕ::Vector{FT} = zeros(FT, N)
   z₊ₕ::Vector{FT} = zeros(FT, N)
   Δz::Vector{FT} = zeros(FT, N)
@@ -17,15 +17,15 @@ export Soil
 
   # 水分
   θ::Vector{FT} = fill(0.1, N)       # θ [m3 m-3]
-  Q::Vector{FT} = zeros(FT, N)       # [cm/s]
-  K::Vector{FT} = zeros(FT, N)       # hydraulic conductivity，[cm/s]
-  K₊ₕ::Vector{FT} = zeros(FT, N - 1)  # hydraulic conductivity at interface, [cm/s]
-  Cap::Vector{FT} = zeros(FT, N)     # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
+  Q::Vector{FT} = zeros(FT, N)       # [cm h-1]
+  K::Vector{FT} = zeros(FT, N)       # hydraulic conductivity，[cm h-1]
+  K₊ₕ::Vector{FT} = zeros(FT, N - 1)  # hydraulic conductivity at interface, [cm h-1]
+  ∂θ∂ψ::Vector{FT} = zeros(FT, N)    # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
   ψ::Vector{FT} = zeros(FT, N)       # [cm]，约干越负
   ψ_next::Vector{FT} = zeros(FT, N)  # ψ[N+1/2], [cm], 临时变量
   θ0::FT = FT(0.0)                   # [m3 m-3]
   ψ0::FT = FT(0.0)                   # [cm]
-  Q0::FT = FT(0.0)                   # [cm/s] 下渗速率，向下为负
+  Q0::FT = FT(0.0)                   # [cm h-1] 下渗速率，向下为负
   sink::Vector{FT} = fill(0.0, N)    # 蒸发项, [cm per unit time]
   θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ  
   ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
@@ -104,7 +104,7 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :Tsurf)
 
   printstyled(io, "Soil Moisture: \n", color=:blue, bold=true)
-  print_var(io, x, :K, scale=1 / 3600) # [cm/s] to [cm h-1]
+  print_var(io, x, :K)
   print_var(io, x, :ψ)
   print_var(io, x, :θ)
   print_var(io, x, :sink)

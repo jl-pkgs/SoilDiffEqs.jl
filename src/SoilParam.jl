@@ -7,7 +7,7 @@ abstract type AbstractSoilParam{T<:Real} end
 @with_kw mutable struct ParamVanGenuchten{T<:Real} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   θ_res::T = 0.075       # [m3 m-3]
-  Ksat::T = 34 / 3600    # [cm s-1]
+  Ksat::T = 34.0         # [cm h-1]
   α::T = 0.027
   n::T = 3.96
   m::T = 1.0 - 1.0 / n
@@ -17,7 +17,7 @@ end
   θ_sat::T = 0.287       # [m3 m-3]
   # θ_res::T = 0.075     # [m3 m-3]
   ψ_sat::T = -10.0       # [cm]
-  Ksat::T = 34 / 3600    # [cm s-1]
+  Ksat::T = 34.0         # [cm h-1]
   b::T = 4.0             # [-]
 end
 
@@ -43,7 +43,7 @@ end
 
   θ_sat::Vector{FT} = fill(FT(0.4), N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(FT(0.1), N)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(FT(2.0 / 3600), N) # saturated hydraulic conductivity, [cm s-1]
+  Ksat::Vector{FT} = fill(FT(2.0), N) # saturated hydraulic conductivity, [cm h-1]
   α::Vector{FT} = fill(FT(0.01), N)        # [cm-1]
   n::Vector{FT} = fill(FT(2.0), N)         # [-]
   m::Vector{FT} = fill(FT(0.5), N)         # [-]，优化时的可选参数，不建议优化
@@ -143,7 +143,7 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   print_selected(io, "van_Genuchten ($(np)p$subfix)", method_retention)
   print_var(io, param, :θ_sat)
   print_var(io, param, :θ_res)
-  print_var(io, param, :Ksat; scale=1e-3)
+  print_var(io, param, :Ksat)
   print_var(io, param, :α)
   print_var(io, param, :n)
   use_m && print_var(io, param, :m; used=use_m)
