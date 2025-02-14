@@ -3,12 +3,15 @@ gr(framestyle=:box)
 
 
 function plot_sim(i; ysim=nothing, ignore...)
+  i2 = i + ibeg - 1
+  depth = round(soil.z[i2] * 100; digits=0)
+  
   t = dates
   time_min, time_max = minimum(t), maximum(t)
   ticks = time_min:Dates.Month(1):time_max
   xticks = ticks, format.(ticks, "mm-dd")
 
-  title = @sprintf("%dcm", depths[i])
+  title = @sprintf("%dcm", depth)
   p = plot(; title, 
     xticks,
     xrot=30, tickfonthalign=:center, tickfontvalign=:bottom)
