@@ -18,8 +18,9 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   cal_K!(soil, θ)     # K
   cal_∂θ∂ψ!(soil, ψ)  # ∂θ∂ψ
   
-  K0₊ₕ = K[ibeg]
-  dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[ibeg-1]
+  i0 = max(ibeg - 1, 1)
+  K0₊ₕ = ibeg == 1 ? K[1] : K₊ₕ[i0]
+  dz0₊ₕ = ibeg == 1 ? 0.5 * Δz[1] : Δz₊ₕ[i0]
   # dz0₊ₕ = 0.5 * Δz[1] # ? 
   dt_half = 0.5 * dt
 
@@ -49,7 +50,7 @@ function soil_moisture!(soil::Soil, sink::V, ψ0::T;
   cal_θ!(soil, ψ_next)    # θ
   cal_K!(soil, θ)         # K
   cal_∂θ∂ψ!(soil, ψ_next) # ∂θ∂ψ
-  K0₊ₕ = K[ibeg] # 可以按照同样的方法，设置
+  K0₊ₕ = ibeg == 1 ? K[1] : K₊ₕ[i0]
 
   ## second round: in half step
   @inbounds for i = ibeg:N

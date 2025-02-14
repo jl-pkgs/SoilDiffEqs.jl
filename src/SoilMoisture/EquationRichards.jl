@@ -12,8 +12,7 @@ function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
   cal_ψ!(soil, θ)
 
   if method == "ψ0"
-    z_prev = ibeg == 1 ? 0 : z[ibeg-1]
-    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z_prev - z[ibeg]) + 1) # [cm h-1]
+    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z[ibeg-1] - z[ibeg]) + 1) # [cm h-1]
   elseif method == "Q0"
     # Q0 = Q0
   end

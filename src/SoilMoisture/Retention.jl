@@ -47,6 +47,15 @@ function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
   clamp!(Sy, 0.0, sy_max)
 end
 
+
+function cal_θ!(soil::Soil, ψ::AbstractVector{T}) where {T<:Real}
+  (; N, ibeg, θ) = soil
+  (; param) = soil.param
+  @inbounds for i = ibeg:N
+    θ[i] = Retention_θ(ψ[i], param[i])
+  end
+end
+
 function cal_∂θ∂ψ!(soil::Soil{T,P}, ψ::AbstractVector{T}) where {T<:Real,P<:AbstractSoilParam{T}}
   (; ibeg, N, ∂θ∂ψ) = soil
   (; param) = soil.param
@@ -62,26 +71,19 @@ mean_harmonic(K1::T, K2::T, d1::T, d2::T) where {T<:Real} = K1 * K2 * (d1 + d2) 
 # 一并更新K和K₊ₕ
 cal_K!(soil::Soil) = cal_K!(soil, soil.θ)
 function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
-  (; N, ibeg, K, K₊ₕ, Δz) = soil
-  (; param) = soil.param
+  (; N, K, K₊ₕ, Δz) = soil
+  param = soil.param.param
+  i0 = max(soil.ibeg - 1, 1)
   
-  @inbounds for i = ibeg:N
+  @inbounds for i = i0:N
     K[i] = Retention_K(θ[i], param[i])
   end
-  @inbounds for i = ibeg:N-1
+  @inbounds for i = i0:N-1
     K₊ₕ[i] = mean_arithmetic(K[i], K[i+1], Δz[i], Δz[i+1])
     # K₊ₕ[i] = mean_harmonic(K[i], K[i+1], Δz[i], Δz[i+1])
   end
 end
 
-
-function cal_θ!(soil::Soil, ψ::AbstractVector{T}) where {T<:Real}
-  (; N, ibeg, θ) = soil
-  (; param) = soil.param
-  @inbounds for i = ibeg:N
-    θ[i] = Retention_θ(ψ[i], param[i])
-  end
-end
 
 
 cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
@@ -95,9 +97,9 @@ end
 
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
-  i = soil.ibeg # 默认采用第一层进行初始化
-  (; param) = soil.param
-  return Retention_ψ(θ, param[i]) # ψ0
+  # ibeg = 1, ψ0; ibeg = 2, ψ1
+  i = max(soil.ibeg - 1, 1)
+  return Retention_ψ(θ, soil.param.param[i]) # ψ0
 end
 
 
