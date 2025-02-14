@@ -1,7 +1,7 @@
 ## kongdd, 2025-02-14
 # 1. dt只有时间步长比较小，才能取得较高的精度
 using SoilDifferentialEquations, Test
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 # using Plots
 
 function init_soil()

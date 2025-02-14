@@ -1,5 +1,5 @@
 ## TODO: Bonan求解不稳定，会来回跳动
-using SoilDifferentialEquations, OrdinaryDiffEq, Test
+using SoilDifferentialEquations, OrdinaryDiffEqTsit5, Test
 # using Plots
 
 function init_soil(; dt=60)

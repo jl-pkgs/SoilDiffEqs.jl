@@ -1,5 +1,5 @@
 using SoilDifferentialEquations, Test
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 
 
 function init_soil()

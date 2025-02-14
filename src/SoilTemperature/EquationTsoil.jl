@@ -4,21 +4,27 @@
 - `ibeg`: 第一层土壤温度观测具有较大的误差，因此不使用第一层土壤温度
 """
 function soil_HeatFlux!(F::V, T::V, κ::V, z::OV, z₊ₕ::V;
-  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf", 
+  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf",
   ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT},OV<:AbstractVector{FT}}
 
   N = length(T)
   if method == "Tsurf"
-    _κ₊ₕ::T = ibeg == 1 ? κ[1] : κ₊ₕ[ibeg-1]
-    _dz::T = ibeg == 1 ? -z[1] : z[ibeg-1] - z[ibeg]
+    if ibeg > 1
+      d1 = z[ibeg-1] - z[ibeg]
+      d2 = z[ibeg] - z[ibeg+1]
+      _κ₊ₕ = mean_arithmetic(κ[ibeg-1], κ[ibeg], d1, d2)
+      _dz = z[ibeg-1] - z[ibeg+1]
+    else
+      _κ₊ₕ = κ[1]
+      _dz = 0 - z[1]
+    end
     F0 = -_κ₊ₕ * (Tsurf - T[ibeg]) / _dz
   end
 
   @inbounds for i in ibeg:N-1
     d1 = z[i] - z₊ₕ[i]
     d2 = z₊ₕ[i] - z[i+1]
-    κ₊ₕ = κ[i] * κ[i+1] * (d1 + d2) / (κ[i] * d2 + κ[i+1] * d1) # Eq. 5.16, 
-    # κ₊ₕ = (κ[i] + κ[i+1]) / 2
+    κ₊ₕ = mean_arithmetic(κ[i], κ[i+1], d1, d2)  # Eq. 5.16, 
     Δz₊ₕ = z[i] - z[i+1]
     F[i] = -κ₊ₕ * (T[i] - T[i+1]) / Δz₊ₕ
   end
