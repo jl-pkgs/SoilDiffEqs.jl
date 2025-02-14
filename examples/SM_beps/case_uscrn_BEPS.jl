@@ -19,7 +19,7 @@ function goal(theta)
   map(i -> begin
       obs = @view yobs[:, i]
       sim = @view ysim[:, i]
-      ∑ += -of_NSE(obs, sim)
+      ∑ += -of_KGE(obs, sim)
     end, 1:n)
   return ∑ / n # mean of NSE
 end
@@ -52,14 +52,14 @@ function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
   θ = fill(0.2, N)
   θ[i0:end] .= θ0
   θ[1:i0-1] .= θ0[1]
-  
+
   par = get_soilpar(soil_type)
   par = ParamVanGenuchten(;
-    θ_sat = 0.20,
-    θ_res = 0.03, 
-    Ksat = 1.04, 
-    α = 0.036,
-    n = 1.56
+    θ_sat=0.20,
+    θ_res=0.03,
+    Ksat=1.04,
+    α=0.036,
+    n=1.56
   )
   param = SoilParam(N, par;
     use_m=false, method_retention, same_layer)
@@ -92,22 +92,16 @@ begin
 
   lower, upper = SM_paramBound(soil)
   theta0 = SM_param2theta(soil)
-  @time ysim = model_sim(theta0);
+  @time ysim = model_sim(theta0)
   goal(theta0)
 end
 
-@time goal(theta0)
+# @profview for i = 1:10
+#   goal(theta0)
+# end
 
-begin
-  lower, upper = SM_paramBound(soil)
-  theta0 = SM_param2theta(soil)
-  ysim = model_sim(theta0)
-  goal(theta0)
-  # plot_result(theta0)
-  @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=1_000)
-end
-
-# include("main_plot.jl")
+@time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=2_000)
 # SM_UpdateParam!(soil, theta)
+# include("main_plot.jl")
 # plot_result(theta)
 # plot_result(theta0)

@@ -51,11 +51,11 @@ end
 # @fastmath 
 function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, Ksat, m) = par
-  Se = (θ - θ_res) / (θ_sat - θ_res)
+  Se::T = (θ - θ_res) / (θ_sat - θ_res)
   Se = clamp(Se, T(0.0), T(1.0))
 
-  diff = (1.0 - Se^(1.0 / m))
-  K = Se < 1.0 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
+  diff::T = (1 - Se^(1 / m))
+  K::T = Se < 1 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
   return K
 end
 
