@@ -19,8 +19,9 @@ function cal_Q!(soil::Soil{T}, θ::AbstractVector{T};
   cal_ψ!(soil, θ)
 
   if method == "ψ0"
-    _dz = ibeg == 1 ? -z[1] : Δz₊ₕ[ibeg-1]
-    _K₊ₕ = ibeg == 1 ? K[1] : K₊ₕ[ibeg-1]
+    # _dz::T = z[ibeg-1] - z[ibeg]
+    _dz::T = ibeg == 1 ? -z[1] : Δz₊ₕ[ibeg-1]
+    _K₊ₕ::T = ibeg == 1 ? K[1] : K₊ₕ[ibeg-1]
     Q0 = -_K₊ₕ * ((ψ0 - ψ[ibeg]) / _dz + 1) # [cm h-1]
   end
 
@@ -28,26 +29,30 @@ function cal_Q!(soil::Soil{T}, θ::AbstractVector{T};
     Q[i] = -K₊ₕ[i] * ((ψ[i] - ψ[i+1]) / Δz₊ₕ[i] + 1.0)
   end
   Q[N] = -K[N] # 尾部重力排水
+  soil.Q0 = Q0
   return Q0
 end
 
 # dt: in hours
 "Update soil water content θ according to Q"
-function soil_Updateθ!(soil::Soil{T}, dt::Real; method="ψ0") where {T<:Real}
-  (; ibeg, N, θ, Q, ψ0, Q0, sink) = soil # Δz, z, 
-  Δz = soil.Δz_cm                               # [cm]
-  Q0 = cal_Q!(soil, θ; ψ0, Q0, method) # [cm h-1]
+function soil_Updateθ!(soil::Soil{T}, dt::T) where {T<:Real}
+  (; ibeg, N, θ, Q, Q0, sink) = soil # Δz, z, 
   (; θ_sat, θ_res) = soil.param
+  Δz = soil.Δz_cm                               # [cm]
   dt = dt / 3600.0 # [s] -> [h]
+  # Q0 = cal_Q!(soil, θ; ψ0, Q0, method) # [cm h-1]
 
   # TODO: 
   # 若某一层发生了饱和，则继续向下传导
   # 若某一层的土壤水分全部耗干，则继续向下抽水
-  θ[ibeg] += -((Q0 - Q[ibeg]) + sink[ibeg]) * dt / Δz[ibeg]
+  if ibeg > 1
+    θ[ibeg-1] -= -Q0 * dt / Δz[ibeg-1]
+  end
+  θ[ibeg] += ((-Q0 + Q[ibeg]) - sink[ibeg]) * dt / Δz[ibeg]
   # θ[ibeg] = clamp(θ[ibeg], θ_res[ibeg], θ_sat[ibeg])
 
   @inbounds for i in ibeg+1:N
-    θ[i] += -((Q[i-1] - Q[i]) + sink[i]) * dt / Δz[i] # [m3 m-3]
+    θ[i] += ((-Q[i-1] + Q[i]) - sink[i]) * dt / Δz[i] # [m3 m-3]
     # θ[i] = clamp(θ[i], θ_res[i], θ_sat[i])
   end
 end

@@ -20,7 +20,7 @@ end
 
 
 function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::FT; method="ψ0") where {FT}
-  (; ψ0, Q, Q0, ibeg, ψ) = soil
+  (; ψ0, Q, ibeg, ψ) = soil
   kstep = soil.dt # 3600s
   ∑t = 0.0
   θ = soil.θ
@@ -34,9 +34,9 @@ function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::FT; method="ψ0") where {FT
     cal_ψ!(soil, θ)
     ψ0 = ψ[i0]
 
-    _Q0 = cal_Q!(soil, θ; ψ0, Q0, method) # update Q
+    Q0 = cal_Q!(soil, θ; ψ0, method) # update Q
     
-    Qmax = guess_Qmax(Q, _Q0; ibeg)
+    Qmax = guess_Qmax(Q, Q0; ibeg)
     Δt = guess_step(Qmax) # this_step
     ∑t += Δt
     ∑t > kstep && (Δt -= (∑t - kstep))
@@ -66,16 +66,16 @@ end
 # Arguments
 - `max_Fb`: [cm h-1]
 """
-function guess_step(Qmax::FT) where {FT}
+function guess_step(Qmax::T) where {T}
   Qmax = Qmax * 24 * 10 # [cm h-1] -> [mm d-1]
   # this constraint is too large
   # 需要调研，暴雨期间土壤的下渗速率，或者说`Ksat`
   if Qmax >= 100 # [mm d-1]
-    30
+    T(30)
   elseif Qmax >= 20
-    120
+    T(120)
   else
-    360
+    T(360)
   end
 end
 # if max_Fb > 86.4 # 86.4 mm/day

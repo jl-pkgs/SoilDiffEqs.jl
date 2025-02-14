@@ -85,12 +85,13 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
 end
 
 
-
 cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
 function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
-  (; N, ibeg, ψ) = soil
-  (; param) = soil.param
-  @inbounds for i = ibeg:N
+  (; N, ψ) = soil
+  param = soil.param.param
+  i0 = max(soil.ibeg - 1, 1)
+  
+  @inbounds for i = i0:N
     ψ[i] = Retention_ψ(θ[i], param[i])
   end
 end

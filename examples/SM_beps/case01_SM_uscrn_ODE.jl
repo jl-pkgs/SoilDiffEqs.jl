@@ -55,6 +55,13 @@ function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
   θ[1:i0-1] .= θ0[1]
   
   par = get_soilpar(soil_type)
+  par = ParamVanGenuchten(;
+    θ_sat = 0.20,
+    θ_res = 0.03, 
+    Ksat = 1.04, 
+    α = 0.036,
+    n = 1.56
+  )
   param = SoilParam(N, par;
     use_m=false, method_retention, same_layer)
   soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, method_retention)
@@ -90,8 +97,6 @@ begin
   goal(theta0;)
 end
 
-soil = init_soil(; θ0)
-
 
 begin
   lower, upper = SM_paramBound(soil)
@@ -103,6 +108,5 @@ begin
 end
 
 SM_UpdateParam!(soil, theta)
-ysim = model_sim(theta;)
 plot_result(ysim)
 # goal(theta; same_layer)
