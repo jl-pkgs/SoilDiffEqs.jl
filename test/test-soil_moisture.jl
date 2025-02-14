@@ -1,7 +1,7 @@
 using SoilDifferentialEquations, Test
 
 
-function data_loader_soil()
+function init_soil()
   N = 150
   par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   param = SoilParam(N, par; use_m=true)
@@ -14,16 +14,16 @@ function data_loader_soil()
   θ0 = 0.267
   ψ0 = Retention_ψ(θ0; par)
 
-  dt = 5 # [s]
+  dt = 60 # [s]
   sink = ones(N) * 0.3 / 86400 # [cm s⁻¹], 蒸发速率
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, θ, ψ, θ0, ψ0, dt, sink, param)
   return soil
 end
 
-soil = data_loader_soil()
+soil = init_soil()
 
 function solve_ode()
-  p = data_loader_soil()
+  p = init_soil()
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
 
   u0 = p.θ
@@ -34,7 +34,7 @@ function solve_ode()
 end
 
 function solve_bonan()
-  soil = data_loader_soil()
+  soil = init_soil()
   (; dt, ψ0, sink) = soil
   ntim = 0.8 * 3600 / dt
 
@@ -60,8 +60,8 @@ function solve_bonan()
   soil.θ
 end
 
-@time θ = solve_bonan()
-@time solution = solve_ode()
+@time θ = solve_bonan();
+@time solution = solve_ode();
 
 # 40 times slower
 # @profview solution = solve_ode();
@@ -75,17 +75,16 @@ end
 # @test sum_in == 11.810243822643141
 # @test sum_out == 0.10508872215771699
 # @test sum_store == 11.704825251924781
+begin
+  @time θ = solve_bonan()
+  @time solution = solve_ode()
 
-# begin
-#   @time θ = solve_bonan()
-#   @time solution = solve_ode()
+  using Plots
+  N = 150
+  Δz = fill(0.01, N)
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 
-#   using Plots
-#   N = 150
-#   Δz = fill(0.01, N)
-#   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
-
-#   gr(framestyle=:box)
-#   plot(θ, z; label="Bonan", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
-#   plot!(solution, z; label="ODE")
-# end
+  gr(framestyle=:box)
+  plot(θ, z[1:end]; label="Bonan", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
+  plot!(solution, z[1:end]; label="ODE")
+end

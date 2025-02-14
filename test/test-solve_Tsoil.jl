@@ -1,7 +1,7 @@
 using SoilDifferentialEquations, OrdinaryDiffEq, Test
 
 
-function data_loader_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
+function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1)
   N = 120
   Δz = fill(0.025, N)
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
@@ -21,13 +21,13 @@ end
 begin
   # 4 hours
   dt = 60 * 6
-  soil = data_loader_soil(; dt)
+  soil = init_soil(; dt)
   ntime = round(Int, 3600 * 4 / dt)
 
   TS_surf = fill(20.0, ntime)
   ysim_bonan = solve_Tsoil_Bonan(soil, TS_surf)
 
-  soil = data_loader_soil(; dt)
+  soil = init_soil(; dt)
   ysim_ode = solve_Tsoil_ODE(soil, TS_surf; solver=Tsit5())
 
   @test maximum(abs.(ysim_bonan[end, :] - ysim_ode[end, :])) <= 0.05

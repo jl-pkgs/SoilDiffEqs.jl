@@ -40,7 +40,7 @@ function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1.0
-  Se = clamp(Se, T(0.01), T(1.0))
+  Se = clamp(Se, T(0.0), T(1.0))
 
   # Volumetric soil moisture (θ) for specified matric potential (ψ)
   return θ_res + (θ_sat - θ_res) * Se # θ
@@ -50,7 +50,7 @@ end
 function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, Ksat, m) = par
   Se = (θ - θ_res) / (θ_sat - θ_res)
-  Se = clamp(Se, T(0.01), T(1.0))
+  Se = clamp(Se, T(0.0), T(1.0))
 
   diff = (1.0 - Se^(1.0 / m))
   K = Se < 1.0 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
@@ -67,9 +67,10 @@ function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψmin=T(-1e7)) where
     return T(0.0)   # Saturated condition, psi is zero
   else
     Se = (θ - θ_res) / (θ_sat - θ_res)
-    Se = clamp(Se, T(0.01), T(1.0))
-    ψ = -1 / α * pow(pow(1 / Se, (1 / m)) - 1, 1 / n)
-    return max(ψ, ψmin)
+    Se = clamp(Se, T(0.0), T(1.0))
+    ψ = -1 / α * pow(pow(1.0 / Se, (1 / m)) - 1, 1 / n)
+    return ψ
+    # return max(ψ, ψmin)
   end
 end
 

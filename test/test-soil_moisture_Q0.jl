@@ -2,7 +2,7 @@ using SoilDifferentialEquations, Test
 using OrdinaryDiffEq
 
 
-function data_loader_soil()
+function init_soil()
   N = 150
   par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34 / 3600, α=0.027, n=3.96, m=1.0)
   param = SoilParam(N, par; use_m=true)
@@ -23,11 +23,11 @@ function data_loader_soil()
   return soil
 end
 
-p = data_loader_soil()
+p = init_soil()
 display(p)
 
 function solve_ode()
-  p = data_loader_soil()
+  p = init_soil()
   u0 = p.θ
   tspan = (0.0, 0.8 * 3600)  # Time span for the simulation
 
@@ -39,7 +39,7 @@ end
 
 function solve_bonan()
   # soil_texture = 1
-  soil = data_loader_soil()
+  soil = init_soil()
   (; dt, Q0, sink) = soil
 
   # % --- Initialize accumulators for water balance check
@@ -74,10 +74,10 @@ end
   @test maximum(abs.(solution - θ)) <= 0.003 # 误差小于3/1000
 end
 
-# begin
-#   gr(framestyle=:box)
-#   plot(solution, z; label="ODE", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
-#   plot!(θ, z; label="Bonan")
-# end
+begin
+  gr(framestyle=:box)
+  plot(solution, z; label="ODE", xlabel="θ", ylabel="Depth (cm)", xlims=(0.08, 0.3))
+  plot!(θ, z; label="Bonan")
+end
 # plot!(solution, z; label="ODE")
 # ODE: 10 times slower

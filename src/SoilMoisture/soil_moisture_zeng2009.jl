@@ -1,10 +1,11 @@
 # 中间变量
-
 # ! 注意
 # - CoLM中，z向下为正
-function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ0, dqidθ1, dqodθ1, dqodθ2, dzmm) where {FT<:Real}
+function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl) where {FT<:Real}
   (; N, dt, zwt,
     z₊ₕ, z_cm, Δz_cm, Δz₊ₕ_cm) = soil
+  param = soil.param.param
+  (; θ_sat) = soil.param
 
   dKdθ = zeros(FT, N)
   dψdθ = zeros(FT, N)
@@ -24,16 +25,18 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl, dKdθ, dψdθ, dqidθ
 
   # Hydraulic conductivity and soil matric potential and their derivatives
   for j in 1:N
+    par = param[j]  # updated to ensure correct index usage
+    
     j2 = min(N, j + 1)
     _θ = 0.5(θ[j] + θ[j2])
     _θsat = 0.5(θ_sat[j] + θ_sat[j2])
     se = clamp(_θ / _θsat, 0.01, 1.0)
 
-    s2 = Ksat[j] * se^(2.0 * B[j] + 2.0)
-    dKdθ[j] = (2B[j] + 3.0) * s2 / (2 * _θsat)    # CLM5, Eq. 7.87
-
-    ψ[j] = cal_ψ(θ[j], θ_sat[j], ψ_sat[j], B[j]; ψmin)
-    dψdθ[j] = -B[j] * ψ[j] / θ[j]                                               # CLM5, Eq. 7.85
+    # s2 = Ksat[j] * se^(2.0 * B[j] + 2.0)
+    # dKdθ[j] = (2 * B[j] + 3.0) * s2 / (2 * _θsat)    
+    dKdθ[j] = Retention_∂K∂Se(se, par) / (2 * _θsat)  # CLM5, Eq. 7.87
+    ψ[j] = Retention_ψ(θ[j], par)
+    dψdθ[j] = Retention_∂ψ∂θ(ψ[j], par) # CLM5, Eq. 7.85
   end
 
   sdamp = 0.0 # extrapolates θ dependence of evaporation
