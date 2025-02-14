@@ -35,27 +35,43 @@ end
 
 # dt: in hours
 "Update soil water content θ according to Q"
-function soil_Updateθ!(soil::Soil{T}, dt::T) where {T<:Real}
+function soil_Updateθ!(soil::Soil{T, P}, dt::T) where {T<:Real, P<:AbstractSoilParam{T}}
   (; ibeg, N, θ, Q, Q0, sink) = soil # Δz, z, 
-  (; θ_sat, θ_res) = soil.param
   Δz = soil.Δz_cm                               # [cm]
   dt = dt / 3600.0 # [s] -> [h]
-  # Q0 = cal_Q!(soil, θ; ψ0, Q0, method) # [cm h-1]
-
   # TODO: 
   # 若某一层发生了饱和，则继续向下传导
   # 若某一层的土壤水分全部耗干，则继续向下抽水
-  if ibeg > 1
-    θ[ibeg-1] -= -Q0 * dt / Δz[ibeg-1]
-  end
+  ibeg > 1 && (θ[ibeg-1] -= -Q0 * dt / Δz[ibeg-1])
+  
   θ[ibeg] += ((-Q0 + Q[ibeg]) - sink[ibeg]) * dt / Δz[ibeg]
-  # θ[ibeg] = clamp(θ[ibeg], θ_res[ibeg], θ_sat[ibeg])
-
   @inbounds for i in ibeg+1:N
     θ[i] += ((-Q[i-1] + Q[i]) - sink[i]) * dt / Δz[i] # [m3 m-3]
-    # θ[i] = clamp(θ[i], θ_res[i], θ_sat[i])
+  end
+  clamp_θ!(soil, θ)
+  return nothing
+end
+
+function clamp_θ!(soil::Soil{T,ParamVanGenuchten{T}}, θ::AbstractVector{T}) where {T<:Real}
+  (; θ_res, θ_sat) = soil.param
+  i0 = max(soil.ibeg - 1, 1)
+  N = soil.N
+  @inbounds for i in i0:N
+    δ::T = (θ_sat[i] - θ_res[i]) * T(0.01)
+    θ[i] = clamp(θ[i], θ_res[i] + δ, θ_sat[i])
   end
 end
+
+function clamp_θ!(soil::Soil{T,ParamCampbell{T}}, θ::AbstractVector{T}) where {T<:Real}
+  (; θ_sat) = soil.param
+  _θ_res::T = T(0.01)
+  i0 = max(soil.ibeg - 1, 1)
+  N = soil.N
+  @inbounds for i in i0:N
+    θ[i] = clamp(θ[i], _θ_res, θ_sat[i])
+  end
+end
+
 
 """
 # Arguments
@@ -72,10 +88,9 @@ function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil
   Δz = p.Δz_cm
   Q0 = cal_Q!(p, θ; ψ0, Q0, method)
 
-  dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg] / 3600.0
+  dθ[ibeg] = ((-Q0 + Q[ibeg]) - sink[ibeg]) / Δz[ibeg] / 3600.0
   @inbounds for i in ibeg+1:N
-    _dθ = -(Q[i-1] - Q[i]) / Δz[i] - sink[i] / Δz[i] # [m3 m-3] / h-1
-    dθ[i] = _dθ / 3600.0 # [m3 m-3] / s-1
+    dθ[i] = ((-Q[i-1] + Q[i]) - sink[i]) / Δz[i] / 3600.0 # [m3 m-3] / h-1
   end
 end
 

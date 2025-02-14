@@ -6,7 +6,7 @@ function soil_moisture_BEPS(soil::Soil{FT}, θ0::AbstractVector{FT}, θ_surf::Ab
   (; ibeg, N) = soil
   i0 = max(ibeg - 1, 1)
   soil.θ[i0:end] .= θ0
-  
+
   ntime = length(θ_surf)
   nlayer = N - ibeg + 1
   res = zeros(ntime, nlayer)
@@ -27,20 +27,17 @@ function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::FT; method="ψ0") where {FT
   i0 = max(ibeg - 1, 1)
   θ[i0] = θ_surf
 
-  # 这里是一个时间步长
   n = 0
   while ∑t < kstep
     n += 1
     cal_ψ!(soil, θ)
     ψ0 = ψ[i0]
-
     Q0 = cal_Q!(soil, θ; ψ0, method) # update Q
-    
+
     Qmax = guess_Qmax(Q, Q0; ibeg)
     Δt = guess_step(Qmax) # this_step
     ∑t += Δt
     ∑t > kstep && (Δt -= (∑t - kstep))
-
     # mod(n, 20) == 0 && println("Qmax = $Qmax, Δt = $Δt")
     # println("Qmax = $Qmax, Δt = $Δt")
     soil_Updateθ!(soil, Δt) # update θ during Δt
@@ -51,7 +48,8 @@ end
 
 function guess_Qmax(Q::AbstractVector{FT}, Q0::FT=0; ibeg::Int=1) where {FT}
   Qmax = 0.0
-  @inbounds for i = ibeg:length(Q)
+  N = length(Q)
+  @inbounds for i = ibeg:N-1
     val = abs(Q[i])
     val > Qmax && (Qmax = val)
   end
