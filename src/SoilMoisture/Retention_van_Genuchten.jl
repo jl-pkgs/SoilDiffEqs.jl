@@ -40,7 +40,7 @@ function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1.0
-  Se = clamp(Se, 0.0, 1.0)
+  Se = clamp(Se, T(0.01), T(1.0))
 
   # Volumetric soil moisture (θ) for specified matric potential (ψ)
   return θ_res + (θ_sat - θ_res) * Se # θ
@@ -50,11 +50,27 @@ end
 function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, Ksat, m) = par
   Se = (θ - θ_res) / (θ_sat - θ_res)
-  Se = clamp(Se, 0.0, 1.0)
+  Se = clamp(Se, T(0.01), T(1.0))
 
   diff = (1.0 - Se^(1.0 / m))
   K = Se < 1.0 ? Ksat * sqrt(Se) * (1 - diff^m)^2 : Ksat
   return K
+end
+
+# @fastmath 
+# ψmin = -1e7cm, CLM5, Eq. 7.53
+function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψmin=T(-1e7)) where {T<:Real}
+  (; θ_res, θ_sat, α, n, m) = par
+  if θ <= θ_res
+    return T(-Inf)  # Return a very high negative number indicating very dry conditions
+  elseif θ >= θ_sat
+    return T(0.0)   # Saturated condition, psi is zero
+  else
+    Se = (θ - θ_res) / (θ_sat - θ_res)
+    Se = clamp(Se, T(0.01), T(1.0))
+    ψ = -1 / α * pow(pow(1 / Se, (1 / m)) - 1, 1 / n)
+    return max(ψ, ψmin)
+  end
 end
 
 # @fastmath 
@@ -67,29 +83,26 @@ function van_Genuchten_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<
   else
     ∂θ∂ψ = T(0.0)
   end
+  return ∂θ∂ψ
 end
 
-# @fastmath 
-function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
-  (; θ_res, θ_sat, α, n, m) = par
-  if θ <= θ_res
-    return T(-Inf)  # Return a very high positive number indicating very dry conditions
-  elseif θ >= θ_sat
-    return T(0.0)   # Saturated condition, psi is zero
-  else
-    return -1 / α * pow(pow((θ_sat - θ_res) / (θ - θ_res), (1 / m)) - 1, 1 / n)
-  end
+van_Genuchten_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = T(1.0) / van_Genuchten_∂θ∂ψ(ψ, par)
+
+@inline function van_Genuchten_∂K∂Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; Ksat, m) = par
+  f = 1 - (1 - Se^(1 / m))^m
+  term1 = f^2 / (2 * sqrt(Se))
+  term2 = 2 * Se^(1 / m - 1 / 2) * f / ((1 - Se^(1 / m))^(1 - m))
+  return Ksat * (term1 + term2)
 end
 
-Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten(ψ, par)
-Retention_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_θ(ψ, par)
-Retention_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_K(θ, par)
-Retention_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ(θ, par)
-Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂θ∂ψ(ψ, par)
+
+export van_Genuchten, van_Genuchten_θ, van_Genuchten_K, van_Genuchten_ψ, 
+  van_Genuchten_∂θ∂ψ, van_Genuchten_∂ψ∂θ, van_Genuchten_∂K∂Se
 
 # Special case for:
-# - `soil_texture = 1`: Haverkamp et al. (1977) sand
-# - `soil_texture = 2`: Yolo light clay
+# - `soil_type = 1`: Haverkamp et al. (1977) sand
+# - `soil_type = 2`: Yolo light clay
 
 # if soil_type == 1
 #   K = Ksat * 1.175e6 / (1.175e6 + abs(ψ)^4.74)

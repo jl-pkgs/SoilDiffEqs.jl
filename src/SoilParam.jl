@@ -44,7 +44,7 @@ end
   θ_sat::Vector{FT} = fill(FT(0.4), N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(FT(0.1), N)     # residual water content, [m3 m-3]
   Ksat::Vector{FT} = fill(FT(2.0 / 3600), N) # saturated hydraulic conductivity, [cm s-1]
-  α::Vector{FT} = fill(FT(0.01), N)        # [m-1]
+  α::Vector{FT} = fill(FT(0.01), N)        # [cm-1]
   n::Vector{FT} = fill(FT(2.0), N)         # [-]
   m::Vector{FT} = fill(FT(0.5), N)         # [-]，优化时的可选参数，不建议优化
 
