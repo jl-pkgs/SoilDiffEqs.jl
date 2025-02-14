@@ -2,7 +2,6 @@ using SoilDifferentialEquations, Test, Dates, Ipaper
 using LazyArtifacts
 import RTableTools: fread
 # using OrdinaryDiffEq
-include("main_plot.jl")
 
 function model_sim(theta)
   (; θ_surf, θ0) = options
@@ -18,8 +17,8 @@ function goal(theta)
   n = size(ysim, 2)
   ∑ = 0.0
   map(i -> begin
-      obs = yobs[:, i]
-      sim = ysim[:, i]
+      obs = @view yobs[:, i]
+      sim = @view ysim[:, i]
       ∑ += -of_NSE(obs, sim)
     end, 1:n)
   return ∑ / n # mean of NSE
@@ -93,21 +92,22 @@ begin
 
   lower, upper = SM_paramBound(soil)
   theta0 = SM_param2theta(soil)
-  @time ysim = model_sim(theta0;)
-  goal(theta0;)
+  @time ysim = model_sim(theta0);
+  goal(theta0)
 end
 
+@time goal(theta0)
 
 begin
   lower, upper = SM_paramBound(soil)
   theta0 = SM_param2theta(soil)
-  ysim = model_sim(theta0;)
-  goal(theta0;)
+  ysim = model_sim(theta0)
+  goal(theta0)
   # plot_result(theta0)
-  @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=2_000)
+  @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=1_000)
 end
 
-SM_UpdateParam!(soil, theta)
-plot_result(theta)
-
-plot_result(theta0)
+# include("main_plot.jl")
+# SM_UpdateParam!(soil, theta)
+# plot_result(theta)
+# plot_result(theta0)

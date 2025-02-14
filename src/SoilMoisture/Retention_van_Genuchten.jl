@@ -36,8 +36,10 @@ param = (soil_texture=2,
 end
 
 # @fastmath 
-function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}; ψ_min::T=T(-1e7)) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
+  ψ <= ψ_min && return θ_res
+
   # Effective saturation (Se) for specified matric potential (ψ)
   Se = ψ <= 0 ? (1 + (α * abs(ψ))^n)^-m : 1.0
   Se = clamp(Se, T(0.0), T(1.0))
@@ -59,18 +61,17 @@ end
 
 # @fastmath 
 # ψmin = -1e7cm, CLM5, Eq. 7.53
-function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψmin=T(-1e7)) where {T<:Real}
+function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   if θ <= θ_res
-    return T(-Inf)  # Return a very high negative number indicating very dry conditions
+    return ψ_min # Return a very high negative number indicating very dry conditions
   elseif θ >= θ_sat
     return T(0.0)   # Saturated condition, psi is zero
   else
     Se = (θ - θ_res) / (θ_sat - θ_res)
     Se = clamp(Se, T(0.0), T(1.0))
     ψ = -1 / α * pow(pow(1.0 / Se, (1 / m)) - 1, 1 / n)
-    return ψ
-    # return max(ψ, ψmin)
+    return max(ψ, ψ_min) # Ensure the returned value does not go below ψ_min
   end
 end
 
@@ -98,7 +99,7 @@ van_Genuchten_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = T(1
 end
 
 
-export van_Genuchten, van_Genuchten_θ, van_Genuchten_K, van_Genuchten_ψ, 
+export van_Genuchten, van_Genuchten_θ, van_Genuchten_K, van_Genuchten_ψ,
   van_Genuchten_∂θ∂ψ, van_Genuchten_∂ψ∂θ, van_Genuchten_∂K∂Se
 
 # Special case for:
