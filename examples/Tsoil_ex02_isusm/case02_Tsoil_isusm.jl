@@ -1,5 +1,5 @@
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
-using OrdinaryDiffEq
+using OrdinaryDiffEqTsit5
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 import NetCDFTools: approx
 import Ipaper: set_seed

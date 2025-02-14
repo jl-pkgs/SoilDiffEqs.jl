@@ -1,6 +1,6 @@
 module SoilDifferentialEquations
 
-# using OrdinaryDiffEq
+# using OrdinaryDiffEqTsit5
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Parameters
 using Reexport

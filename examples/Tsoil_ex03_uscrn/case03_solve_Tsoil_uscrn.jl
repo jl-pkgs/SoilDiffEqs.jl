@@ -1,5 +1,5 @@
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
-using OrdinaryDiffEq, Ipaper
+using OrdinaryDiffEqTsit5, Ipaper
 import HydroTools: sceua, GOF, of_KGE, of_NSE
 using Artifacts
 includet("main_Tsoil.jl")
