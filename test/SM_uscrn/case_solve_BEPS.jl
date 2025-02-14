@@ -1,5 +1,4 @@
-using SoilDifferentialEquations, Test, Dates, Ipaper
-using LazyArtifacts
+using SoilDifferentialEquations, Test, Dates
 import RTableTools: fread
 
 
@@ -47,6 +46,7 @@ function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
     α=0.036,
     n=1.56
   )
+  method_retention = "van_Genuchten"
   param = SoilParam(N, par;
     use_m=false, method_retention, same_layer)
   soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, method_retention)
@@ -61,7 +61,7 @@ end
   N_fake = 1
   i0 = max(ibeg - 1, 1) - N_fake
   # [5, 10, 20, 50, 100]
-  yobs_full = d[:, 3:end] |> Matrix |> drop_missing # [time, depth], `depth`: 2:N (5cm~100cm)
+  yobs_full = d[:, 3:end] |> Matrix # [time, depth], `depth`: 2:N (5cm~100cm)
   yobs = yobs_full[:, i0+1:end]  # 从3th开始模拟(10cm)，2th (5cm)作为输入, 1th虚假层, 
   θ0 = yobs_full[1, i0:end]      # t0初始SM值, 
   θ_surf = yobs_full[:, i0]      # i0所有时刻

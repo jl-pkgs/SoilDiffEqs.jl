@@ -61,6 +61,7 @@ function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
     α=0.036,
     n=1.56
   )
+  method_retention = "van_Genuchten"
   param = SoilParam(N, par;
     use_m=false, method_retention, same_layer)
   soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, param, method_retention)
