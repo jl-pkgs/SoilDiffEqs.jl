@@ -4,30 +4,30 @@ import HypergeometricFunctions: _₂F₁
 ## campbell 1974
 # z: 向下为负
 function _cal_θE_campbell(z1::T, z0::T, zwt::T, ψ_sat::T, 
-  θ_sat::T, B::T; use_clamp=true) where {T<:Real}
-  
+  par::ParamCampbell{T}) where {T<:Real}
+  (; θ_sat, b) = par
   C = ψ_sat + zwt
   Δz = z0 - z1
-  u1 = ((C - z1) / ψ_sat)^(1 - 1 / B) # z1 = z[j]
-  u0 = ((C - z0) / ψ_sat)^(1 - 1 / B) # z0 = z[j-1]
-  θE = ψ_sat * θ_sat / (1 - 1 / B) / Δz * (u1 - u0) # Zeng2009, Eq.9
-  use_clamp && (θE = clamp(θE, 0, θ_sat))
+  u1 = ((C - z1) / ψ_sat)^(1 - 1 / b) # z1 = z[j]
+  u0 = ((C - z0) / ψ_sat)^(1 - 1 / b) # z0 = z[j-1]
+  θE = ψ_sat * θ_sat / (1 - 1 / b) / Δz * (u1 - u0) # Zeng2009, Eq.9
+  θE = clamp(θE, 0, θ_sat)
   return θE
 end
 
-function cal_θE_campbell(z1::T, z0::T, zwt::T, ψ_sat::T, 
-  θ_sat::T, B::T; use_clamp=true) where {T<:Real}
-  
+function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T, 
+  par::ParamCampbell{T}) where {T<:Real}
+  (; θ_sat) = par
   if zwt >= z0
     θE = θ_sat
   elseif z0 < zwt < z1
     d1 = zwt - z0 # 未饱和
     d2 = z1 - zwt   # 饱和
-    _θE = _cal_θE_campbell(zwt, z0, zwt, ψ_sat, θ_sat, B; use_clamp)
-    _θE = (_θE * d1 + θ_sat[j] * d2) / (d1 + d2)
+    _θE = _cal_θE_campbell(zwt, z0, zwt, ψ_sat, par)
+    _θE = (_θE * d1 + θ_sat * d2) / (d1 + d2)
     θE = clamp(_θE, 0, θ_sat)
   elseif zwt <= z1
-    θE = _cal_θE_campbell(z1, z0, zwt, ψ_sat, θ_sat, B; use_clamp)
+    θE = _cal_θE_campbell(z1, z0, zwt, ψ_sat, par)
   end
   return θE
 end
@@ -44,7 +44,8 @@ end
 #   I = θ_r*(z_{i+1/2}-z_{i-1/2})
 #     + (θ_s-θ_r)*[F(C-z_{i-1/2}) - F(C-z_{i+1/2})]
 function _cal_θE_van1980(z1::T, z0::T, zwt::T, ψ_sat::T,
-  θ_sat::T, θ_res::T, α::T, n::T) where {T<:Real}
+  par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_sat, θ_res, α, n) = par
   Δz = z0 - z1 # make sure positive
   C = ψ_sat + zwt
   I1 = θ_res * (z1 - z0)
@@ -52,21 +53,22 @@ function _cal_θE_van1980(z1::T, z0::T, zwt::T, ψ_sat::T,
   return -(I1 + I2) / Δz
 end
 
-function cal_θE_van1980(z1::T, z0::T, zwt::T, ψ_sat::T,
-  θ_sat::T, θ_res::T, α::T, n::T) where {T<:Real}
+function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T,
+  par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_sat) = par
   
   if zwt >= z0
     θE = θ_sat
   elseif z0 < zwt < z1
     d1 = zwt - z0 # 未饱和
     d2 = z1 - zwt   # 饱和
-    _θE = _cal_θE_van1980(zwt, z0, zwt, ψ_sat, θ_sat, θ_res, α, n)
-    _θE = (_θE * d1 + θ_sat[j] * d2) / (d1 + d2)
+    _θE = _cal_θE_van1980(zwt, z0, zwt, ψ_sat, par)
+    _θE = (_θE * d1 + θ_sat * d2) / (d1 + d2)
     θE = clamp(_θE, 0, θ_sat)
   elseif zwt <= z1
-    θE = _cal_θE_van1980(z1, z0, zwt, ψ_sat, θ_sat, θ_res, α, n)
+    θE = _cal_θE_van1980(z1, z0, zwt, ψ_sat, par)
   end
   return θE
 end
 
-export cal_θE_campbell, cal_θE_van1980
+export cal_θE
