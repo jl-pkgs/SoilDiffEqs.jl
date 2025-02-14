@@ -7,7 +7,9 @@ __pycache__
 *.pdf
 .vscode/*
 
-examples
+# examples
+*.ipynb
+
 data
 *.csv
 .vdoc.jl
