@@ -1,39 +1,44 @@
-export soil_WaterFlux!
+export cal_Q!
 
+function cal_Q!(soil::Soil{T}; Q0::T=0.0, ψ0::T=NaN)::T where {T<:Real}
+  (; θ) = soil
+  method = "Q0"
+  !isnan(ψ0) && (method = "ψ0")
+  Q0 = cal_Q!(soil, θ; Q0, ψ0, method)
+  return Q0
+end
 
-function soil_WaterFlux!(soil::Soil{T}, θ::AbstractVector{T};
-  ψ0::T=NaN, Q0::T=NaN, method="ψ0") where {T<:Real}
+function cal_Q!(soil::Soil{T}, θ::AbstractVector{T};
+  ψ0::T=NaN, Q0::T=NaN, method="ψ0")::T where {T<:Real}
 
   (; ibeg, N, Q, K, K₊ₕ, ψ) = soil
   z = soil.z_cm
-
+  Δz₊ₕ = soil.Δz₊ₕ_cm
   # need to update here
   cal_K!(soil, θ)
   cal_ψ!(soil, θ)
 
   if method == "ψ0"
-    Q0 = -K[ibeg] * ((ψ0 - ψ[ibeg]) / (z[ibeg-1] - z[ibeg]) + 1) # [cm h-1]
-  elseif method == "Q0"
-    # Q0 = Q0
+    _dz = ibeg == 1 ? -z[1] : Δz₊ₕ[ibeg-1]
+    _K₊ₕ = ibeg == 1 ? K[1] : K₊ₕ[ibeg-1]
+    Q0 = -_K₊ₕ * ((ψ0 - ψ[ibeg]) / _dz + 1) # [cm h-1]
   end
 
   @inbounds for i in ibeg:N-1
-    # K₊ₕ = (K[i] + K[i+1]) / 2
-    Δz₊ₕ = z[i] - z[i+1]
-    Q[i] = -K₊ₕ[i] * ((ψ[i] - ψ[i+1]) / Δz₊ₕ + 1)
+    Q[i] = -K₊ₕ[i] * ((ψ[i] - ψ[i+1]) / Δz₊ₕ[i] + 1.0)
   end
   Q[N] = -K[N] # 尾部重力排水
-  Q0
+  return Q0
 end
 
 # dt: in hours
 "Update soil water content θ according to Q"
 function soil_Updateθ!(soil::Soil{T}, dt::Real; method="ψ0") where {T<:Real}
-  dt = dt / 3600.0 # [s] -> [h]
   (; ibeg, N, θ, Q, ψ0, Q0, sink) = soil # Δz, z, 
   Δz = soil.Δz_cm                               # [cm]
-  Q0 = soil_WaterFlux!(soil, θ; ψ0, Q0, method) # [cm h-1]
+  Q0 = cal_Q!(soil, θ; ψ0, Q0, method) # [cm h-1]
   (; θ_sat, θ_res) = soil.param
+  dt = dt / 3600.0 # [s] -> [h]
 
   # TODO: 
   # 若某一层发生了饱和，则继续向下传导
@@ -57,10 +62,10 @@ end
 function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil{T}, t; method="ψ0") where {T<:Real}
   p.timestep += 1
   # mod(p.timestep, 1000) == 0 && println("timestep = ", p.timestep)
-  
+
   (; ibeg, N, Q, ψ0, Q0, sink) = p # Δz, z, 
   Δz = p.Δz_cm
-  Q0 = soil_WaterFlux!(p, θ; ψ0, Q0, method)
+  Q0 = cal_Q!(p, θ; ψ0, Q0, method)
 
   dθ[ibeg] = -((Q0 - Q[ibeg]) + sink[ibeg]) / Δz[ibeg] / 3600.0
   @inbounds for i in ibeg+1:N

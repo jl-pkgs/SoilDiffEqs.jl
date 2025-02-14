@@ -9,11 +9,9 @@ function soil_HeatFlux!(F::V, T::V, κ::V, z::OV, z₊ₕ::V;
 
   N = length(T)
   if method == "Tsurf"
-    if ibeg == 1
-      F0 = -κ[1] * (Tsurf - T[1]) / (0 - z[1])
-    elseif ibeg > 1
-      F0 = -κ[ibeg] * (Tsurf - T[ibeg]) / (z[ibeg-1] - z[ibeg])
-    end
+    _κ₊ₕ = ibeg == 1 ? κ[1] : κ₊ₕ[ibeg-1]
+    _dz = ibeg == 1 ? -z[1] : z[ibeg-1] - z[ibeg]
+    F0 = -_κ₊ₕ * (Tsurf - T[ibeg]) / _dz
   end
 
   @inbounds for i in ibeg:N-1

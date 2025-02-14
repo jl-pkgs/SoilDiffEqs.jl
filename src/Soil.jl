@@ -108,9 +108,11 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :ψ)
   print_var(io, x, :θ)
   print_var(io, x, :sink)
-  print_var(io, x, :θ0)
-  print_var(io, x, :ψ0)
-
+  print_var(io, x, :Q)
+  
+  str = @sprintf(" - Q0 = %.3f, θ0 = %.3f, ψ0 = %.3f \n", x.Q0, x.θ0, x.ψ0)
+  printstyled(io, str, color=:white, bold=false)
+  
   # groundwater
   print_var(io, x, :zwt)
   print_var(io, x, :wa)
