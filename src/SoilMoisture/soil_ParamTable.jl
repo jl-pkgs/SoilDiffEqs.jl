@@ -33,10 +33,10 @@ function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1)
   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 end
 
-function get_soilpar(::Type{ParamVanGenuchten}, theta::AbstractVector)
-  θ_sat, θ_res, Ksat, α, n = theta[1:5]
-  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
-end
+# function get_soilpar(::Type{ParamVanGenuchten}, theta::AbstractVector)
+#   θ_sat, θ_res, Ksat, α, n = theta[1:5]
+#   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
+# end
 
 function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
   # Bonan 2019, Table 8.3
@@ -59,11 +59,10 @@ function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
   ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
 end
 
-function get_soilpar(::Type{ParamCampbell}, theta::AbstractVector)
-  θ_sat, ψ_sat, b, Ksat = theta[1:4]
-  ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
-end
-
+# function get_soilpar(::Type{ParamCampbell}, theta::AbstractVector)
+#   θ_sat, ψ_sat, b, Ksat = theta[1:4]
+#   ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
+# end
 
 function get_soilpar(soil_type::Int=1; method_retention::String="van_Genuchten")
   method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
@@ -71,8 +70,8 @@ function get_soilpar(soil_type::Int=1; method_retention::String="van_Genuchten")
   get_soilpar(P, soil_type)
 end
 
-function get_soilpar(theta::AbstractVector; method_retention::String="van_Genuchten")
-  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
-  method_retention == "Campbell" && (P = ParamCampbell)
-  get_soilpar(P, theta)
-end
+# function get_soilpar(theta::AbstractVector; method_retention::String="van_Genuchten")
+#   method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
+#   method_retention == "Campbell" && (P = ParamCampbell)
+#   get_soilpar(P, theta)
+# end

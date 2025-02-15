@@ -14,9 +14,25 @@ begin
 end
 
 @testset "cal_θEψE!" begin
+  soil.zwt = -0.5
   ψE = cal_θEψE!(soil)
+  @test ψE[end] == 0.0
   @test -50 <= minimum(ψE) <= -49
+
+  soil.zwt = -5.0
+  ψE = cal_θEψE!(soil)
+  @test minimum(ψE) >= -500
+  @test maximum(ψE) <= -130
+  soil.zwt = -0.5
 end
+
+# soil.zwt = -0.5
+# ψE = cal_θEψE!(soil)
+# gr(framestyle=:box)
+# plot(
+#   plot(soil.θE[1:end-1], soil.z[1:end], ylabel="depth", xlabel="θE (%)"),
+#   plot(soil.ψE[1:end-1], soil.z[1:end], ylabel="depth", xlabel="ψE (cm)")
+# )
 
 @testset "find_jwt" begin
   @test find_jwt(z₊ₕ, 0.0) == 0

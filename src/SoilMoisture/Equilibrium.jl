@@ -1,10 +1,8 @@
 # https://chatgpt.com/c/67aad86c-8458-8012-85e7-07d3ae77aa16
 import HypergeometricFunctions: _₂F₁
 
-## campbell 1974
 # z: 向下为负
-function _cal_θE_campbell(z1::T, z0::T, zwt::T, ψ_sat::T, 
-  par::ParamCampbell{T}) where {T<:Real}
+function _cal_θE_campbell(z1::T, z0::T, zwt::T, ψ_sat::T, par::ParamCampbell{T}) where {T<:Real}
   (; θ_sat, b) = par
   C = ψ_sat + zwt
   Δz = z0 - z1
@@ -15,8 +13,7 @@ function _cal_θE_campbell(z1::T, z0::T, zwt::T, ψ_sat::T,
   return θE
 end
 
-function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T, 
-  par::ParamCampbell{T}) where {T<:Real}
+function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T, par::ParamCampbell{T}) where {T<:Real}
   (; θ_sat) = par
   if zwt >= z0
     θE = θ_sat
@@ -43,8 +40,7 @@ end
 # 公式为：
 #   I = θ_r*(z_{i+1/2}-z_{i-1/2})
 #     + (θ_s-θ_r)*[F(C-z_{i-1/2}) - F(C-z_{i+1/2})]
-function _cal_θE_van1980(z1::T, z0::T, zwt::T, ψ_sat::T,
-  par::ParamVanGenuchten{T}) where {T<:Real}
+function _cal_θE_van1980(z1::T, z0::T, zwt::T, ψ_sat::T, par::ParamVanGenuchten{T}) where {T<:Real}
   (; θ_sat, θ_res, α, n) = par
   Δz = z0 - z1 # make sure positive
   C = ψ_sat + zwt
