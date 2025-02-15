@@ -159,4 +159,4 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
 end
 
 
-export cal_θEψE!, soil_moisture_zeng2009
+export cal_θEψE!, soil_moisture_Zeng2009

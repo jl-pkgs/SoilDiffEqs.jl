@@ -19,16 +19,16 @@ begin
   θ = fill(0.3, N)
   # z₊ₕ = soil.z₊ₕ
   soil = Soil(dz; θ=deepcopy(θ), zwt=-0.5, wa)
-  soil_moisture_zeng2009(soil)
+  soil_moisture_Zeng2009(soil)
   @test maximum(soil.θ) ≈ 0.30996934526428166
   # p1 = plot_θ(soil)
 
   soil = Soil(dz; θ=deepcopy(θ), zwt=-2.5, wa)
-  @time soil_moisture_zeng2009(soil)
+  @time soil_moisture_Zeng2009(soil)
   θ_next3 = soil.θ
   # plot_θ(soil)
   soil = Soil(dz; θ=deepcopy(θ), zwt=-3.0, wa)
-  @time soil_moisture_zeng2009(soil)
+  @time soil_moisture_Zeng2009(soil)
   θ_next5 = soil.θ
 
   plot(xlabel="θ (m³ m⁻³)", ylabel="Depth [m]", legend=:topright)
