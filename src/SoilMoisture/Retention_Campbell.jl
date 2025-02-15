@@ -47,11 +47,18 @@ end
 end
 
 # Campbell 1974, Bonan 2019 Table 8.2
-@inline @fastmath function Campbell_ψ(θ::T, par::ParamCampbell{T}; ψmin=T(-1e7)) where {T<:Real}
+@inline @fastmath function Campbell_ψ(θ::T, par::ParamCampbell{T}; ψ_min=T(-1e7)) where {T<:Real}
   (; θ_sat, ψ_sat, b) = par
   Se = clamp(θ / θ_sat, T(0.01), T(1.0))
   ψ = ψ_sat * Se^(-b)
-  return max(ψ, ψmin) # ψ为负值
+  return max(ψ, ψ_min) # ψ为负值
+end
+
+@inline @fastmath function Campbell_ψ_Se(Se::T, par::ParamCampbell{T}; ψ_min=T(-1e7)) where {T<:Real}
+  (; ψ_sat, b) = par
+  Se = clamp(Se, T(0.01), T(1.0))
+  ψ = ψ_sat * Se^(-b)
+  return max(ψ, ψ_min) # ψ为负值
 end
 
 @inline @fastmath function Campbell_∂θ∂ψ(ψ::T, par::ParamCampbell{T}) where {T<:Real}
@@ -66,5 +73,5 @@ end
   Ksat * (2b + 3) * (Se^(2b + 2))
 end
 
-export Campbell, Campbell_ψ, Campbell_θ, Campbell_K, 
-  Campbell_∂θ∂ψ, Campbell_∂ψ∂θ, Campbell_∂K∂Se
+export Campbell, Campbell_ψ, Campbell_θ, Campbell_K,
+  Campbell_∂θ∂ψ, Campbell_∂ψ∂θ, Campbell_∂K∂Se, Campbell_ψ_Se

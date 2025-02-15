@@ -5,6 +5,7 @@ Retention(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell(ψ, par)
 Retention_K(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_K(θ, par)
 Retention_θ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_θ(ψ, par)
 Retention_ψ(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_ψ(θ, par)
+Retention_ψ_Se(Se::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_ψ_Se(Se, par)
 Retention_∂θ∂ψ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂θ∂ψ(ψ, par)
 Retention_∂ψ∂θ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂ψ∂θ(ψ, par)
 Retention_∂K∂Se(Se::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂K∂Se(Se, par)
@@ -14,15 +15,17 @@ Retention(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten(ψ, 
 Retention_θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_θ(ψ, par)
 Retention_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_K(θ, par)
 Retention_ψ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ(θ, par)
+Retention_ψ_Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_ψ_Se(Se, par)
 Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂θ∂ψ(ψ, par)
 Retention_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂ψ∂θ(ψ, par)
-Retention_∂K∂Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂K∂Se(θSe, par)
+Retention_∂K∂Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂K∂Se(Se, par)
 
 
 Retention(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention(ψ, par)
 Retention_K(θ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_K(θ, par)
 Retention_θ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_θ(ψ, par)
 Retention_ψ(θ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_ψ(θ, par)
+Retention_ψ_Se(Se::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_ψ_Se(Se, par)
 Retention_∂θ∂ψ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂θ∂ψ(ψ, par)
 Retention_∂ψ∂θ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂ψ∂θ(ψ, par)
 Retention_∂K∂Se(Se::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂K∂Se(Se, par)
@@ -82,6 +85,7 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
     K₊ₕ[i] = mean_arithmetic(K[i], K[i+1], Δz[i], Δz[i+1])
     # K₊ₕ[i] = mean_harmonic(K[i], K[i+1], Δz[i], Δz[i+1])
   end
+  K₊ₕ[N] = K[N]
 end
 
 

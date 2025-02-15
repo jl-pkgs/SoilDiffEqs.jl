@@ -1,63 +1,36 @@
-# Calculate the equilibrium water content based on the water table depth
-function cal_θEψE!(soil::Soil{T}) where {T<:Real}
-  (; N, θE, ψE, z, zwt, jwt, method_retention) = soil
-  (; param, θ_sat, ψ_sat) = soil.param
-  iszero_ψsat = method_retention == "van_Genuchten" ? true : false
-
-  # Δz = soil.Δz_cm
-  z = soil.z_cm
-  zwt = soil.zwt * 100
-  soil.jwt = find_jwt(soil.z₊ₕ, soil.zwt) # ? 
-  jwt = soil.jwt
-
-  for j = 1:N
-    z0 = z[j-1]
-    z1 = z[j]
-    par = param[j]
-    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[j]
-    θE[j] = cal_θE(z1, z0, zwt, _ψsat, par)
-    ψE[j] = Retention_ψ(θE[j], par)
-  end
-
-  # If zwt below soil column, calculate ψE for the 11th layer
-  j = N
-  if jwt == N
-    # 积分在：z₊ₕ[N] ~ zwt，最后一层的θE、ψE代表的区间
-    par = param[j]
-    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[j]
-    θE[j+1] = cal_θE(zwt, z[j], zwt, _ψsat, par)
-    ψE[j+1] = Retention_ψ(θE[j+1], par)
-  elseif jwt < N # 最后一层饱和
-    θE[j+1] = θ_sat[j]
-    ψE[j+1] = T(0.0)
-  end
-  return ψE
-end
-
-# 中间变量
 # ! 注意
 # - CoLM中，z向下为正
 function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Real}
-  (; N, zwt, θ, ψE) = soil
+  cal_θEψE!(soil)
+  (; N, jwt, ibeg) = soil
+  (; ψ, θ, K₊ₕ, ψE) = soil
   (; θ_sat, param) = soil.param
+
+  ET = soil.sink
   dt = soil.dt / 3600 # [s] -> [h]
-
-  dKdθ = zeros(FT, N)
-  dψdθ = zeros(FT, N)
-  dqidθ0 = zeros(FT, N)
-  dqidθ1 = zeros(FT, N)
-  dqodθ1 = zeros(FT, N)
-  dqodθ2 = zeros(FT, N)
-
+  zwt = soil.zwt * 100 # [m] -> [cm]
   z = soil.z_cm
   Δz = soil.Δz_cm
   # Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
-  cal_θEψE!(soil)
+
+  dKdθ = zeros(FT, N)
+  dψdθ = zeros(FT, N)
+  dqidθ0 = zeros(FT, N + 1)
+  dqidθ1 = zeros(FT, N + 1)
+  dqodθ1 = zeros(FT, N + 1)
+  dqodθ2 = zeros(FT, N + 1)
+
+  qin = zeros(FT, N + 1)
+  qout = zeros(FT, N + 1)
+  rmx = zeros(FT, N + 1)
+  amx = zeros(FT, N + 1)
+  bmx = zeros(FT, N + 1)
+  cmx = zeros(FT, N + 1)
 
   # Hydraulic conductivity and soil matric potential and their derivatives
   for j in 1:N
     par = param[j]  # updated to ensure correct index usage
-    
+
     j2 = min(N, j + 1)
     _θ = 0.5(θ[j] + θ[j2])
     _θsat = 0.5(θ_sat[j] + θ_sat[j2])
@@ -108,7 +81,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
   z_gw = 0.5 * (1e2 * zwt + z[N]) # 动态调整最后一层的深度，高明! 中间位置
   Δz_gw = Δz[N] # if jwt < N
   jwt >= N && (Δz_gw = 1e2 * zwt - z[N]) # in cm
-  
+
   # Node j=N (bottom)
   i = N
   if jwt < N  # water table is in soil column
@@ -138,7 +111,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
 
     # compute for aquifer layer [N+1]
     par = param[i]
-    _ψ = Retention_ψ_se(se, par) # N+1层的ψ，用的是第N层
+    _ψ = Retention_ψ_Se(se, par) # N+1层的ψ，用的是第N层
     dψdθ1 = Retention_∂ψ∂θ(_ψ, par) #
     # dψdθ1 = -B[i] * _ψ / (se * θ_sat[i])
 
@@ -152,6 +125,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     # dz = (z[i+1] - z[i])
     dz = (z_gw - z[i])
     dψ = (_ψ - ψE[i+1]) - (ψ[i] - ψE[i])
+    # @show i, length(K₊ₕ)
     qout[i] = -K₊ₕ[i] * dψ / dz
     dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
@@ -175,7 +149,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     cmx[i+1] = 0.0
     rmx[i+1] = qin[i+1] - qout[i+1]
   end
-  Tridiagonal(amx, bmx, cmx, rmx, dθ; ibeg) # Solve for dθ
+  dθ = tridiagonal_solver(amx, bmx, cmx, rmx; ibeg) # Solve for dθ
 
   # Renew the mass of liquid water also compute qcharge from dθ in aquifer layer
   # update in drainage for case jwt < N
@@ -184,4 +158,5 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
   end
 end
 
-export cal_θEψE!
+
+export cal_θEψE!, soil_moisture_zeng2009

@@ -75,6 +75,14 @@ function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) wher
   end
 end
 
+function van_Genuchten_ψ_Se(Se::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
+  (; α, n, m) = par
+  Se <= 0.0 && return ψ_min
+  Se >= 1.0 && return T(0.0)
+  ψ = -1 / α * pow(pow(1.0 / Se, (1 / m)) - 1, 1 / n)
+  return max(ψ, ψ_min) # Ensure the returned value does not go below ψ_min
+end
+
 # @fastmath 
 function van_Genuchten_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
@@ -100,7 +108,8 @@ end
 
 
 export van_Genuchten, van_Genuchten_θ, van_Genuchten_K, van_Genuchten_ψ,
-  van_Genuchten_∂θ∂ψ, van_Genuchten_∂ψ∂θ, van_Genuchten_∂K∂Se
+  van_Genuchten_∂θ∂ψ, van_Genuchten_∂ψ∂θ, van_Genuchten_∂K∂Se,
+  van_Genuchten_ψ_Se
 
 # Special case for:
 # - `soil_type = 1`: Haverkamp et al. (1977) sand

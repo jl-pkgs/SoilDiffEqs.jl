@@ -19,7 +19,7 @@ export Soil
   θ::Vector{FT} = fill(0.1, N)       # θ [m3 m-3]
   Q::Vector{FT} = zeros(FT, N)       # [cm h-1]
   K::Vector{FT} = zeros(FT, N)       # hydraulic conductivity，[cm h-1]
-  K₊ₕ::Vector{FT} = zeros(FT, N - 1)  # hydraulic conductivity at interface, [cm h-1]
+  K₊ₕ::Vector{FT} = zeros(FT, N)  # hydraulic conductivity at interface, [cm h-1]
   ∂θ∂ψ::Vector{FT} = zeros(FT, N)    # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
   ψ::Vector{FT} = zeros(FT, N)       # [cm]，约干越负
   ψ_next::Vector{FT} = zeros(FT, N)  # ψ[N+1/2], [cm], 临时变量
@@ -44,7 +44,7 @@ export Soil
 
   # 温度
   Tsoil::Vector{FT} = fill(NaN, N)   # [°C]
-  κ₊ₕ::Vector{FT} = zeros(FT, N - 1)  # thermal conductivity at interface [W m-1 K-1]
+  κ₊ₕ::Vector{FT} = zeros(FT, N)     # thermal conductivity at interface [W m-1 K-1]
   F::Vector{FT} = zeros(FT, N)       # heat flux, [W m-2]
   Tsurf::FT = FT(NaN)                # surface temperature, [°C]
   F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
