@@ -30,8 +30,12 @@ export Soil
   θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ  
   ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
 
+  θE::Vector{FT} = zeros(FT, N + 1)  # equilibrium water content, [m3 m-3]
+  ψE::Vector{FT} = zeros(FT, N + 1)  # water potential, [cm]
+
   # 地下水
   zwt::FT = FT(0.0)                  # groundwater depth, [m], 为了与z单位一致
+  jwt::Int = 0                       # non-groundwater index
   wa::FT = FT(5000.0)                # water amount in aquifer, [mm]，潜水含水层
   uex::FT = FT(0.0)                  # 超出地表的水量, [mm], [kg m-2] 以地表径流的形式排放
   recharge::FT = FT(0.0)             # recharge rate, [mm/s]

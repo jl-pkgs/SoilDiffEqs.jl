@@ -1,24 +1,32 @@
 using SoilDifferentialEquations, Test
 
 begin
-  N = 100
-  dz = fill(0.02, N)
-  θ = fill(0.3, N)
-  soil = Soil(dz; θ)
-  z₊ₕ = soil.z₊ₕ
-
   wa = 4000.0 # [mm]
   zwt = -0.5
   Δt = 60 # [s]
   recharge = 1 / 3600 # [mm s-1], namely [1 mm h-1]
+
+  N = 100
+  dz = fill(0.02, N) # 2m
+  θ = fill(0.3, N)
+  soil = Soil(dz; θ, zwt, wa)
+  z₊ₕ = soil.z₊ₕ
+end
+
+@testset "cal_θEψE!" begin
+  ψE = cal_θEψE!(soil)
+  @test -50 <= minimum(ψE) <= -49
 end
 
 @testset "find_jwt" begin
+  @test find_jwt(z₊ₕ, 0.0) == 0
   @test find_jwt(z₊ₕ, -0.01) == 0
   @test find_jwt(z₊ₕ, -0.02) == 0
   @test find_jwt(z₊ₕ, -0.03) == 1
   @test find_jwt(z₊ₕ, -100.0) == N
 end
+
+
 
 
 @testset "GW_UpdateRecharge!" begin

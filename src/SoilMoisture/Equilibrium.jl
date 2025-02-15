@@ -59,13 +59,13 @@ function cal_θE(z1::T, z0::T, zwt::T, ψ_sat::T,
   
   if zwt >= z0
     θE = θ_sat
-  elseif z0 < zwt < z1
+  elseif z1 <= zwt < z0
     d1 = zwt - z0 # 未饱和
     d2 = z1 - zwt   # 饱和
     _θE = _cal_θE_van1980(zwt, z0, zwt, ψ_sat, par)
     _θE = (_θE * d1 + θ_sat * d2) / (d1 + d2)
     θE = clamp(_θE, 0, θ_sat)
-  elseif zwt <= z1
+  elseif zwt < z1
     θE = _cal_θE_van1980(z1, z0, zwt, ψ_sat, par)
   end
   return θE
