@@ -1,5 +1,4 @@
 using SoilDifferentialEquations, Test
-# using Plots
 
 @testset "soil_moisture_zeng2009" begin
   wa = 4000.0 # [mm]

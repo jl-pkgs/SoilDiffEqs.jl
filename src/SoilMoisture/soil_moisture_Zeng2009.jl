@@ -1,6 +1,6 @@
 # ! 注意
 # - CoLM中，z向下为正
-function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Real}
+function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Real}
   cal_θEψE!(soil)
   (; N, jwt, ibeg) = soil
   (; ψ, θ, K₊ₕ, ψE) = soil

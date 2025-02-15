@@ -42,10 +42,10 @@ include("SoilMoisture/Retention.jl")
 
 include("SoilMoisture/Equilibrium.jl")
 include("SoilMoisture/EquationRichards.jl")
-include("SoilMoisture/soil_moisture.jl")
-include("SoilMoisture/soil_moisture_Q0.jl")
+include("SoilMoisture/soil_moisture_Bonan.jl")
+include("SoilMoisture/soil_moisture_Bonan_Q0.jl")
 include("SoilMoisture/soil_moisture_BEPS.jl")
-include("SoilMoisture/soil_moisture_zeng2009.jl")
+include("SoilMoisture/soil_moisture_Zeng2009.jl")
 include("SoilMoisture/Solve_SM.jl")
 
 include("SoilTemperature/soil_properties_thermal.jl")
