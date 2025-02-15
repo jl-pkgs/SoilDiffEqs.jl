@@ -45,7 +45,7 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
 
   # Set up r, a, b, and c vectors for tridiagonal solution
   i = 1
-  qin[i] = qflx_infl # Infiltration rate, [mm H₂O/s]
+  qin[i] = -qflx_infl # Infiltration rate, [mm H₂O/s]
   dz = (z[i+1] - z[i])
   dψ = (ψ[i+1] - ψE[i+1]) - (ψ[i] - ψE[i])
   qout[i] = -K₊ₕ[i] * dψ / dz
@@ -53,9 +53,9 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
   dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
 
   sdamp = 0.0 # extrapolates θ dependence of evaporation
-  rmx[i] = qin[i] - qout[i] - ET[i]
+  rmx[i] = qin[i] - qout[i] + ET[i]
   amx[i] = 0.0
-  bmx[i] = Δz[i] * (sdamp + 1.0 / dt) + dqodθ1[i] # ! -Δz[i]
+  bmx[i] = Δz[i] * (sdamp - 1.0 / dt) + dqodθ1[i] # 
   cmx[i] = dqodθ2[i]
 
   for i in 2:N-1
@@ -72,15 +72,15 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = dqodθ2[i]
-    rmx[i] = qin[i] - qout[i] - ET[i]
+    rmx[i] = qin[i] - qout[i] + ET[i]
   end
 
   # Aquifer (11th) layer
-  z_gw = 0.5 * (1e2 * zwt + z[N]) # 动态调整最后一层的深度，高明! 中间位置
+  z_gw = 0.5 * (zwt + z[N]) # 动态调整最后一层的深度，高明! 中间位置
   Δz_gw = Δz[N] # if jwt < N
-  jwt >= N && (Δz_gw = 1e2 * zwt - z[N]) # in cm
+  jwt >= N && (Δz_gw = abs(zwt - z[N])) # in cm
 
   # Node j=N (bottom)
   i = N
@@ -94,9 +94,9 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     dqodθ1[i] = 0.0
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = 0.0
-    rmx[i] = qin[i] - qout[i] - ET[i]
+    rmx[i] = qin[i] - qout[i] + ET[i]
 
     # next set up aquifer layer; hydrologically inactive
     amx[i+1] = 0.0
@@ -131,9 +131,9 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
 
     amx[i] = -dqidθ0[i]
-    bmx[i] = Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
     cmx[i] = dqodθ2[i]
-    rmx[i] = qin[i] - qout[i] - ET[i]
+    rmx[i] = qin[i] - qout[i] + ET[i]
 
     ## N+1层
     # next set up aquifer layer; dz/num unchanged, qin=qout
@@ -145,9 +145,9 @@ function soil_moisture_zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
 
     amx[i+1] = -dqidθ0[i+1]
     # bmx[i+1] = Δz[i+1] / dt - dqidθ1[i+1] + dqodθ1[i+1]
-    bmx[i+1] = Δz_gw / dt - dqidθ1[i+1] + dqodθ1[i+1]
+    bmx[i+1] = -Δz_gw / dt - dqidθ1[i+1] + dqodθ1[i+1]
     cmx[i+1] = 0.0
-    rmx[i+1] = qin[i+1] - qout[i+1]
+    rmx[i+1] = qin[i+1] - qout[i+1] # 最后一层，地下水不考虑蒸发
   end
   dθ = tridiagonal_solver(amx, bmx, cmx, rmx; ibeg) # Solve for dθ
 
