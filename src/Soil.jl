@@ -142,11 +142,11 @@ function soil_depth_init(Δz::AbstractVector)
   # Soil depth (m) at i+1/2 interface between layers i and i+1 (negative distance from surface)
   # z_{i+1/2}
   N = length(Δz)
-  z = OffsetArray(zeros(N + 1), 0:N)
+  z = OffsetArray(zeros(N + 2), 0:N+1)    # 虚拟层N+1
   # dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
-  dz₊ₕ = zeros(N)
-  z₊ₕ = zeros(N)
-  z₋ₕ = zeros(N)
+  dz₊ₕ = zeros(N + 1)
+  z₊ₕ = zeros(N + 1)
+  z₋ₕ = zeros(N + 1)
 
   z₊ₕ[1] = -Δz[1]
   for i = 2:N

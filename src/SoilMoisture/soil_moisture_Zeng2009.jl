@@ -156,6 +156,7 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
   for j in 1:N
     θ[j] += dθ[j] * Δz[j]
   end
+  return θ
 end
 
 

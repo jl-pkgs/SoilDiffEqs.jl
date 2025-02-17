@@ -39,7 +39,7 @@ end
   @test find_jwt(z₊ₕ, -0.01) == 0
   @test find_jwt(z₊ₕ, -0.02) == 0
   @test find_jwt(z₊ₕ, -0.03) == 1
-  @test find_jwt(z₊ₕ, -100.0) == N
+  @test find_jwt(z₊ₕ, -100.0; N) == N
 end
 
 
