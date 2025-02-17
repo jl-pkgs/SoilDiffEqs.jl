@@ -1,19 +1,21 @@
+export soil_HeatFlux!
+
 """
 计算每层的土壤的热通量 [W m-2]
 
 - `ibeg`: 第一层土壤温度观测具有较大的误差，因此不使用第一层土壤温度
 """
-function soil_HeatFlux!(F::V, T::V, κ::V, z::OV, z₊ₕ::V;
-  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf",
-  ibeg::Int=1) where {FT<:Real,V<:AbstractVector{FT},OV<:AbstractVector{FT}}
-
-  N = length(T)
+function soil_HeatFlux!(soil::Soil{FT}, T::AbstractVector{FT};
+  F0::FT=NaN, Tsurf::FT=NaN, method="Tsurf", ibeg::Int=1) where {FT<:Real}
+  (; N, F, z, z₊ₕ) = soil
+  (; κ) = soil.param
+  
   if method == "Tsurf"
     if ibeg > 1
       d1 = z[ibeg-1] - z[ibeg]
       d2 = z[ibeg] - z[ibeg+1]
       _κ₊ₕ = mean_arithmetic(κ[ibeg-1], κ[ibeg], d1, d2)
-      _dz = z[ibeg-1] - z[ibeg+1]
+      _dz = z[ibeg-1] - z[ibeg]
     else
       _κ₊ₕ = κ[1]
       _dz = 0 - z[1]
@@ -42,9 +44,9 @@ end
 function TsoilEquation(dT, T, soil::Soil, t; method="Tsurf", ibeg::Int=1)
   soil.timestep += 1
   # TODO: 根据t，更新Tsurf
-  (; N, Δz, z, z₊ₕ, F, Tsurf) = soil
-  (; κ, cv) = soil.param
-  F0 = soil_HeatFlux!(F, T, κ, z, z₊ₕ; Tsurf, F0=soil.F0, method, ibeg)
+  (; N, Δz, F, Tsurf) = soil
+  (; cv) = soil.param
+  F0 = soil_HeatFlux!(soil, T; Tsurf, F0=soil.F0, method, ibeg)
 
   dT[ibeg] = -(F0 - F[ibeg]) / (Δz[ibeg] * cv[ibeg])
   @inbounds for i in ibeg+1:N
@@ -52,10 +54,12 @@ function TsoilEquation(dT, T, soil::Soil, t; method="Tsurf", ibeg::Int=1)
   end
 end
 
+# ibeg:N
 function TsoilEquation_partial(dT, T, p::Soil, t; method="Tsurf", ibeg::Int=1)
-  p.du[ibeg:end] .= dT
-  p.u[ibeg:end] .= T
+  (; N) = p
+  p.du[ibeg:N] .= dT
+  p.u[ibeg:N] .= T
   TsoilEquation(p.du, p.u, p, t; method, ibeg)
-  dT .= p.du[ibeg:end]
+  dT .= p.du[ibeg:N]
   return nothing
 end

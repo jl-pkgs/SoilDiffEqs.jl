@@ -94,12 +94,12 @@ function RichardsEquation(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil
   end
 end
 
-
+# ibeg:N
 function RichardsEquation_partial(dθ, θ, p::Soil, t; method="ψ0")
-  (; ibeg) = p
-  p.du[ibeg:end] .= dθ
-  p.u[ibeg:end] .= θ
+  (; ibeg, N) = p
+  p.du[ibeg:N] .= dθ
+  p.u[ibeg:N] .= θ
   RichardsEquation(p.du, p.u, p, t; method)
-  dθ .= p.du[ibeg:end]
+  dθ .= p.du[ibeg:N]
   return nothing
 end

@@ -87,7 +87,7 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
     end
   end
 
-  tridiagonal_solver!(a, b, c, d, e, f, u; ibeg)
+  tridiagonal_solver!(a, b, c, d, e, f, u; ibeg, N)
   # _a = @view a[ibeg:end]
   # _b = @view b[ibeg:end]
   # _c = @view c[ibeg:end]
@@ -113,8 +113,7 @@ function soil_temperature!(soil::Soil, Tsurf_next::Real;
   # Error check
   err = edif - G - LE_f
   # abs(err) > 1e-03 && error("Soil temp erature energy conservation error")
-
-  Tsoil .= u # update Tsoil
+  @inbounds Tsoil[ibeg:N] .= u[ibeg:N] # update Tsoil
   soil.G = G
   u, G
 end

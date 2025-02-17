@@ -70,6 +70,7 @@ end
 @testset "soil_moisture!" begin
   @time θ = solve_bonan()
   @time solution = solve_ode()
+  @test maximum(abs.(solution - θ)) * 100 <= 0.2 # 误差小于0.2%
 end
 
 # begin
@@ -89,7 +90,7 @@ end
 #   θ = solve_bonan()
 # end
 # @testset "RichardsEquation θ0" begin
-#   @test maximum(abs.(solution - θ)) <= 0.004 # 误差小于1/1000
+#   
 # end
 
 # @test sum_in == 11.810243822643141

@@ -101,6 +101,6 @@ function soil_temperature_F0!(soil::Soil, df0::Real, f0::Real, snow_water::Real=
   G = G_soil + G_snow
   soil.G = G_soil + G_snow
 
-  Tsoil .= u
+  Tsoil .= u[1:N]
   u, G_soil, G_snow
 end

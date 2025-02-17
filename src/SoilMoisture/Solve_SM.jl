@@ -133,22 +133,22 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
   (; N, inds_obs, ibeg, dt) = soil
 
   ntime = length(θ_surf)
-  u0 = soil.θ[ibeg:end]
+  u0 = soil.θ[ibeg:N]
 
   _Equation(dθ, θ, p, t) = RichardsEquation_partial(dθ, θ, p, t)
   tspan = (0, dt)
   prob = _ODEProblem(_Equation, u0, tspan, soil)
 
   R = zeros(ntime, N - ibeg + 1)
-  R[1, :] .= soil.θ[ibeg:end]
+  R[1, :] .= soil.θ[ibeg:N]
 
   for i = 2:ntime
     soil.θ0 = θ_surf[i]
-    prob.u0 .= soil.θ[ibeg:end]
+    prob.u0 .= soil.θ[ibeg:N]
 
     sol = _solve(prob, solver; reltol, abstol, saveat=dt)
-    soil.θ[ibeg:end] .= sol.u[end] # 更新这个时刻的结果
-    R[i, :] .= soil.θ[ibeg:end]
+    soil.θ[ibeg:N] .= sol.u[end] # 更新这个时刻的结果
+    R[i, :] .= soil.θ[ibeg:N]
   end
 
   inds = @. inds_obs - ibeg + 1

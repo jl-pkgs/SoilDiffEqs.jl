@@ -1,37 +1,37 @@
 export Soil
 
-@with_kw_noshow mutable struct Soil{FT, P<:AbstractSoilParam{FT}}
+@with_kw_noshow mutable struct Soil{FT,P<:AbstractSoilParam{FT}}
   N::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
   inds_obs::Vector{Int} = ibeg:N     # indices of observed layers
 
   dt::Float64 = 3600.0               # 时间步长, seconds
-  z::OffsetVector{FT} = zeros(FT, N + 1) # m, 向下为负
-  Δz₊ₕ::Vector{FT} = zeros(FT, N)
-  z₊ₕ::Vector{FT} = zeros(FT, N)
-  Δz::Vector{FT} = zeros(FT, N)
+  z::OffsetVector{FT} = zeros(FT, N + 2) # m, 向下为负
+  Δz₊ₕ::Vector{FT} = zeros(FT, N + 1)
+  z₊ₕ::Vector{FT} = zeros(FT, N + 1)
+  Δz::Vector{FT} = zeros(FT, N + 1)
 
-  z_cm::OffsetVector{FT} = z * 100         # cm, 向下为负
+  z_cm::OffsetVector{FT} = z * 100      # cm, 向下为负
   Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
   Δz_cm::Vector{FT} = Δz * 100
 
   # 水分
-  θ::Vector{FT} = fill(0.1, N)       # θ [m3 m-3]
-  Q::Vector{FT} = zeros(FT, N)       # [cm h-1]
-  K::Vector{FT} = zeros(FT, N)       # hydraulic conductivity，[cm h-1]
-  K₊ₕ::Vector{FT} = zeros(FT, N)  # hydraulic conductivity at interface, [cm h-1]
-  ∂θ∂ψ::Vector{FT} = zeros(FT, N)    # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
-  ψ::Vector{FT} = zeros(FT, N)       # [cm]，约干越负
-  ψ_next::Vector{FT} = zeros(FT, N)  # ψ[N+1/2], [cm], 临时变量
-  θ0::FT = FT(0.0)                   # [m3 m-3]
-  ψ0::FT = FT(0.0)                   # [cm]
-  Q0::FT = FT(0.0)                   # [cm h-1] 下渗速率，向下为负
-  sink::Vector{FT} = fill(0.0, N)    # 蒸发项, [cm per unit time]
-  θ_prev::Vector{FT} = zeros(FT, N)  # backup of θ  
-  ψ_prev::Vector{FT} = zeros(FT, N)  # backup of ψ
+  θ::Vector{FT} = fill(0.1, N + 1)      # θ [m3 m-3]
+  Q::Vector{FT} = zeros(FT, N)          # [cm h-1]
+  K::Vector{FT} = zeros(FT, N + 1)      # hydraulic conductivity，[cm h-1]
+  K₊ₕ::Vector{FT} = zeros(FT, N + 1)    # hydraulic conductivity at interface, [cm h-1]
+  ∂θ∂ψ::Vector{FT} = zeros(FT, N + 1)   # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
+  ψ::Vector{FT} = zeros(FT, N + 1)      # [cm]，约干越负
+  ψ_next::Vector{FT} = zeros(FT, N + 1) # ψ[N+1/2], [cm], 临时变量
+  θ0::FT = FT(0.0)                      # [m3 m-3]
+  ψ0::FT = FT(0.0)                      # [cm]
+  Q0::FT = FT(0.0)                      # [cm h-1] 下渗速率，向下为负
+  sink::Vector{FT} = fill(0.0, N + 1)   # 蒸发项, [cm per unit time]
+  θ_prev::Vector{FT} = zeros(FT, N + 1) # backup of θ  
+  ψ_prev::Vector{FT} = zeros(FT, N + 1) # backup of ψ
 
-  θE::Vector{FT} = zeros(FT, N + 1)  # equilibrium water content, [m3 m-3]
-  ψE::Vector{FT} = zeros(FT, N + 1)  # water potential, [cm]
+  θE::Vector{FT} = zeros(FT, N + 1)     # equilibrium water content, [m3 m-3]
+  ψE::Vector{FT} = zeros(FT, N + 1)     # water potential, [cm]
 
   # 地下水
   zwt::FT = FT(0.0)                  # groundwater depth, [m], 为了与z单位一致
@@ -40,31 +40,31 @@ export Soil
   uex::FT = FT(0.0)                  # 超出地表的水量, [mm], [kg m-2] 以地表径流的形式排放
   recharge::FT = FT(0.0)             # recharge rate, [mm/s]
   drainage::FT = FT(0.0)             # drainage rate, [mm/s]
-  Sy::Vector{FT} = fill(0.02, N)     # specific yield, [m3 m-3]
+  Sy::Vector{FT} = fill(0.02, N + 1) # specific yield, [m3 m-3]
 
   # 温度
-  Tsoil::Vector{FT} = fill(NaN, N)   # [°C]
-  κ₊ₕ::Vector{FT} = zeros(FT, N)     # thermal conductivity at interface [W m-1 K-1]
-  F::Vector{FT} = zeros(FT, N)       # heat flux, [W m-2]
-  Tsurf::FT = FT(NaN)                # surface temperature, [°C]
-  F0::FT = FT(NaN)                   # heat flux at the surface, [W m-2]，向下为负
-  G::FT = FT(NaN)                    # [W m-2]，土壤热通量
+  Tsoil::Vector{FT} = fill(NaN, N) # [°C]
+  κ₊ₕ::Vector{FT} = zeros(FT, N)    # thermal conductivity at interface [W m-1 K-1]
+  F::Vector{FT} = zeros(FT, N)     # heat flux, [W m-2]
+  Tsurf::FT = FT(NaN)                  # surface temperature, [°C]
+  F0::FT = FT(NaN)                     # heat flux at the surface, [W m-2]，向下为负
+  G::FT = FT(NaN)                      # [W m-2]，土壤热通量
 
   ## Parameter: [水力] + [热力]参数
   method_retention::String = "van_Genuchten"
   param::SoilParam{FT,P} = SoilParam{FT,P}(; N, method_retention)
-  
+
   # ODE求解临时变量
-  u::Vector{FT} = fill(NaN, N)  # [°C], 为了从ibeg求解地温，定义的临时变量
-  du::Vector{FT} = fill(NaN, N) # [°C]
+  u::Vector{FT} = fill(NaN, N + 1)  # [°C], 为了从ibeg求解地温，定义的临时变量
+  du::Vector{FT} = fill(NaN, N + 1) # [°C]
 
   # 三角阵求解临时变量
-  a::Vector{FT} = zeros(FT, N)
-  b::Vector{FT} = zeros(FT, N)
-  c::Vector{FT} = zeros(FT, N)
-  d::Vector{FT} = zeros(FT, N)
-  e::Vector{FT} = zeros(FT, N)
-  f::Vector{FT} = zeros(FT, N)
+  a::Vector{FT} = zeros(FT, N + 1)
+  b::Vector{FT} = zeros(FT, N + 1)
+  c::Vector{FT} = zeros(FT, N + 1)
+  d::Vector{FT} = zeros(FT, N + 1)
+  e::Vector{FT} = zeros(FT, N + 1)
+  f::Vector{FT} = zeros(FT, N + 1)
 
   timestep::Int = 0                  # 迭代次数
 end
@@ -113,10 +113,10 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   print_var(io, x, :θ)
   print_var(io, x, :sink)
   print_var(io, x, :Q)
-  
+
   str = @sprintf(" - Q0 = %.3f, θ0 = %.3f, ψ0 = %.3f \n", x.Q0, x.θ0, x.ψ0)
   printstyled(io, str, color=:white, bold=false)
-  
+
   # groundwater
   print_var(io, x, :zwt)
   print_var(io, x, :wa)

@@ -37,33 +37,35 @@ equations so that:
 tridiagonal_solver!(a, b, c, d, e, f, u; ibeg)
 ```
 """
-function tridiagonal_solver!(a::V, b::V, c::V, d::V, e::V, f::V, u::V; ibeg=1) where {T<:Real,V<:AbstractVector{T}}
-  n = length(a)
-  # e = fill(NaN, n - 1)
+function tridiagonal_solver!(a::V, b::V, c::V, d::V, e::V, f::V, u::V;
+  ibeg::Int=1, N::Int=length(a)) where {T<:Real,V<:AbstractVector{T}}
+
+  # e = fill(NaN, N - 1)
   e[ibeg] = c[ibeg] / b[ibeg]
-  @inbounds for i in ibeg+1:(n-1)
+  @inbounds for i in ibeg+1:(N-1)
     e[i] = c[i] / (b[i] - a[i] * e[i-1])
   end
 
-  # f = fill(NaN, n)
+  # f = fill(NaN, N)
   f[ibeg] = d[ibeg] / b[ibeg]
-  @inbounds for i in ibeg+1:(n)
+  @inbounds for i in ibeg+1:(N)
     f[i] = (d[i] - a[i] * f[i-1]) / (b[i] - a[i] * e[i-1])
   end
-  
-  # u = fill(NaN, n)
-  u[n] = f[n]
-  @inbounds for i in n-1:-1:ibeg
+
+  # u = fill(NaN, N)
+  u[N] = f[N]
+  @inbounds for i in N-1:-1:ibeg
     u[i] = f[i] - e[i] * u[i+1]
   end
   return u
 end
 
-function tridiagonal_solver(a::V, b::V, c::V, d::V; ibeg::Int=1) where {T<:Real,V<:AbstractVector{T}}
-  n = length(a)
-  e = fill(NaN, n - 1)
-  f = fill(NaN, n)
-  u = fill(NaN, n)
-  tridiagonal_solver!(a, b, c, d, e, f, u; ibeg)
+function tridiagonal_solver(a::V, b::V, c::V, d::V;
+  ibeg::Int=1, N::Int=length(a)) where {T<:Real,V<:AbstractVector{T}}
+
+  e = fill(NaN, N - 1)
+  f = fill(NaN, N)
+  u = fill(NaN, N)
+  tridiagonal_solver!(a, b, c, d, e, f, u; ibeg, N)
   return u
 end

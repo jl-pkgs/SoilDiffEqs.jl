@@ -9,8 +9,8 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
   Δz = soil.Δz_cm
   Δz₊ₕ = soil.Δz₊ₕ_cm
 
-  θ_prev .= θ # backup
-  ψ_prev .= ψ
+  θ_prev[1:N] .= θ[1:N] # backup
+  ψ_prev[1:N] .= ψ[1:N]
 
   cal_ψ!(soil, θ)     # ψ, 以θ为导向
   cal_K!(soil, θ)     # K
@@ -40,7 +40,7 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
   end
 
   # Solve for ψ at N+1/2 time
-  tridiagonal_solver!(a, b, c, d, e, f, ψ_next)
+  tridiagonal_solver!(a, b, c, d, e, f, ψ_next; N)
   # ψ_next .= tridiagonal_solver(a, b, c, d)
 
   ## update: θ, K and ∂θ∂ψ
@@ -77,7 +77,7 @@ function soil_moisture_Q0!(soil::Soil{FT}, sink::V, Q0::FT;) where {
     d[i] -= sink[i]
   end
   # Solve for ψ at N+1
-  tridiagonal_solver!(a, b, c, d, e, f, ψ)
+  tridiagonal_solver!(a, b, c, d, e, f, ψ; N)
   cal_θ!(soil, ψ)
   
   # --- Check water balance
