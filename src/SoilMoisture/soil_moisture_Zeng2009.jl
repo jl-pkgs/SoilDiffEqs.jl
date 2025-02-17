@@ -54,65 +54,70 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
   for i in 1:N
     dz = (z[i+1] - z[i])
     dψ = (ψ[i+1] - ψE[i+1]) - (ψ[i] - ψE[i])
-
     Q[i] = -K₊ₕ[i] * dψ / dz
 
     ∂qᵢ∂θᵢ[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
     ∂qᵢ∂θᵢ₊₁[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
   end
-  jwt < N && (Q[N] = 0.0)
+  
+  i = N
+  ∂qᵢ∂θᵢ[i+1] = 0.0
+  ∂qᵢ∂θᵢ₊₁[i+1] = 0.0
+
+  if jwt < N
+    Q[i] = 0.0
+    ∂qᵢ∂θᵢ[i] = 0.0
+    ∂qᵢ∂θᵢ₊₁[i] = 0.0
+  end
 
   i = 1
   sdamp = 0.0 # extrapolates θ dependence of evaporation
   a[i] = 0.0
-  b[i] = Δz[i] * (sdamp - 1.0 / dt) + ∂qᵢ∂θᵢ[i] # 
+  b[i] = ∂qᵢ∂θᵢ[i] - Δz[i] / dt + Δz[i] * sdamp
   c[i] = ∂qᵢ∂θᵢ₊₁[i]
   d[i] = Q0 - Q[i] + sink[i]
 
-  for i in 2:N-1
+  for i in 2:N
     a[i] = -∂qᵢ∂θᵢ[i-1]
-    b[i] = -Δz[i] / dt - ∂qᵢ∂θᵢ₊₁[i-1] + ∂qᵢ∂θᵢ[i]
+    b[i] = ∂qᵢ∂θᵢ[i] - ∂qᵢ∂θᵢ₊₁[i-1] - Δz[i] / dt
     c[i] = ∂qᵢ∂θᵢ₊₁[i]
     d[i] = Q[i-1] - Q[i] + sink[i]
   end
 
-  # Node j=N (bottom)
+  ## N+1 layer, qᵢ₊₁ = 0.0, qᵢ₊₁项移除
   i = N
-  if jwt < N  # water table is in soil column
-    # qi = 0.0, ∂qᵢ∂θᵢ[i] = 0.0
-    a[i] = -∂qᵢ∂θᵢ[i-1]
-    b[i] = -Δz[i] / dt - ∂qᵢ∂θᵢ₊₁[i-1]
-    c[i] = 0.0
-    d[i] = Q[i-1] - Q[i] + sink[i]
+  a[i+1] = -∂qᵢ∂θᵢ[i]
+  b[i+1] = -∂qᵢ∂θᵢ₊₁[i] - Δz_gw / dt
+  c[i+1] = 0.0
+  d[i+1] = Q[i] # 最后一层，地下水不考虑蒸发
 
-    # next set up aquifer layer; hydrologically inactive
-    a[i+1] = 0.0
-    b[i+1] = Δz_gw / dt # Δz[i+1] / dt
-    c[i+1] = 0.0
-    d[i+1] = 0.0
-  else  # water table is below soil column
-    # compute aquifer soil moisture as average of layer 10 and saturation
-    a[i] = -∂qᵢ∂θᵢ[i-1]
-    b[i] = -Δz[i] / dt - ∂qᵢ∂θᵢ₊₁[i-1] + ∂qᵢ∂θᵢ[i]
-    c[i] = ∂qᵢ∂θᵢ₊₁[i]
-    d[i] = Q[i-1] - Q[i] + sink[i]
-    ## N+1层
-    # next set up aquifer layer; dz/num unchanged, qin=Q
-    # q[i+1] = 0.0  # zero-flow bottom boundary condition
-    a[i+1] = -∂qᵢ∂θᵢ[i]
-    b[i+1] = -Δz_gw / dt - ∂qᵢ∂θᵢ₊₁[i]
-    c[i+1] = 0.0
-    d[i+1] = Q[i] # 最后一层，地下水不考虑蒸发
-  end
   tridiagonal_solver!(a, b, c, d, e, f, dθ; ibeg, N=N + 1)
-
-  # Renew the mass of liquid water also compute qcharge from dθ in aquifer layer
-  # update in drainage for case jwt < N
   for j in 1:N
-    θ[j] += dθ[j] * Δz[j]
+    θ[j] += dθ[j] * Δz[j] # update θ
   end
   return Q
 end
 
+
+function error_SM(soil::Soil{FT}) where {FT<:Real}
+  (; N, θ, θ_prev, Q, Q0) = soil
+  dt = soil.dt / 3600 # [s] -> [h]
+  Δz = soil.Δz_cm
+  QN = Q[N]
+  dθ = 0
+  for i = 1:N
+    dθ += (θ[i] - θ_prev[i]) * Δz[i] # in cm
+  end
+  obs = (QN - Q0) * dt # cm
+  sim = dθ
+
+  bias = sim - obs
+  perc = bias / obs * 100 |> _round
+
+  info = (; obs, sim, bias, perc, dθ, QN, Q0)
+  info
+end
+
+_round(x::Real; digits=3) = round(x; digits)
 
 export cal_θEψE!, soil_moisture_Zeng2009
