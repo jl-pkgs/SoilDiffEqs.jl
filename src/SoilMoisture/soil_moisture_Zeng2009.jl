@@ -4,7 +4,7 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
   cal_θEψE!(soil)
   (; N, jwt, ibeg) = soil
   (; ψ, θ, K₊ₕ, ψE, sink) = soil
-  (; θ_sat, param) = soil.param
+  (; θ_sat, θ_res, param) = soil.param
   cal_K!(soil, θ)
   # cal_ψ!(soil, θ)
 
@@ -34,17 +34,21 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
     j2 = min(N, j + 1)
     _θ = 0.5(θ[j] + θ[j2])
     _θsat = 0.5(θ_sat[j] + θ_sat[j2])
-    se = clamp(_θ / _θsat, 0.01, 1.0)
-
-    dKdθ[j] = Retention_∂K∂Se(se, par) / (2 * _θsat)  # CLM5, Eq. 7.87
+    _θres = 0.5(θ_res[j] + θ_res[j2])
+    
+    se = clamp((_θ - _θres) / (_θsat - _θres), 0.01, 1.0)
+    # se = clamp(_θ / _θsat, 0.01, 1.0)
+    dKdθ[j] = Retention_∂K∂Se(se, par) / (2 * (_θsat - _θres))  # CLM5, Eq. 7.87
     ψ[j] = Retention_ψ(θ[j], par)
     dψdθ[j] = Retention_∂ψ∂θ(ψ[j], par) # CLM5, Eq. 7.85
   end
 
   i = N
   if jwt == N
-    se = 0.5 * (1.0 + θ[i] / θ_sat[i])
-    se = clamp(se, 0.01, 1.0)
+    _θ = 0.5 * (θ[i] + θ_sat[i])
+    se = clamp((_θ - θ_res[i]) / (θ_sat[i] - θ_res[i]), 0.01, 1.0)
+    # se = 0.5 * (1.0 + θ[i] / θ_sat[i])
+    # se = clamp(se, 0.01, 1.0)
     # compute for aquifer layer [N+1]
     par = param[i]
     ψ[i+1] = Retention_ψ_Se(se, par) # N+1层的ψ，用的是第N层
@@ -121,3 +125,4 @@ end
 _round(x::Real; digits=3) = round(x; digits)
 
 export cal_θEψE!, soil_moisture_Zeng2009
+export error_SM

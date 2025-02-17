@@ -3,7 +3,7 @@
 """
 function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}) where {T<:Real}
   (; N, jwt, Q, ψ, ψE, K₊ₕ) = soil
-  (; θ_sat, param) = soil.param
+  (; θ_sat, θ_res, param) = soil.param
   zwt = soil.zwt * 100 # [m] -> [cm]
   z = soil.z_cm
   Δz = soil.Δz_cm
@@ -17,8 +17,10 @@ function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}) where {T<:Real}
 
   i = N
   if jwt == N # GW under soil profile
-    se = 0.5 * (θ_sat[i] + θ[i]) / θ_sat[i]
-    se = clamp(se, 0.01, 1.0)
+    _θ = 0.5 * (θ[i] + θ_sat[i])
+    se = clamp((_θ - θ_res[i]) / (θ_sat[i] - θ_res[i]), 0.01, 1.0)
+    # se = 0.5 * (θ_sat[i] + θ[i]) / θ_sat[i]
+    # se = clamp(se, 0.01, 1.0)
     ψ[i+1] = Retention_ψ_Se(se, param[i]) # N+1层的ψ，用的是第N层
   end
   jwt < N && (ψ[i+1] = 0.0)

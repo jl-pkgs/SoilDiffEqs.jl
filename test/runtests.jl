@@ -9,6 +9,8 @@ using SoilDifferentialEquations, Test
   @test z2[1:6] == z
 end
 
+include("test-partials.jl")
+
 include("test-soil_moisture_Zeng2009.jl")
 include("test-θE.jl")
 include("test-GW.jl")

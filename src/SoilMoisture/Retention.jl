@@ -1,4 +1,5 @@
 export Retention, Retention_K, Retention_θ, Retention_ψ, Retention_∂θ∂ψ, Retention_∂K∂Se
+export Retention_∂K∂θ, Retention_∂ψ∂θ
 
 # 多重派发(runtime-dispatch)可能会导致速度变慢
 Retention(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell(ψ, par)
@@ -19,6 +20,7 @@ Retention_ψ_Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchte
 Retention_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂θ∂ψ(ψ, par)
 Retention_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂ψ∂θ(ψ, par)
 Retention_∂K∂Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂K∂Se(Se, par)
+Retention_∂K∂θ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real} = van_Genuchten_∂K∂θ(θ, par)
 
 
 Retention(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention(ψ, par)

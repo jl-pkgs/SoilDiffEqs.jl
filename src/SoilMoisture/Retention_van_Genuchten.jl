@@ -106,10 +106,17 @@ van_Genuchten_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = T(1
   return Ksat * (term1 + term2)
 end
 
+@inline function van_Genuchten_∂K∂θ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+  (; θ_res, θ_sat) = par
+  Se = (θ - θ_res) / (θ_sat - θ_res)
+  return van_Genuchten_∂K∂Se(Se, par) / (θ_sat - θ_res)
+end
+
 
 export van_Genuchten, van_Genuchten_θ, van_Genuchten_K, van_Genuchten_ψ,
   van_Genuchten_∂θ∂ψ, van_Genuchten_∂ψ∂θ, van_Genuchten_∂K∂Se,
-  van_Genuchten_ψ_Se
+  van_Genuchten_ψ_Se, 
+  van_Genuchten_∂K∂θ
 
 # Special case for:
 # - `soil_type = 1`: Haverkamp et al. (1977) sand
