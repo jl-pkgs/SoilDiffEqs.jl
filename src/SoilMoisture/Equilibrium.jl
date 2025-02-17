@@ -77,6 +77,7 @@ function cal_θEψE!(soil::Soil{T}) where {T<:Real}
   # Δz = soil.Δz_cm
   z = soil.z_cm
   zwt = soil.zwt * 100
+  
   soil.jwt = find_jwt(soil.z₊ₕ, soil.zwt; N) # ? 
   jwt = soil.jwt
 

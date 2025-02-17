@@ -1,27 +1,19 @@
 """
 - Q0: Infiltration rate, [cm h-1], should be negative or zero
 """
-function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}; Q0::T=NaN) where {T<:Real}
+function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}) where {T<:Real}
   (; N, jwt, Q, ψ, ψE, K₊ₕ) = soil
   (; θ_sat, param) = soil.param
   zwt = soil.zwt * 100 # [m] -> [cm]
   z = soil.z_cm
   Δz = soil.Δz_cm
 
+  cal_θEψE!(soil) # update θE, ψE
   cal_K!(soil, θ)
   cal_ψ!(soil, θ)
 
   z[N+1] = 0.5 * (zwt + z[N])
   Δz[N+1] = zwt >= z[N] ? Δz[N] : abs(zwt - z[N])
-  cal_θEψE!(soil) # update θE, ψE
-
-  for i in 1:N
-    i2 = min(N, i + 1)
-    _θ = 0.5(θ[i] + θ[i2])
-    _θsat = 0.5(θ_sat[i] + θ_sat[i2])
-    se = clamp(_θ / _θsat, 0.01, 1.0)
-    ψ[i] = Retention_ψ_Se(se, param[i])
-  end
 
   i = N
   if jwt == N # GW under soil profile
@@ -38,15 +30,15 @@ function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}; Q0::T=NaN) where 
     Q[i] = -K₊ₕ[i] * dψ / dz
   end
   jwt < N && (Q[N] = 0.0)
-  return Q0
+  return Q
 end
 
 
-function RichardsEquation_Zeng2009(dθ::AbstractVector{T}, θ::AbstractVector{T}, p::Soil{T}, t; method="ψ0") where {T<:Real}
-  p.timestep += 1
-  (; ibeg, N, Q, Q0, sink) = p # Δz, z, 
-  Δz = p.Δz_cm
-  Q0 = cal_Q_Zeng2009!(p, θ; Q0)
+function RichardsEquation_Zeng2009(dθ::AbstractVector{T}, θ::AbstractVector{T}, soil::Soil{T}, t; method="ψ0") where {T<:Real}
+  soil.timestep += 1
+  (; ibeg, N, Q, Q0, sink) = soil # Δz, z, 
+  Δz = soil.Δz_cm
+  cal_Q_Zeng2009!(soil, θ)
 
   dθ[ibeg] = ((-Q0 + Q[ibeg]) - sink[ibeg]) / Δz[ibeg] / 3600.0
   @inbounds for i in ibeg+1:N
