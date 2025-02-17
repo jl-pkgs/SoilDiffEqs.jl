@@ -80,8 +80,12 @@ end
 
 function Soil(Δz::Vector{FT}; kw...) where {FT}
   N = length(Δz)
+  Δz2 = zeros(FT, N+1)
+  Δz2[1:N] = Δz
+
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
-  soil = Soil{Float64}(; N, z, z₊ₕ, Δz, Δz₊ₕ, kw...)
+  
+  soil = Soil{Float64}(; N, z, z₊ₕ, Δz=Δz2, Δz₊ₕ, kw...)
   # update K and ψ
   cal_K!(soil)
   cal_ψ!(soil)
@@ -135,7 +139,7 @@ using OffsetArrays
 Soil depth initialization
 
 ```julia
-z, z₋ₕ, z₊ₕ, dz₊ₕ = soil_depth_init(Δz)
+z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
 ```
 """
 function soil_depth_init(Δz::AbstractVector)
@@ -143,8 +147,8 @@ function soil_depth_init(Δz::AbstractVector)
   # z_{i+1/2}
   N = length(Δz)
   z = OffsetArray(zeros(N + 2), 0:N+1)    # 虚拟层N+1
-  # dz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
-  dz₊ₕ = zeros(N + 1)
+  # Δz₊ₕ = OffsetArray(zeros(N + 1), 0:N)
+  Δz₊ₕ = zeros(N + 1)
   z₊ₕ = zeros(N + 1)
   z₋ₕ = zeros(N + 1)
 
@@ -160,16 +164,16 @@ function soil_depth_init(Δz::AbstractVector)
   end
 
   # Thickness between between z(i) and z(i+1)
-  # dz₊ₕ[0] = 0.5 * Δz[1]
+  # Δz₊ₕ[0] = 0.5 * Δz[1]
   for i = 1:N-1
-    dz₊ₕ[i] = z[i] - z[i+1]
+    Δz₊ₕ[i] = z[i] - z[i+1]
   end
-  dz₊ₕ[N] = 0.5 * Δz[N]
+  Δz₊ₕ[N] = 0.5 * Δz[N]
 
   ## z₋ₕ
   z₋ₕ[1] = 0
   z₋ₕ[2:end] = z₊ₕ[1:end-1]
-  (; z, z₋ₕ, z₊ₕ, dz₊ₕ)
+  (; z, z₋ₕ, z₊ₕ, Δz₊ₕ)
 end
 
 

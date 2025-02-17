@@ -2,10 +2,14 @@
 - Q0: Infiltration rate, [cm h-1], should be negative or zero
 """
 function cal_Q_Zeng2009!(soil::Soil{T}, θ::AbstractVector{T}; Q0::T=NaN) where {T<:Real}
-  (; N, Q, ψ, ψE) = soil
-  (; θ_sat) = soil.param
+  (; N, jwt, Q, ψ, ψE, K₊ₕ) = soil
+  (; θ_sat, param) = soil.param
   zwt = soil.zwt * 100 # [m] -> [cm]
   z = soil.z_cm
+  Δz = soil.Δz_cm
+
+  cal_K!(soil, θ)
+  cal_ψ!(soil, θ)
 
   z[N+1] = 0.5 * (zwt + z[N])
   Δz[N+1] = zwt >= z[N] ? Δz[N] : abs(zwt - z[N])

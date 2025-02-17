@@ -3,10 +3,11 @@
 function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Real}
   cal_θEψE!(soil)
   (; N, jwt, ibeg) = soil
-  (; ψ, θ, K₊ₕ, ψE) = soil
+  (; ψ, θ, K₊ₕ, ψE, sink) = soil
   (; θ_sat, param) = soil.param
-
-  ET = soil.sink
+  cal_K!(soil, θ)
+  cal_ψ!(soil, θ)
+  
   dt = soil.dt / 3600 # [s] -> [h]
   zwt = soil.zwt * 100 # [m] -> [cm]
   z = soil.z_cm
@@ -22,10 +23,8 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
 
   qin = zeros(FT, N + 1)
   qout = zeros(FT, N + 1)
-  rmx = zeros(FT, N + 1)
-  amx = zeros(FT, N + 1)
-  bmx = zeros(FT, N + 1)
-  cmx = zeros(FT, N + 1)
+  (; a, b, c, d, e, f) = soil
+  dθ = soil.du
 
   # Hydraulic conductivity and soil matric potential and their derivatives
   for j in 1:N
@@ -53,10 +52,10 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
   dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
 
   sdamp = 0.0 # extrapolates θ dependence of evaporation
-  rmx[i] = qin[i] - qout[i] + ET[i]
-  amx[i] = 0.0
-  bmx[i] = Δz[i] * (sdamp - 1.0 / dt) + dqodθ1[i] # 
-  cmx[i] = dqodθ2[i]
+  a[i] = 0.0
+  b[i] = Δz[i] * (sdamp - 1.0 / dt) + dqodθ1[i] # 
+  c[i] = dqodθ2[i]
+  d[i] = qin[i] - qout[i] + sink[i]
 
   for i in 2:N-1
     dz = (z[i] - z[i-1]) # pos
@@ -71,10 +70,10 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
 
-    amx[i] = -dqidθ0[i]
-    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
-    cmx[i] = dqodθ2[i]
-    rmx[i] = qin[i] - qout[i] + ET[i]
+    a[i] = -dqidθ0[i]
+    b[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    c[i] = dqodθ2[i]
+    d[i] = qin[i] - qout[i] + sink[i]
   end
 
   # Aquifer (11th) layer
@@ -93,16 +92,16 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     qout[i] = 0.0
     dqodθ1[i] = 0.0
 
-    amx[i] = -dqidθ0[i]
-    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
-    cmx[i] = 0.0
-    rmx[i] = qin[i] - qout[i] + ET[i]
+    a[i] = -dqidθ0[i]
+    b[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    c[i] = 0.0
+    d[i] = qin[i] - qout[i] + sink[i]
 
     # next set up aquifer layer; hydrologically inactive
-    amx[i+1] = 0.0
-    bmx[i+1] = Δz_gw / dt # Δz[i+1] / dt
-    cmx[i+1] = 0.0
-    rmx[i+1] = 0.0
+    a[i+1] = 0.0
+    b[i+1] = Δz_gw / dt # Δz[i+1] / dt
+    c[i+1] = 0.0
+    d[i+1] = 0.0
   else  # water table is below soil column
     # compute aquifer soil moisture as average of layer 10 and saturation
     ## N层
@@ -130,10 +129,10 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     dqodθ1[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
     dqodθ2[i] = -(K₊ₕ[i] * dψdθ1 + dψ * dKdθ[i]) / dz
 
-    amx[i] = -dqidθ0[i]
-    bmx[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
-    cmx[i] = dqodθ2[i]
-    rmx[i] = qin[i] - qout[i] + ET[i]
+    a[i] = -dqidθ0[i]
+    b[i] = -Δz[i] / dt - dqidθ1[i] + dqodθ1[i]
+    c[i] = dqodθ2[i]
+    d[i] = qin[i] - qout[i] + sink[i]
 
     ## N+1层
     # next set up aquifer layer; dz/num unchanged, qin=qout
@@ -143,13 +142,13 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, qflx_infl::FT=0.0) where {FT<:Re
     qout[i+1] = 0.0  # zero-flow bottom boundary condition
     dqodθ1[i+1] = 0.0  # zero-flow bottom boundary condition
 
-    amx[i+1] = -dqidθ0[i+1]
+    a[i+1] = -dqidθ0[i+1]
     # bmx[i+1] = Δz[i+1] / dt - dqidθ1[i+1] + dqodθ1[i+1]
-    bmx[i+1] = -Δz_gw / dt - dqidθ1[i+1] + dqodθ1[i+1]
-    cmx[i+1] = 0.0
-    rmx[i+1] = qin[i+1] - qout[i+1] # 最后一层，地下水不考虑蒸发
+    b[i+1] = -Δz_gw / dt - dqidθ1[i+1] + dqodθ1[i+1]
+    c[i+1] = 0.0
+    d[i+1] = qin[i+1] - qout[i+1] # 最后一层，地下水不考虑蒸发
   end
-  dθ = tridiagonal_solver(amx, bmx, cmx, rmx; ibeg) # Solve for dθ
+  tridiagonal_solver!(a, b, c, d, e, f, dθ; ibeg, N=N + 1)
 
   # Renew the mass of liquid water also compute qcharge from dθ in aquifer layer
   # update in drainage for case jwt < N
