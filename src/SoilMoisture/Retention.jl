@@ -7,6 +7,7 @@ Retention_K(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_K(θ, par)
 Retention_θ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_θ(ψ, par)
 Retention_ψ(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_ψ(θ, par)
 Retention_ψ_Se(Se::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_ψ_Se(Se, par)
+Retention_∂K∂θ(θ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂K∂θ(θ, par)
 Retention_∂θ∂ψ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂θ∂ψ(ψ, par)
 Retention_∂ψ∂θ(ψ::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂ψ∂θ(ψ, par)
 Retention_∂K∂Se(Se::T, par::ParamCampbell{T}) where {T<:Real} = Campbell_∂K∂Se(Se, par)
@@ -79,7 +80,7 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, K, K₊ₕ, Δz) = soil
   param = soil.param.param
   i0 = max(soil.ibeg - 1, 1)
-  
+
   @inbounds for i = i0:N
     K[i] = Retention_K(θ[i], param[i])
   end
@@ -90,13 +91,39 @@ function cal_K!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   K₊ₕ[N] = K[N]
 end
 
+function cal_K_CLM5!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
+  (; N, K, K₊ₕ, jwt) = soil
+  Δz = soil.Δz_cm
+  param = soil.param.param
+  i0 = max(soil.ibeg - 1, 1)
+
+  @inbounds for i = i0:N
+    K[i] = Retention_K(θ[i], param[i])
+  end
+  par = param[N]
+  # if jwt == N
+  #   _θ = 0.5 * (θ[N] + par.θ_sat)
+  #   K[N+1] = Retention_K(_θ, par)
+  # else
+  #   K[N+1] = Retention_K(θ[N], par)
+  # end
+  K[N+1] = Retention_K(θ[N], par)
+
+  @inbounds for i = i0:N
+    K₊ₕ[i] = mean_arithmetic(K[i], K[i+1], Δz[i], Δz[i+1])
+    # K₊ₕ[i] = mean_harmonic(K[i], K[i+1], Δz[i], Δz[i+1])
+  end
+  return K₊ₕ
+end
+
+export cal_K_CLM5!
 
 cal_ψ!(soil::Soil) = cal_ψ!(soil, soil.θ)
 function cal_ψ!(soil::Soil, θ::AbstractVector{T}) where {T<:Real}
   (; N, ψ) = soil
   param = soil.param.param
   i0 = max(soil.ibeg - 1, 1)
-  
+
   @inbounds for i = i0:N
     ψ[i] = Retention_ψ(θ[i], param[i])
   end

@@ -73,5 +73,11 @@ end
   Ksat * (2b + 3) * (Se^(2b + 2))
 end
 
+@inline @fastmath function Campbell_∂K∂θ(θ::T, par::ParamCampbell{T}) where {T<:Real}
+  (; Ksat, b) = par
+  Se = clamp(θ / par.θ_sat, T(0.01), T(1.0))
+  Campbell_∂K∂Se(Se, par) / (par.θ_sat)
+end
+
 export Campbell, Campbell_ψ, Campbell_θ, Campbell_K,
   Campbell_∂θ∂ψ, Campbell_∂ψ∂θ, Campbell_∂K∂Se, Campbell_ψ_Se
