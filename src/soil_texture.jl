@@ -2,6 +2,11 @@
 
 module USDA
 
+export soil_texture, SoilTexture
+export CLAY, SILTY_CLAY, SANDY_CLAY, CLAY_LOAM, SILTY_CLAY_LOAM,
+  SANDY_CLAY_LOAM, LOAM, SILTY_LOAM, SANDY_LOAM, SILT,
+  LOAMY_SAND, SAND
+
 # https://developers.google.com/earth-engine/datasets/catalog/OpenLandMap_SOL_SOL_TEXTURE-CLASS_USDA-TT_M_v02
 @enum SoilTexture begin
   # USDA_UNDEFINED  # NA  
@@ -18,6 +23,12 @@ module USDA
   LOAMY_SAND      = 11 # LOSA
   SAND            = 12 # SA
 end
+
+# const SoilTypes = [
+#   "CLAY", "SILTY_CLAY", "SANDY_CLAY", "CLAY_LOAM", "SILTY_CLAY_LOAM",
+#   "SANDY_CLAY_LOAM", "LOAM", "SILTY_LOAM", "SANDY_LOAM", "SILT",
+#   "LOAMY_SAND", "SAND"]
+# soil_texture(i::Int) = SoilTypes[I]
 
 Base.to_index(i::SoilTexture) = Int(i)
 
@@ -69,6 +80,5 @@ function soil_texture(sand::Float64, silt::Float64)
   end
 end
 
-export soil_texture, SoilTexture
 
 end

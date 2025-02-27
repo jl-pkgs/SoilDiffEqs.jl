@@ -99,30 +99,8 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
   for j in 1:N
     θ[j] += dθ[j] * Δz[j] # update θ
   end
-  return Q
+  return (; Q, ∂K₊ₕ∂θ, ∂ψ∂θ, ∂qᵢ∂θᵢ, ∂qᵢ∂θᵢ₊₁)
 end
 
-
-function error_SM(soil::Soil{FT}) where {FT<:Real}
-  (; N, θ, θ_prev, Q, Q0) = soil
-  dt = soil.dt / 3600 # [s] -> [h]
-  Δz = soil.Δz_cm
-  QN = Q[N]
-  dθ = 0
-  for i = 1:N
-    dθ += (θ[i] - θ_prev[i]) * Δz[i] # in cm
-  end
-  obs = (QN - Q0) * dt # cm
-  sim = dθ
-
-  bias = sim - obs
-  perc = bias / obs * 100 |> _round
-
-  info = (; obs, sim, bias, perc, dθ, QN, Q0)
-  info
-end
-
-_round(x::Real; digits=3) = round(x; digits)
 
 export cal_θEψE!, soil_moisture_Zeng2009
-export error_SM
