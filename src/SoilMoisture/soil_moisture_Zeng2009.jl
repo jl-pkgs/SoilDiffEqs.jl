@@ -15,8 +15,8 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
   Δz = soil.Δz_cm
   # Δz₊ₕ_cm::Vector{FT} = Δz₊ₕ * 100
 
-  dKdθ = zeros(FT, N)
-  dψdθ = zeros(FT, N + 1)
+  ∂K₊ₕ∂θ = zeros(FT, N)
+  ∂ψ∂θ = zeros(FT, N + 1)
   ∂qᵢ∂θᵢ = zeros(FT, N + 1)
   ∂qᵢ∂θᵢ₊₁ = zeros(FT, N + 1)
 
@@ -38,9 +38,9 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
     
     se = clamp((_θ - _θres) / (_θsat - _θres), 0.01, 1.0)
     # se = clamp(_θ / _θsat, 0.01, 1.0)
-    dKdθ[j] = Retention_∂K∂Se(se, par) / (2 * (_θsat - _θres))  # CLM5, Eq. 7.87
+    ∂K₊ₕ∂θ[j] = Retention_∂K∂Se(se, par) / (2 * (_θsat - _θres))  # CLM5, Eq. 7.87
     ψ[j] = Retention_ψ(θ[j], par)
-    dψdθ[j] = Retention_∂ψ∂θ(ψ[j], par) # CLM5, Eq. 7.85
+    ∂ψ∂θ[j] = Retention_∂ψ∂θ(ψ[j], par) # CLM5, Eq. 7.85
   end
 
   i = N
@@ -52,7 +52,7 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
     # compute for aquifer layer [N+1]
     par = param[i]
     ψ[i+1] = Retention_ψ_Se(se, par) # N+1层的ψ，用的是第N层
-    dψdθ[i+1] = Retention_∂ψ∂θ(ψ[i+1], par) #
+    ∂ψ∂θ[i+1] = Retention_∂ψ∂θ(ψ[i+1], par) #
   end
 
   for i in 1:N
@@ -60,8 +60,8 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0) where {FT<:Real}
     dψ = (ψ[i+1] - ψE[i+1]) - (ψ[i] - ψE[i])
     Q[i] = -K₊ₕ[i] * dψ / dz
 
-    ∂qᵢ∂θᵢ[i] = -(-K₊ₕ[i] * dψdθ[i] + dψ * dKdθ[i]) / dz
-    ∂qᵢ∂θᵢ₊₁[i] = -(K₊ₕ[i] * dψdθ[i+1] + dψ * dKdθ[i]) / dz
+    ∂qᵢ∂θᵢ[i] = -(-K₊ₕ[i] * ∂ψ∂θ[i] + dψ * ∂K₊ₕ∂θ[i]) / dz
+    ∂qᵢ∂θᵢ₊₁[i] = -(K₊ₕ[i] * ∂ψ∂θ[i+1] + dψ * ∂K₊ₕ∂θ[i]) / dz
   end
   
   i = N

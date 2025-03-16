@@ -33,11 +33,11 @@ end
   # z₊ₕ = soil.z₊ₕ
   soil = Soil(dz; θ=deepcopy(θ), zwt=-0.5, wa)
   Q_zeng = cal_Q_Zeng2009!(soil, soil.θ)
-  Q_ode = soil_moisture_Zeng2009(soil)
+  Q_ode = soil_moisture_Zeng2009(soil).Q
   @test Q_zeng ≈ Q_ode
 
   soil = Soil(dz; θ=deepcopy(θ), zwt=-3.5, wa)
   Q_zeng = cal_Q_Zeng2009!(soil, soil.θ)
-  Q_ode = soil_moisture_Zeng2009(soil)
+  Q_ode = soil_moisture_Zeng2009(soil).Q
   @test Q_zeng ≈ Q_ode
 end
