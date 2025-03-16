@@ -12,7 +12,7 @@ end
 Base.collect(x::AbstractSoilParam) = Vector(x)
 
 
-function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1)
+function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1; verbose=false)
   # Bonan 2019, Table 8.3
   soilparam = [
     # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹), ID_USDA, ID_Bonan, name
@@ -29,7 +29,7 @@ function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1)
     0.41 0.057 0.124 2.28 14.59; #  11, 2, Loamy sand
     0.43 0.045 0.145 2.68 29.7   #  12, 1, Sand
   ]
-  println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
+  verbose && println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
   θ_sat, θ_res, α, n, Ksat = soilparam[soil_type, :]
   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 end
@@ -39,7 +39,7 @@ end
 #   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 # end
 
-function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
+function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1; verbose=false)
   # Bonan 2019, Table 8.3
   soilparam = [
     # θ_sat, ψ_sat (cm), b, Ksat (cm h⁻¹), ID_USDA, ID_Bonan, name
@@ -56,7 +56,7 @@ function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1)
     0.410 -9.0 4.38 56.28;  # 11, 2, Loamy sand
     0.395 -12.1 4.05 63.36  # 12, 1, Sand
   ]
-  println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
+  verbose && println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
   θ_sat, ψ_sat, b, Ksat = soilparam[soil_type, :]
   ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
 end
