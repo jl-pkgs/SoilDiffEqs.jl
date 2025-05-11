@@ -18,7 +18,6 @@ end
   obs_∂K∂θ = (K2 - K1) / (θ2 - θ1)
   obs_∂K∂Se, obs_∂K∂θ
 
-
   sim_∂K∂Se = Retention_∂K∂Se(se, par)
   sim_∂K∂θ = Retention_∂K∂θ(θ, par)
 

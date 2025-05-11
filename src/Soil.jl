@@ -18,7 +18,7 @@ export Soil
   # 水分
   θ::Vector{FT} = fill(0.1, N + 1)      # θ [m3 m-3]
   Q::Vector{FT} = zeros(FT, N)          # [cm h-1]
-  K::Vector{FT} = zeros(FT, N + 1)      # hydraulic conductivity，[cm h-1]
+  K::Vector{FT} = zeros(FT, N + 1)      # hydraulic conductivity，[cm h-1], 1:N+1
   K₊ₕ::Vector{FT} = zeros(FT, N + 1)    # hydraulic conductivity at interface, [cm h-1]
   ∂θ∂ψ::Vector{FT} = zeros(FT, N + 1)   # specific moisture capacity, dθ/dΨ, [cm-1], 临时变量
   ψ::Vector{FT} = zeros(FT, N + 1)      # [cm]，约干越负

@@ -25,12 +25,12 @@ begin
   d = df[df.site.==SITE, [:time; vars_SM]]
   # d = d[1:24*7*4, ]
 
-  ibeg = 2
+  ibeg = 2 # 从第二层开始模拟
   # [5, 10, 20, 50, 100]
-  yobs_full = d[:, 3:end] |> Matrix |> drop_missing
+  yobs_full = d[:, 3:end] |> Matrix |> drop_missing # [5, 10, 20, 50, 100]
   yobs = yobs_full[:, max(ibeg - 1, 1):end]
   θ0 = yobs_full[1, max(ibeg - 1, 1):end]
-  θ_surf = yobs_full[:, ibeg-1]
+  θ_surf = yobs_full[:, ibeg-1] # 第一层是模型的输入数据
   set_option!(; yobs, θ_surf, ibeg, same_layer=false)
   options
 

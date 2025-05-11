@@ -62,10 +62,6 @@ function soilwater_zengdecker2009()
     zmm[j] = z[j] * 1e3
     dzmm[j] = dz[j] * 1e3
     zimm[j] = zi[j] * 1e3
-
-    vol_ice[j] = min(θ_sat[j], θ_ice[j] / (dz[j] * ρ_ice))
-    icefrac[j] = min(1.0, vol_ice[j] / θ_sat[j])
-    vwc_liq[j] = max(θ_liq[j], 1.0e-6) / (dz[j] * ρ_h20)
   end
 
   zimm[0] = 0.0
@@ -73,19 +69,6 @@ function soilwater_zengdecker2009()
 
   # Compute jwt index
   jwt = find_jwt(zi, zwt)
-  vwc_zwt = θ_sat[N]
-  if Tsoil[jwt+1] < tfrz
-    vwc_zwt = vwc_liq[N]
-    for j in N:nlevgrnd
-      if zwt <= zi[j]
-        _ψ = hfus * (tfrz - Tsoil[j]) / (grav * Tsoil[j]) * 1000.0
-        _ψ = max(ψ_sat[N], _ψ)
-        vwc_zwt = θ_sat[N] * (_ψ / ψ_sat[N])^(-1.0 / bsw[N])
-        vwc_zwt = min(vwc_zwt, 0.5 * (θ_sat[N] + θ[N]))
-        break
-      end
-    end
-  end
 
   # ! 核心参考部分
   # Calculate the equilibrium water content based on the water table depth
@@ -227,46 +210,46 @@ function soilwater_zengdecker2009()
     # TODO: 漂亮！，最后一层不考虑蒸发。
   end
   Tridiagonal(amx, bmx, cmx, rmx, dθ; jtop=1) # Solve for dθ
-
-  # Renew the mass of liquid water also compute qcharge from dθ in aquifer layer
-  # update in drainage for case jwt < N
-  for j in 1:N
-    θ_liq[j] += dθ[j] * dzmm[j]
-  end
-
-  # calculate qcharge for case jwt < N
-  if jwt < N
-    j0 = min(1, jwt)
-    j1 = jwt + 1
-
-    wh_zwt = 0.0
-    # Recharge rate qcharge to groundwater (positive to aquifer)
-
-    se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
-    # scs: this is the expression for unsaturated K
-    _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
-
-    _ψ = max(ψmin, ψ[j0])
-    wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
-
-    if jwt == 0
-      qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)
-    else
-      qcharge = -_K * (wh_zwt - wh) / ((zwt - z[jwt]) * 1000.0 * 2.0)
-    end
-    # To limit qcharge (for the first several timesteps)
-    qcharge = max(qcharge, -10.0 / dtime, 10.0 / dtime)
-  else
-    # if water table is below soil column, compute qcharge from dθ(11)
-    qcharge = dθ[N+1] * dzmm[N+1] / dtime
-  end
-
-  # compute the water deficit and reset negative liquid water content
-  qflx_deficit = 0.0
-  for j in 1:N
-    if θ_liq[j] < 0.0
-      qflx_deficit -= θ_liq[j]
-    end
-  end
-
 end
+
+
+# # Renew the mass of liquid water also compute qcharge from dθ in aquifer layer
+# # update in drainage for case jwt < N
+# for j in 1:N
+#   θ_liq[j] += dθ[j] * dzmm[j]
+# end
+
+# # calculate qcharge for case jwt < N
+# if jwt < N
+#   j0 = min(1, jwt)
+#   j1 = jwt + 1
+
+#   wh_zwt = 0.0
+#   # Recharge rate qcharge to groundwater (positive to aquifer)
+
+#   se = clamp(θ[jwt+1] / θ_sat[jwt+1], 0.01, 1.0)
+#   # scs: this is the expression for unsaturated K
+#   _K = imped[jwt+1] * Ksat[jwt+1] * se^(2.0 * bsw[jwt+1] + 3.0)
+
+#   _ψ = max(ψmin, ψ[j0])
+#   wh = _ψ - ψE[j0]  # 这里是向地下水的排泄，Zeng2009, Eq.14
+
+#   if jwt == 0
+#     qcharge = -_K * (wh_zwt - wh) / ((zwt + 1.0e-3) * 1000.0)
+#   else
+#     qcharge = -_K * (wh_zwt - wh) / ((zwt - z[jwt]) * 1000.0 * 2.0)
+#   end
+#   # To limit qcharge (for the first several timesteps)
+#   qcharge = max(qcharge, -10.0 / dtime, 10.0 / dtime)
+# else
+#   # if water table is below soil column, compute qcharge from dθ(11)
+#   qcharge = dθ[N+1] * dzmm[N+1] / dtime
+# end
+
+# # compute the water deficit and reset negative liquid water content
+# qflx_deficit = 0.0
+# for j in 1:N
+#   if θ_liq[j] < 0.0
+#     qflx_deficit -= θ_liq[j]
+#   end
+# end
