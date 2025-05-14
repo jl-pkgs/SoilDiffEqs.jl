@@ -45,22 +45,20 @@ begin
 end
 
 
-## 设置根系分布情况
-"""
-- z: in cm, 向下为正
-"""
-root_fraction(z_cm::AbstractVector; β) = β .^ z_cm # 
-
-root_fraction(soil::Soil; β=0.943) = root_fraction(-soil.z_cm[0:N]; β)
 
 
 begin
   βs = [0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97]
 
-  p = plot(;legendposition=:bottomright, ylabel="Depths (m)", xlabel="Root Fraction (%)")
+  p = plot(;legendposition=:bottomleft, 
+    xlim=(0.6, 0.99), ylim=(-1, 0),
+    ylabel="Depths (m)", xlabel="Accumulated Root Fraction (%)")
+  vline!(p, [0.95], label=""; linestyle=:dash, color=:red)
   for β in βs
     root = root_fraction(soil; β)
-    plot!(p, -diff(root), soil.z[1:N], label="β =$β")
+    fraction = -diff(root)
+    y = cumsum(fraction)
+    plot!(p, y, soil.z[1:N], label="β =$β")
   end
   p
 end

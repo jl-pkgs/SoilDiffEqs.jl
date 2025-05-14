@@ -21,11 +21,12 @@
 ## 根系
 
 ![](docs/RootFraction.png)
+![](docs/RootFraction_accu.png)
 
 
 ## References
 
-- <https://github.com/jl-pkgs/HydroTools.jl/blob/master/src/Soil/soil_moisture.jl>
+<!-- - <https://github.com/jl-pkgs/HydroTools.jl/blob/master/src/Soil/soil_moisture.jl> -->
 
 - <https://github.com/amireson/RichardsEquation/blob/master/Richards%20Equation.ipynb>
 
