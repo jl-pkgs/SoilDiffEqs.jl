@@ -1,6 +1,5 @@
 using SoilDifferentialEquations, Test
 
-using Plots
 using OrdinaryDiffEqTsit5
 using Plots
 gr(framestyle=:box, legend=:topright)
@@ -22,17 +21,18 @@ begin
   ∂K₊ₕ∂θ = _cal_K(soil_ode)
 
   soil_zeng = init_soil(; zwt=-2.5, dt);
-  (; ∂K₊ₕ∂θ, ∂ψ∂θ, ∂qᵢ∂θᵢ, ∂qᵢ∂θᵢ₊₁) = soil_moisture_Zeng2009(soil_zeng; ∂K₊ₕ∂θ)
+  (; ∂K₊ₕ∂θ, ∂ψ∂θ, ∂qᵢ∂θᵢ, ∂qᵢ∂θᵢ₊₁) = soil_moisture_Zeng2009(soil_zeng;)
+
   error_SM(soil_zeng) |> display
   "ok"
   # θ_zeng = soil_zeng.θ
-  # θ_ode = soil_ode.θ
-  # plot(θ_ode, soil_ode.z[1:N], label="θ_ode", legend=:bottomright)
+  θ_ode = soil_ode.θ
+  plot(θ_ode, soil_ode.z[1:N], label="θ_ode", legend=:bottomright)
   # plot!(θ_zeng, soil_zeng.z[1:N], label="θ_zeng")
 end
 
 
-
+## 测试均衡状态能否维持
 function _cal_K(soil)
   θ_prev = soil.θ_prev
   θ_next = soil.θ

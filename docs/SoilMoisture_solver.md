@@ -150,5 +150,5 @@ $$
 
  C_i^{n+1,m} \frac{\Delta z_i}{\Delta t} (\psi^n_i - \psi^{n+1,m}_i) + 
  K^{n+1,m}_{i-1/2}
- - K^{n+1,m}_{i+1/2} 
+ - K^{n+1,m}_{i+1/2}
 $$

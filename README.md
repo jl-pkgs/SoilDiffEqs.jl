@@ -1,4 +1,4 @@
-# Soil Physics
+# SoilDiffEqs
 
 <!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://jl-pkgs.github.io/SoilDifferentialEquations.jl/stable) -->
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jl-pkgs.github.io/SoilDifferentialEquations.jl/dev)
@@ -17,6 +17,11 @@
 - [x] `ψ0`：已知地表水势
 
 > 注意，sink需要划分到每一层的蒸发量
+
+## 根系
+
+![](docs/RootFraction.png)
+
 
 ## References
 

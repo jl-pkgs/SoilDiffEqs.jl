@@ -8,6 +8,7 @@ using Reexport
 using Printf
 using OffsetArrays
 using StructArrays
+using ProgressMeter
 
 include("GlobalOptions.jl")
 @reexport using .GlobalOptions
