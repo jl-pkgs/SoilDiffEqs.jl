@@ -45,6 +45,9 @@ include("SoilTemperature/Solve_Tsoil.jl")
 
 include("GroundWater/GroundWater.jl")
 
+include("Vegetation/root_fraction.jl")
+include("Vegetation/soil_moisture_constraint.jl")
+
 export solve_Tsoil_Bonan
 
 dir_soil = "$(@__DIR__)/.." |> abspath

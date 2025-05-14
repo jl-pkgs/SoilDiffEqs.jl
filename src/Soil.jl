@@ -84,7 +84,6 @@ function Soil(Δz::Vector{FT}; kw...) where {FT}
   Δz2[1:N] = Δz
 
   z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
-  
   soil = Soil{Float64}(; N, z, z₊ₕ, Δz=Δz2, Δz₊ₕ, kw...)
   # update K and ψ
   cal_K!(soil)

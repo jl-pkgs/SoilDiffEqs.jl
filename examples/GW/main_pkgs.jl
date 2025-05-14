@@ -1,11 +1,13 @@
-function plot_θ(soil)
-  N = soil.N
-  z = soil.z[1:N]
-  zwt = soil.zwt
+# @testset "soil_moisture_zeng2009" 
+function init_soil(; zwt=-0.5, dt=3600)
+  wa = 4000.0 # [mm]
+  par = get_soilpar(1; method_retention="Campbell")
+  param = SoilParam(N, par)
 
-  plot(title="zwt = $zwt m", xlabel="θ (m³ m⁻³)", ylabel="z [m]", legend=:topright)
-  plot!(θ, z, label="θ_init")
-  plot!(soil.θ, z, label="θ_next")
+  soil = Soil(dz; θ=deepcopy(θ), zwt, wa, dt,
+    param,
+    method_retention="Campbell")
+  return soil
 end
 
 function solve_ode(dt)
@@ -28,19 +30,6 @@ function solve_zeng(dt)
   soil = init_soil(; zwt=-2.5, dt)
   soil_moisture_Zeng2009(soil)
   soil
-end
-
-
-# @testset "soil_moisture_zeng2009" 
-function init_soil(; zwt=-0.5, dt=3600)
-  wa = 4000.0 # [mm]
-  par = get_soilpar(1; method_retention="Campbell")
-  param = SoilParam(N, par)
-
-  soil = Soil(dz; θ=deepcopy(θ), zwt, wa, dt, 
-    param,
-    method_retention="Campbell")
-  return soil
 end
 
 
