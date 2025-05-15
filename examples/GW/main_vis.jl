@@ -27,7 +27,7 @@ function plot_depth_timeseries(soil)
     l = layers[i]
     depth = depths[i]
     # depth = round(Int, l * Δ * 100)
-    plot!(p, dates[t], SM[t, l], label="$(depth)cm")
+    plot!(p, dates[t], SM[t, l], label="$(depth) cm")
   end
   p
 end

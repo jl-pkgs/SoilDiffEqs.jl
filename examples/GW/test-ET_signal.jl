@@ -4,6 +4,22 @@ using OrdinaryDiffEqTsit5
 using Plots
 using Dates
 
+
+function Init_VegParam!(soil; β=0.94)
+  soil.f_root = root_fraction(soil; β)
+end
+
+
+ylabel = "Depth (m)"
+plot(
+  plot(soil.f_root, soil.z[1:N]; label="", ylabel, xlabel="Root Fraction"), 
+  plot(cumsum(soil.f_root), soil.z[1:N]; label="", ylabel, xlabel="Accu Root Fraction"), 
+  size=(900, 500)
+)
+
+Init_VegParam!(soil)
+
+
 # gr(framestyle=:box, )
 # gr(display_type=:inline)
 pyplot(framestyle=:box, legend=:bottomleft)
@@ -61,8 +77,9 @@ begin
   p1 = plot_soil_profile(soil)
   p2 = plot_depth_timeseries(soil)
   p = plot(p1, p2; size=(1600, 600))
-  savefig(p, "Figure1_ET_zwt=$(-zwt).pdf")
-  # p
+  # savefig(p, "Figure1_ET_zwt=$(-zwt).pdf")
+  display(p)
+
   R = sum(Q[:, end] * 10) # 最后一层流向地下水 cm h-1, 水量不平衡
   (W_prev + R - W_now - sum(SINK) * 10) / W_prev * 100  # 误差 0.0125%
 end

@@ -50,6 +50,12 @@ export Soil
   F0::FT = FT(NaN)                     # heat flux at the surface, [W m-2]，向下为负
   G::FT = FT(NaN)                      # [W m-2]，土壤热通量
 
+  ## 植被参数
+  f_root::Vector{FT} = zeros(FT, N) # 根系分布比例
+  βi::Vector{FT} = zeros(FT, N)     # 每层土壤水限制, dryness
+  w::Vector{FT} = zeros(FT, N)      # 土壤水限制权重，f_root * βi
+  β::FT = FT(0.1)                   # 总的土壤水限制
+
   ## Parameter: [水力] + [热力]参数
   method_retention::String = "van_Genuchten"
   param::SoilParam{FT,P} = SoilParam{FT,P}(; N, method_retention)
@@ -105,6 +111,9 @@ function Base.show(io::IO, x::Soil{T}) where {T<:Real}
   printstyled(io, "Soil{$T}: ", color=:blue)
   printstyled(io, "N = $(x.N), ibeg=$(x.ibeg), ", color=:blue, underline=true)
   print_index(io, x.inds_obs; prefix="inds_obs =")
+
+  printstyled(io, "Vegetation: \n", color=:blue, bold=true)
+  print_var(io, x, :f_root)
 
   printstyled(io, "Soil Temperature: \n", color=:blue, bold=true)
   print_var(io, x, :Tsoil)

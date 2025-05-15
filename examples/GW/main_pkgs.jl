@@ -6,7 +6,7 @@ function init_soil(; zwt=-0.5, dt=3600)
 
   soil = Soil(dz; θ=deepcopy(θ), zwt, wa, dt,
     param,
-    method_retention="Campbell")
+    method_retention="Campbell");
   return soil
 end
 
