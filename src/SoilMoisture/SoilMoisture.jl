@@ -16,19 +16,6 @@ include("soil_moisture_BEPS.jl")
 include("soil_moisture_Zeng2009.jl")
 include("Solve_SM.jl")
 
-function find_jwt(z₊ₕ::AbstractVector, zwt::Real; N::Int=length(z₊ₕ))
-  jwt = N
-  zwt_abs = abs(zwt)
-  for j in 1:N
-    if zwt_abs <= abs(z₊ₕ[j])
-      jwt = j - 1
-      break
-    end
-  end
-  return jwt
-end
-
-
 
 function error_SM(soil::Soil{T}) where {T<:Real}
   (; N, Q0) = soil

@@ -34,26 +34,6 @@ Retention_∂ψ∂θ(ψ::T; par::AbstractSoilParam{T}) where {T<:Real} = Retenti
 Retention_∂K∂Se(Se::T; par::AbstractSoilParam{T}) where {T<:Real} = Retention_∂K∂Se(Se, par)
 
 
-"""
-  计算每一层的给水度
-
-Sy = θ_sat - θ(ψ_sat + zwt)
-
-前提条件是：每层土壤均接近饱和，才能得到这个公式，`ψ + z = ψ_sat + zwt`，即Q = 0。
-"""
-function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
-  (; N, Sy) = soil
-  (; θ_sat, param, method_retention) = soil.param
-
-  iszero_ψ = method_retention == "van_Genuchten"
-  for i = 1:N
-    _ψ_sat = iszero_ψ ? 0.0 : θ_sat[i] # !Note
-    Sy[i] = θ_sat[i] - Retention_θ(_ψ_sat + zwt, param[i])
-  end
-  clamp!(Sy, 0.0, sy_max)
-end
-
-
 function cal_θ!(soil::Soil, ψ::AbstractVector{T}) where {T<:Real}
   (; N, ibeg, θ) = soil
   (; param) = soil.param

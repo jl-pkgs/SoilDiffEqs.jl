@@ -1,31 +1,27 @@
 using SoilDifferentialEquations, Test
 using HydroTools
 using OrdinaryDiffEqTsit5
-using Plots
-using Dates
+using Plots, Dates
 
+pyplot(framestyle=:box, legend=:bottomleft)
+
+include("main_pkgs.jl")
+include("main_vis.jl")
 
 function Init_VegParam!(soil; β=0.94)
   soil.f_root = root_fraction(soil; β)
 end
 
 
-ylabel = "Depth (m)"
-plot(
-  plot(soil.f_root, soil.z[1:N]; label="", ylabel, xlabel="Root Fraction"), 
-  plot(cumsum(soil.f_root), soil.z[1:N]; label="", ylabel, xlabel="Accu Root Fraction"), 
-  size=(900, 500)
-)
-
-Init_VegParam!(soil)
-
-
+# ylabel = "Depth (m)"
+# plot(
+#   plot(soil.f_root, soil.z[1:N]; label="", ylabel, xlabel="Root Fraction"), 
+#   plot(cumsum(soil.f_root), soil.z[1:N]; label="", ylabel, xlabel="Accu Root Fraction"), 
+#   size=(900, 500)
+# )
 # gr(framestyle=:box, )
 # gr(display_type=:inline)
-pyplot(framestyle=:box, legend=:bottomleft)
 
-include("main_pkgs.jl")
-include("main_vis.jl")
 
 begin
   ## 加入蒸发的信号
@@ -47,7 +43,13 @@ begin
   sum(ET)
 end
 
-## 将ET划分到土壤的每一层。
+
+
+
+
+## 1. 将ET划分到土壤的每一层；模块已成。
+## 2. 将
+
 begin
   # Δ = 0.1
   zwt = -2.5
@@ -60,6 +62,7 @@ begin
   θ = LinRange(0.36, 0.2, N) |> collect
 
   soil = init_soil(; dt, zwt)
+  Init_VegParam!(soil)
   cal_θEψE!(soil) # update θE, ψE
   # soil.θ = soil.θE[1:N]
   soil.θ .= soil.param.θ_sat[1] .* 0.8
@@ -76,7 +79,7 @@ begin
   
   p1 = plot_soil_profile(soil)
   p2 = plot_depth_timeseries(soil)
-  p = plot(p1, p2; size=(1600, 600))
+  p = plot(p1, p2; size=(1000, 400))
   # savefig(p, "Figure1_ET_zwt=$(-zwt).pdf")
   display(p)
 
