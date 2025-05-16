@@ -38,8 +38,8 @@ export Soil
   jwt::Int = 0                       # non-groundwater index
   wa::FT = FT(5000.0)                # water amount in aquifer, [mm]，潜水含水层
   uex::FT = FT(0.0)                  # 超出地表的水量, [mm], [kg m-2] 以地表径流的形式排放
-  recharge::FT = FT(0.0)             # recharge rate, [mm/s]
-  drainage::FT = FT(0.0)             # drainage rate, [mm/s]
+  recharge::FT = FT(0.0)             # recharge rate, [cm/h]
+  drainage::FT = FT(0.0)             # drainage rate, [cm/h]
   Sy::Vector{FT} = fill(0.02, N + 1) # specific yield, [m3 m-3]
 
   # 温度

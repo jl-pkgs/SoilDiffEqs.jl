@@ -71,37 +71,30 @@ end
 
 # Calculate the equilibrium water content based on the water table depth
 function cal_θEψE!(soil::Soil{T}) where {T<:Real}
-  (; N, θE, ψE, z, zwt, jwt, method_retention) = soil
+  (; N, θE, ψE, z₊ₕ, zwt, jwt, method_retention) = soil
   (; param, θ_sat, ψ_sat) = soil.param
   iszero_ψsat = method_retention == "van_Genuchten" ? true : false
 
-  # Δz = soil.Δz_cm
-  z = soil.z_cm
   zwt = soil.zwt * 100
-  
   soil.jwt = find_jwt(soil.z₊ₕ, soil.zwt; N) # ? 
   jwt = soil.jwt
 
-  for j = 1:N
-    z0 = z[j-1]
-    z1 = z[j]
-    par = param[j]
-    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[j]
-    θE[j] = cal_θE(z1, z0, zwt, _ψsat, par)
-    ψE[j] = Retention_ψ(θE[j], par)
-  end
+  for j = 1:N+1
+    z0 = j == 1 ? 0.0 : z₊ₕ[j-1] * 100
+    z1 = j == N + 1 ? zwt : z₊ₕ[j] * 100 # [m] -> [cm]
+    
+    _j = j == N + 1 ? N : j
+    _θsat = θ_sat[_j]
+    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[_j]
+    par = param[_j]
 
-  # If zwt below soil column, calculate ψE for the 11th layer
-  j = N
-  if jwt == N
-    # 积分在：z₊ₕ[N] ~ zwt，最后一层的θE、ψE代表的区间
-    par = param[j]
-    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[j]
-    θE[j+1] = cal_θE(zwt, z[j], zwt, _ψsat, par)
-    ψE[j+1] = Retention_ψ(θE[j+1], par)
-  elseif jwt < N # 最后一层饱和
-    θE[j+1] = θ_sat[j]
-    ψE[j+1] = T(0.0)
+    if j > jwt # 地下水淹没的部分
+      θE[j] = _θsat
+      ψE[j] = _ψsat
+    else
+      θE[j] = cal_θE(z1, z0, zwt, _ψsat, par)
+      ψE[j] = Retention_ψ(θE[j], par)
+    end
   end
   return ψE
 end

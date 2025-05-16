@@ -51,3 +51,17 @@ function _cal_K(soil)
   end
   ∂K₊ₕ∂θ
 end
+
+function generate_ET(dates; lon=120.0, lat=30.0)
+  doys = dayofyear.(dates)
+  hours = hour.(dates)
+
+  Rsi = map(t -> cal_Rsi_toa_hour(hours[t]; lat, J=doys[t]), eachindex(dates)) # MJ per period
+  Rn = Rsi / 4 # MJ h-1
+
+  Ta = 20.0
+  Δ = cal_slope(Ta)
+  γ = cal_gamma(Ta)
+  ET = Rn * Δ / (Δ + γ)
+  ET
+end

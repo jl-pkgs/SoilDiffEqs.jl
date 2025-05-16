@@ -2,16 +2,15 @@ using SoilDifferentialEquations, Test
 using HydroTools
 using OrdinaryDiffEqTsit5
 using Plots, Dates
+gr(framestyle=:box, legend=:bottomleft)
 
-pyplot(framestyle=:box, legend=:bottomleft)
-
+# pyplot(framestyle=:box, legend=:bottomleft)
 include("main_pkgs.jl")
 include("main_vis.jl")
 
 function Init_VegParam!(soil; β=0.94)
   soil.f_root = root_fraction(soil; β)
 end
-
 
 # ylabel = "Depth (m)"
 # plot(
@@ -22,34 +21,7 @@ end
 # gr(framestyle=:box, )
 # gr(display_type=:inline)
 
-
-begin
-  ## 加入蒸发的信号
-  dates = DateTime(2010, 4):Hour(1):DateTime(2010, 10, 31)
-  ntime = length(dates)
-  lon, lat = 120.0, 30.0
-
-  doys = dayofyear.(dates)
-  hours = hour.(dates)
-
-  Rsi = map(t -> cal_Rsi_toa_hour(hours[t]; lat, J=doys[t]), eachindex(dates)) # MJ per period
-  Rn = Rsi / 4
-
-  # MJ h-1
-  Ta = 20.0
-  Δ = cal_slope(Ta)
-  γ = cal_gamma(Ta)
-  ET = Rn * Δ / (Δ + γ) * 1
-  sum(ET)
-end
-
-
-
-
-
 ## 1. 将ET划分到土壤的每一层；模块已成。
-## 2. 将
-
 begin
   # Δ = 0.1
   zwt = -2.5
@@ -69,6 +41,11 @@ begin
 
   W_prev = sum(soil.Δz[1:N] .* soil.θ[1:N]) * 1000 # [m] -> [mm]
   solver = Tsit5()
+
+  ## 加入蒸发的信号
+  dates = DateTime(2010, 4):Hour(1):DateTime(2010, 10, 31)
+  ET = generate_ET(dates)
+  @show sum(ET)
 
   # soil.zwt = -1.5
   soil.zwt = -2.5

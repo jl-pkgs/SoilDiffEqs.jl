@@ -24,13 +24,13 @@ end
 
 # 水位向下为正，地表为0
 # 0 ~ N + 1
-function find_jwt(z₊ₕ::AbstractVector, zwt::Real)
-  N = length(z₊ₕ)
-  zwt <= 0 && return 0
-  zwt >= z₊ₕ[end] && return N + 1
+function find_jwt(z₊ₕ::AbstractVector, zwt::Real; N::Integer=length(z₊ₕ))
+  # N = length(z₊ₕ)
+  zwt > 0 && return 0
+  zwt < z₊ₕ[N] && return N + 1
 
   for j in 1:N
-    zwt <= z₊ₕ[j] && return j
+    zwt > z₊ₕ[j] && return j
   end
 end
 
