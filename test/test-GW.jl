@@ -89,11 +89,11 @@ end
   # 超饱和
   θ = fill(0.3, N)
   θ[2:3] .= 0.6
-  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=4000.0, uex=0.5999999999999999, drainage=60)
+  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=4000.0, uex=5.999999999999998, drainage=60)
 
   θ = fill(0.3, N)
   θ[100] = 12.0
   r = GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) 
   @test all(θ .== 0.4)
-  @test r == (wa=4000.0, uex=3.399999999999999, drainage=60)
+  @test r == (wa=4000.0, uex=33.999999999999986, drainage=60)
 end

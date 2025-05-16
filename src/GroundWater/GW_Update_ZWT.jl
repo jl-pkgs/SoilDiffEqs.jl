@@ -1,9 +1,4 @@
 """
-    GW_Update_ZWT!(soil, soilpar; Q_in=0.0)
-
-> This function is for `SoilDiffEqs`, kdd, 20250516
-目的在于处理QN和地下径流引起的地下水水位的上升或下降。
-
 > 按照CoLM的方式进行修改
 
 Kun的做法是合理的，非饱和带和饱和带应该分开，否则地下水层会出现镂空。
@@ -14,15 +9,23 @@ Kun的做法是合理的，非饱和带和饱和带应该分开，否则地下�
 # TODO: 
 1. 补充一个均衡水位的示意图
 """
-function GW_Update_ZWT!(soil::Soil; ) #where {T<:Real}
-  (; z₊ₕ, Δz, zwt, θ, Q, N) = soil
+
+"""
+    GW_Update_ZWT!(soil, soilpar; Q_in=0.0)
+
+> This function is for `SoilDiffEqs`, kdd, 20250516
+目的在于处理QN和地下径流引起的地下水水位的上升或下降。
+
+- `∑`: `∑ = drainage * dt / 100`, [cm h-1 * h-1 / 100] = [cm/100] = [m]
+  > `∑ = -Q[N] * 1h / 100`, in [m]
+  + `∑ > 0`，SM补给GW，GW上升
+  + `∑ < 0`，GW补给SM，GW下降
+"""
+function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T<:Real}
+  (; z₊ₕ, Δz, N) = soil
   (; θ_sat, θ_wp) = soil.param
 
-  # 注意单位
   j = find_jwt(z₊ₕ, zwt)
-  ∑ = -Q[N]
-  # `∑ > 0`，SM补给GW，GW上升
-  # `∑ < 0`，GW补给SM，GW下降
   # _θ_wp = 0.01
   # _θ_wp = i == 1 ? 0.01 : θ_wp # 土壤蒸发可超越凋萎含水量的限制
 
@@ -41,14 +44,14 @@ function GW_Update_ZWT!(soil::Soil; ) #where {T<:Real}
       ∑ -= _recharge
       ∑ <= 0 && break
     end
-    ∑ > 0 && (uex = ∑) # excess water to soil surface
+    ∑ > 0 && (uex = ∑*1000) # excess water to soil surface
   end
 
   ## 补给和排泄，都是从最下层开始
   if ∑ < 0
     for i = j:N
       _sy = i == N + 1 ? Sy[N] : Sy[i] # unitless
-      z0 = i == 1 ? 0.0 : z₊ₕ[i-1]
+      z0 = i == 1 ? 0.0 : z₊ₕ[i-1]  
       z1 = i == N + 1 ? zwt : z₊ₕ[i]
 
       _drainage = clamp(∑, -(θ_sat[i] - _sy) * (z0 - z1), 0) # 排泄量，负值
@@ -60,7 +63,7 @@ function GW_Update_ZWT!(soil::Soil; ) #where {T<:Real}
     end
     ∑ < 0 && (zwt += ∑ / (θ_sat[N] - Sy[N])) # excess water to soil surface
   end
-  wa += ∑ # in cm
+  wa += ∑*1000 # in cm
   (; zwt, wa, uex)
 end
 
@@ -88,7 +91,7 @@ function GW_Correctθ!(soil::Soil{FT,P}, θ::AbstractVector{FT}, zwt, wa, Δt, d
     if exceed > 0.0
       θ[j] = θ_sat[j]
       if j == 1
-        uex = exceed * 100 # [m] to [cm]
+        uex = exceed * 1000 # [m] to [cm]
       else
         θ[j-1] = θ[j-1] + exceed / Δz[j-1]
       end
