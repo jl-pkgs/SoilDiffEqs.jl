@@ -41,6 +41,7 @@ end
 
 @testset "find_jwt" begin
   dz = fill(0.02, 100)
+  N = length(dz)
   soil = _init_soil(dz)
   z₊ₕ = soil.z₊ₕ
 
