@@ -40,7 +40,9 @@ export Soil
   uex::FT = FT(0.0)                  # 超出地表的水量, [mm], [kg m-2] 以地表径流的形式排放
   recharge::FT = FT(0.0)             # recharge rate, [cm/h]
   drainage::FT = FT(0.0)             # drainage rate, [cm/h]
-  Sy::Vector{FT} = fill(0.02, N + 1) # specific yield, [m3 m-3]
+  Sy_r::Vector{FT} = fill(0.2, N + 1)  # recharge, specific yield, [m3 m-3]
+  Sy_d::Vector{FT} = fill(0.2, N + 1)  # discharge, specific yield, [m3 m-3]
+  Sy_e::Vector{FT} = fill(0.2, N + 1)  # 均衡状态, specific yield, [m3 m-3]
 
   # 温度
   Tsoil::Vector{FT} = fill(NaN, N) # [°C]

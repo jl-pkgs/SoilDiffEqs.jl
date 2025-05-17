@@ -10,7 +10,7 @@ begin
   dz = fill(0.02, N) # 2m
   θ = fill(0.3, N)
   soil = Soil(dz; θ, zwt, wa)
-  z₊ₕ = soil.z₊ₕ
+  z₊ₕ = soil.z₊ₕ;
 end
 
 @testset "cal_θEψE!" begin
@@ -78,22 +78,35 @@ end
   
   Δt = 1/60 # [h]
   drainage = 60  # [cm h-1]
-  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=4000.0, uex=0.0, drainage=60)
+  wa = 4000 # [mm]
+
+  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=0.0, drainage=60)
 
   θ[2:3] .= -0.1
-  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=4000.0, uex=0.0, drainage=36)
+  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=0.0, drainage=36)
 
   θ[2:3] .= -10.0 # [m3 m-3]
-  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=3610.0, uex=0.0, drainage=0.0)
+  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=3610.0, uex=0.0, drainage=0.0)
   
   # 超饱和
   θ = fill(0.3, N)
   θ[2:3] .= 0.6
-  @test GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) == (wa=4000.0, uex=5.999999999999998, drainage=60)
+  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=5.999999999999998, drainage=60)
 
   θ = fill(0.3, N)
   θ[100] = 12.0
-  r = GW_Correctθ!(soil, θ, -0.5, 4000.0, Δt, drainage) 
+  r = GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) 
   @test all(θ .== 0.4)
-  @test r == (wa=4000.0, uex=33.999999999999986, drainage=60)
+  @test r == (wa=wa, uex=33.999999999999986, drainage=60)
 end
+
+## 测试Recharges
+
+# 亏损
+θ = fill(0.3, N)
+
+Δt = 1 / 60 # [h]
+drainage = 60  # [cm h-1]
+wa = 4000 # [mm]
+@test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=0.0, drainage=60)
+

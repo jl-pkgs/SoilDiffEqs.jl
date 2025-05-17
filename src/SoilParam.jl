@@ -26,6 +26,7 @@ function build_param(; method_retention::String="van_Genuchten", use_m::Bool=fal
   T = eltype(θ_sat)
   if method_retention == "van_Genuchten"
     _m = use_m ? m : T(1) .- T(1) ./ n
+    ψ_sat .= T(0) # update 20250517
     return ParamVanGenuchten{T}.(θ_sat, θ_res, Ksat, α, n, _m)
   elseif method_retention == "Campbell"
     return ParamCampbell{T}.(θ_sat, ψ_sat, Ksat, b)
@@ -43,7 +44,8 @@ end
 
   θ_sat::Vector{FT} = fill(FT(0.4), N)     # saturated water content, [m3 m-3]
   θ_res::Vector{FT} = fill(FT(0.1), N)     # residual water content, [m3 m-3]
-  Ksat::Vector{FT} = fill(FT(2.0), N) # saturated hydraulic conductivity, [cm h-1]
+  θ_fc::Vector{FT} = fill(FT(0.2), N)      # field capacity, [m3 m-3]
+  Ksat::Vector{FT} = fill(FT(2.0), N)      # saturated hydraulic conductivity, [cm h-1]
   α::Vector{FT} = fill(FT(0.01), N)        # [cm-1]
   n::Vector{FT} = fill(FT(2.0), N)         # [-]
   m::Vector{FT} = fill(FT(0.5), N)         # [-]，优化时的可选参数，不建议优化
@@ -61,10 +63,13 @@ end
 function SoilParam{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
   if method_retention == "van_Genuchten"
     P = ParamVanGenuchten{FT}
+    param = SoilParam{FT,P}(; method_retention, kw...)
+    param.ψ_sat .= FT(0) # update 20250517
   elseif method_retention == "Campbell"
     P = ParamCampbell{FT}
+    param = SoilParam{FT,P}(; method_retention, kw...)
   end
-  return SoilParam{FT,P}(; method_retention, kw...)
+  return param
 end
 
 
@@ -87,6 +92,7 @@ function SoilParam(N::Int, par::ParamVanGenuchten{T};
   (; θ_sat, θ_res, Ksat, α, n, m) = par
   _m = use_m ? m : (1 - 1 / n)
   SoilParam{T,ParamVanGenuchten{T}}(; N,
+    ψ_sat = fill(T(0), N), # update 20250517
     θ_sat=fill(θ_sat, N),
     θ_res=fill(θ_res, N),
     Ksat=fill(Ksat, N),
@@ -140,6 +146,8 @@ function Base.show(io::IO, param::SoilParam{T}) where {T<:Real}
   method_retention = param.method_retention
   subfix = same_layer ? " * 1" : " * N"
   np = use_m ? 6 : 5
+  print_var(io, param, :θ_fc)
+
   print_selected(io, "van_Genuchten ($(np)p$subfix)", method_retention)
   print_var(io, param, :θ_sat)
   print_var(io, param, :θ_res)

@@ -2,6 +2,9 @@ using UnPack
 export find_jwt, GW_Rsb
 export GW_Update_ZWT!, GW_Correctθ!
 
+include("GW_Update_ZWT.jl")
+include("GW_Correctθ.jl")
+
 
 """
   计算每一层的给水度
@@ -10,16 +13,23 @@ Sy = θ_sat - θ(ψ_sat + zwt) # 可以理解为孔隙度
 
 前提条件是：每层土壤均接近饱和，才能得到这个公式，`ψ + z = ψ_sat + zwt`，即Q = 0。
 """
-function specific_yield!(soil::Soil{T}, zwt::T; sy_max::T=0.02) where {T<:Real}
+function specific_yield!(soil::Soil{T}, zwt::T;) where {T<:Real}
   (; N, Sy) = soil
   (; θ_sat, param, method_retention) = soil.param
+  cal_θEψE!(soil) # update θE, ψE
+  
+  for i = 1:N+1
+    _i = min(i, N) # N+1层，采用第N层的参数
+    _ψ_sat = ψ_sat[_i]
 
-  iszero_ψ = method_retention == "van_Genuchten"
-  for i = 1:N
-    _ψ_sat = iszero_ψ ? 0.0 : θ_sat[i] # !Note
-    Sy[i] = θ_sat[i] - Retention_θ(_ψ_sat + zwt, param[i]) # 这里存在更好的计算方法，采用θE
+    # 排泄与补给不同
+    Sy_d[i] = θ_sat[_i] - θ_fc[_i] # 排泄
+    Sy_r[i] = θ_sat[_i] - θ[_i]    # 补给
+    Sy_e[i] = θ_sat[_i] - Retention_θ(_ψ_sat + zwt, param[_i]) # 均衡状态
+    # 详见: CoLM TechNote, 2024, ch12.1.2, P257
+    # ψE + z = ψ_sat + zwt, θE = cal_ψ(ψE)
+    # ψE = ψ_sat + zwt, (z = 0)
   end
-  clamp!(Sy, 0.0, sy_max)
 end
 
 # 水位向下为正，地表为0
@@ -53,4 +63,3 @@ function GW_Rsb(zwt::Real)
 end
 
 
-include("GW_Update_ZWT.jl")

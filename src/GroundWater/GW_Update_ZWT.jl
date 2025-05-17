@@ -11,7 +11,7 @@ Kun的做法是合理的，非饱和带和饱和带应该分开，否则地下�
 """
 
 """
-    GW_Update_ZWT!(soil, soilpar; Q_in=0.0)
+    GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;)
 
 > This function is for `SoilDiffEqs`, kdd, 20250516
 目的在于处理QN和地下径流引起的地下水水位的上升或下降。
@@ -23,14 +23,14 @@ Kun的做法是合理的，非饱和带和饱和带应该分开，否则地下�
 """
 function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T<:Real}
   (; z₊ₕ, Δz, N) = soil
-  (; θ_sat, θ_wp) = soil.param
+  (; θ_sat, θ_fc) = soil.param
 
   j = find_jwt(z₊ₕ, zwt)
   # _θ_wp = 0.01
   # _θ_wp = i == 1 ? 0.01 : θ_wp # 土壤蒸发可超越凋萎含水量的限制
 
   ## 非饱和带
-  if ∑ >= 0
+  if ∑ >= 0 # 补给、水位上升
     for i = j:-1:1
       _sy = i == N + 1 ? Sy[N] : Sy[i] # unitless
       z0 = i == 1 ? 0.0 : z₊ₕ[i-1]
@@ -47,9 +47,8 @@ function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T
     ∑ > 0 && (uex = ∑*1000) # excess water to soil surface
   end
 
-  ## 补给和排泄，都是从最下层开始
-  if ∑ < 0
-    for i = j:N
+  if ∑ < 0 # 排泄、水位下降
+    for i = j:-1:1
       _sy = i == N + 1 ? Sy[N] : Sy[i] # unitless
       z0 = i == 1 ? 0.0 : z₊ₕ[i-1]  
       z1 = i == N + 1 ? zwt : z₊ₕ[i]
@@ -65,55 +64,4 @@ function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T
   end
   wa += ∑*1000 # in cm
   (; zwt, wa, uex)
-end
-
-
-
-"""
-- `Δt`       : [h]
-- `drainage` : [cm h-1], 排泄为正
-- `wa`       : [mm]
-- `zwt`      : [m]
-"""
-function GW_Correctθ!(soil::Soil{FT,P}, θ::AbstractVector{FT}, zwt, wa, Δt, drainage) where {FT<:Real,P}
-  (; N, Δz, Sy) = soil
-  (; θ_sat) = soil.param
-
-  # jwt = find_jwt(z₊ₕ, zwt)
-  zwt = clamp(zwt, 0.0, 80.0) # 地下水水位在[0, 80m]
-  # 强制限制水位，不考虑水量平衡是否合适？
-
-  uex = 0.0
-  ## 1. 超饱和？
-  exceed = 0.0
-  for j = N:-1:1
-    exceed = max((θ[j] - θ_sat[j]) * Δz[j], 0.0)
-    if exceed > 0.0
-      θ[j] = θ_sat[j]
-      if j == 1
-        uex = exceed * 1000 # [m] to [cm]
-      else
-        θ[j-1] = θ[j-1] + exceed / Δz[j-1]
-      end
-    end
-  end
-
-  ## 2. 亏损？
-  ∑_neg = 0.0
-  for j = 1:N
-    if θ[j] < 0
-      ∑_neg += θ[j] * Δz[j] # [m]
-      θ[j] = 0.0
-    end
-  end
-
-  # 1. 少排一点水; 2. drainage扣完之后，从地下水中扣除
-  drainage += ∑_neg / Δt * 100 # [m h-1] to [cm h-1]
-  # @show ∑_neg, drainage
-  if drainage < 0
-    wa += drainage * Δt * 10 # [cm] to [mm]
-    zwt += drainage * Δt / Sy[N] / 100
-    drainage = 0.0
-  end
-  (; wa, uex, drainage)
 end

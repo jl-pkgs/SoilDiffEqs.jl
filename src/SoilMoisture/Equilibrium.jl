@@ -73,7 +73,6 @@ end
 function cal_θEψE!(soil::Soil{T}) where {T<:Real}
   (; N, θE, ψE, z₊ₕ, zwt, jwt, method_retention) = soil
   (; param, θ_sat, ψ_sat) = soil.param
-  iszero_ψsat = method_retention == "van_Genuchten" ? true : false
 
   zwt = soil.zwt * 100
   soil.jwt = find_jwt(soil.z₊ₕ, soil.zwt; N) # ? 
@@ -82,10 +81,10 @@ function cal_θEψE!(soil::Soil{T}) where {T<:Real}
   for j = 1:N+1
     z0 = j == 1 ? 0.0 : z₊ₕ[j-1] * 100
     z1 = j == N + 1 ? zwt : z₊ₕ[j] * 100 # [m] -> [cm]
-    
+
     _j = j == N + 1 ? N : j
     _θsat = θ_sat[_j]
-    _ψsat = iszero_ψsat ? 0.0 : ψ_sat[_j]
+    _ψsat = ψ_sat[_j]
     par = param[_j]
 
     if j > jwt # 地下水淹没的部分
