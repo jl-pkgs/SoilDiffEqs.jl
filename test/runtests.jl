@@ -9,12 +9,14 @@ using SoilDifferentialEquations, Test
   @test z2[1:6] == z
 end
 
+include("GW/test-GW_Correctθ.jl")
+include("GW/test-GW_Update_ZWT.jl")
+include("test-θE.jl")
+
 include("test-partials_Campbell.jl")
 include("test-partials_Van.jl")
 
 include("test-soil_moisture_Zeng2009.jl")
-include("test-θE.jl")
-include("test-GW.jl")
 
 include("test-soil_temperature.jl")
 include("test-soil_temperature_F0.jl")

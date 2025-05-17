@@ -27,16 +27,16 @@ end
 #   p.alpha = 0.4
 # end
 """
-- `ψ`: 越干越负, 饱和为0, in [m] or [kPa]
+- `ψ`: 越干越负, 饱和为0, in [m] or [10 kPa]
 """
-function cal_βw_BEPS(ψ::T; ψ_min=33.0, α=0.4)::T where {T<:Real}
+function cal_βw_BEPS(ψ::T; ψ_min=33, α=0.4)::T where {T<:Real}
   abs(ψ) <= ψ_min && return T(1)
   1 / (1 + (abs(ψ) / ψ_min - 1)^α) ## He 2017, JGR-B, Eq.4
 end
 
 # ρ g h = Pa
-# - `33kPa`  : field capacity, 33 m
-# - `1500kPa`: wilting point, 1500m
+# - `33kPa`  : field capacity, 3.3 m, 0.033MPa(有地下水), 0.010MPa(无地下水)
+# - `1500kPa`: wilting point, 150m
 function cal_βt_BEPS(Tsoil::T; t1=-0.02, t2=2.0)::T where {T<:Real}
   Tsoil <= 0 && return T(0)
   1 - exp(t1 * Tsoil^t2) ## He 2017, JGR-B, Eq.4
