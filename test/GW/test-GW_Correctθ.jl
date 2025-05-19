@@ -29,7 +29,6 @@ end
   @test minimum(ψE) >= -500
   @test maximum(ψE) <= -130
   soil.zwt = -0.5
-
   # soil.zwt = -2.5
   # ψE = cal_θEψE!(soil)
   # gr(framestyle=:box)
@@ -47,42 +46,36 @@ end
 
   @test find_jwt(z₊ₕ, 0.0; N) == 1
   @test find_jwt(z₊ₕ, -0.01; N) == 1
-  @test find_jwt(z₊ₕ, -0.02; N) == 2
+  @test find_jwt(z₊ₕ, -0.02; N) == 1 # 调整了边界计数
   @test find_jwt(z₊ₕ, -0.03; N) == 2
-  @test find_jwt(z₊ₕ, -100.0; N) == N+1
+  @test find_jwt(z₊ₕ, -100.0; N) == N + 1
 end
 
-
-@testset "GW_Correctθ!" begin
-  # 亏损
-  dz = fill(0.02, 100)
-  soil = _init_soil(dz)
+begin
+  dz = [fill(0.1, 5); fill(0.2, 3); fill(0.5, 2)] # 2.1m
   N = length(dz)
-  θ = fill(0.3, N)
-  
-  Δt = 1/60 # [h]
-  drainage = 60  # [cm h-1]
+  soil = _init_soil(dz)
+  z₊ₕ = soil.z₊ₕ
+
+  zwt = -1.5
+  jwt = find_jwt(z₊ₕ, zwt; N)
+  GW = fill(0.0, N)
+  GW[jwt] = 0.5
+  GW[jwt+1:N] .= 1.0
+
+  Δt = 1 # [h]
+  drainage = 0  # [cm h-1]
   wa = 4000 # [mm]
 
-  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=0.0, drainage=60)
-
-  θ[2:3] .= -0.1
-  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=0.0, drainage=36)
-
-  θ[2:3] .= -10.0 # [m3 m-3]
-  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=3610.0, uex=0.0, drainage=0.0)
-  
-  # 超饱和
   θ = fill(0.3, N)
-  θ[2:3] .= 0.6
-  @test GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) == (wa=wa, uex=5.999999999999998, drainage=60)
+  r = GW_Correctθ!(soil, θ; zwt, exceed2surf=true) # 
+  @test r.∑ ≈ -50.0
 
-  θ = fill(0.3, N)
-  θ[100] = 12.0
-  r = GW_Correctθ!(soil, θ, -0.5, wa, Δt, drainage) 
-  @test all(θ .== 0.4)
-  @test r == (wa=wa, uex=33.999999999999986, drainage=60)
+  θ = fill(0.42, N) # 42mm, 2.1m * 0.02
+  r = GW_Correctθ!(soil, θ; zwt, exceed2surf=false) 
+  @test r.∑ ≈ 42.0
+
+  θ = fill(0.42, N) # 42mm, 2.1m * 0.02
+  r = GW_Correctθ!(soil, θ; zwt, exceed2surf=true) # 
+  @test r.uex ≈ 42.0
 end
-
-## 限制条件
-# 1. zwt以下，地下水饱和

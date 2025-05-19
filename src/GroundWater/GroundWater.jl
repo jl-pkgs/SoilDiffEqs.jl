@@ -11,10 +11,11 @@ include("specific_yield.jl")
 function find_jwt(z₊ₕ::AbstractVector, zwt::Real; N::Integer=length(z₊ₕ))
   # N = length(z₊ₕ)
   zwt > 0 && return 0
+  zwt == 0 && return 1
   zwt < z₊ₕ[N] && return N + 1
 
   for j in 1:N
-    zwt > z₊ₕ[j] && return j
+    zwt >= z₊ₕ[j] && return j
   end
 end
 

@@ -4,7 +4,10 @@
 > This function is for `SoilDiffEqs`, kdd, 20250516
 目的在于处理QN和地下径流引起的地下水水位的上升或下降。
 
-- `∑`: [mm], `∑ = drainage * dt * 10`, [cm h-1 * h *10] = [mm]
+## Arguments
+- `wa`: wa定义为地下水水量，不包含土壤水的部分
+
+- `∑` : [mm], `∑ = drainage * dt * 10`, [cm h-1 * h *10] = [mm]
   > `∑ = -Q[N] * 1h * 10`, in [mm]
   + `∑ > 0`，SM补给GW，GW上升
   + `∑ < 0`，GW补给SM，GW下降
@@ -13,7 +16,7 @@ function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T
   specific_yield!(soil, zwt)
   (; z₊ₕ, Δz, N, Sy_r, Sy_d, Sy_e) = soil
   (; θ_sat) = soil.param
-  wa += ∑ # in cm
+  wa += ∑ # [mm]
   Sy = ∑ >= 0 ? Sy_r : Sy_d
   j = find_jwt(z₊ₕ, zwt; N)
   # _θ_wp = 0.01
@@ -70,4 +73,4 @@ end
 
 
 GW_Update_ZWT!(soil::Soil, θ::AbstractVector; zwt, wa, ∑) =
-  GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑)
+  GW_Update_ZWT!(soil, θ, zwt, wa, ∑)
