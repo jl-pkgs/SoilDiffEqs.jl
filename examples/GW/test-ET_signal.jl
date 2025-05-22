@@ -2,9 +2,9 @@ using SoilDifferentialEquations, Test
 using HydroTools
 using OrdinaryDiffEqTsit5
 using Plots, Dates
-gr(framestyle=:box, legend=:bottomleft)
+# gr(framestyle=:box, legend=:bottomleft)
+pyplot(framestyle=:box, legend=:bottomleft)
 
-# pyplot(framestyle=:box, legend=:bottomleft)
 include("main_pkgs.jl")
 include("main_vis.jl")
 
@@ -51,13 +51,17 @@ begin
   soil.zwt = -2.5
   # soil.zwt = -5.0
   zwt = soil.zwt
-  @time SM, SINK, Q = solve_SM_Zeng2009(soil; solver, verbose=true, ET, reltol=1e-4, abstol=1e-4)
+  GW = false
+  @time SM, SINK, Q, Z = solve_SM_Zeng2009(soil; solver, verbose=true, ET, reltol=1e-4, abstol=1e-4, GW)
   W_now = sum(soil.Δz[1:N] .* soil.θ[1:N]) * 1000 # [m] -> [mm]
-  
+
   p1 = plot_soil_profile(soil)
   p2 = plot_depth_timeseries(soil)
-  p = plot(p1, p2; size=(1000, 400))
-  # savefig(p, "Figure1_ET_zwt=$(-zwt).pdf")
+  p3 = plot(dates, Z, title="(c) Groundwater Level (m)", label="", ylabel="Depth (m)")
+  p4 = plot(dates, Q[:, end], title="(d) Discharge Rate [cm h-1]", label="")
+
+  p = plot(p1, p2, p3, p4; size=(1600, 800), layout=(2, 2))
+  savefig(p, "Figure1_ET_zwt=$(-zwt)_(GW=$GW).png")
   display(p)
 
   R = sum(Q[:, end] * 10) # 最后一层流向地下水 cm h-1, 水量不平衡
@@ -68,8 +72,6 @@ end
 
 ## m^3
 ## 严重干旱期间，出现了补给量大于排泄量的情况
-
-
 begin
   k = 2
   q_in = Q[:, k-1]

@@ -12,7 +12,7 @@
   + `∑ > 0`，SM补给GW，GW上升
   + `∑ < 0`，GW补给SM，GW下降
 """
-function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T<:Real}
+function GW_Update_ZWT!(soil::Soil, θ::AbstractVector; ∑, zwt=soil.zwt, wa=soil.wa) #where {T<:Real}
   specific_yield!(soil, zwt)
   (; z₊ₕ, Δz, N, Sy_r, Sy_d, Sy_e) = soil
   (; θ_sat) = soil.param
@@ -71,6 +71,5 @@ function GW_Update_ZWT!(soil::Soil, θ::AbstractVector, zwt, wa, ∑;) #where {T
   (; zwt, wa, uex)
 end
 
-
-GW_Update_ZWT!(soil::Soil, θ::AbstractVector; zwt, wa, ∑) =
-  GW_Update_ZWT!(soil, θ, zwt, wa, ∑)
+# GW_Update_ZWT!(soil::Soil, θ::AbstractVector; ∑, zwt=soil.zwt, wa=soil.wa) = 
+#   GW_Update_ZWT!(soil, θ, ∑, zwt, wa)

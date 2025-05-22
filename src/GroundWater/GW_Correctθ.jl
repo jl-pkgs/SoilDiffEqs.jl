@@ -4,7 +4,7 @@
 - `wa`       : [mm], 地下蓄水量
 - `zwt`      : [m]
 """
-function GW_Correctθ!(soil::Soil{FT,P}, θ::AbstractVector{FT}; zwt, exceed2surf=true) where {FT<:Real,P}
+function GW_Correctθ!(soil::Soil{FT,P}, θ::AbstractVector{FT}; zwt=soil.zwt, exceed2surf=false) where {FT<:Real,P}
   (; N, Δz) = soil
   (; θ_sat) = soil.param
 
@@ -13,7 +13,8 @@ function GW_Correctθ!(soil::Soil{FT,P}, θ::AbstractVector{FT}; zwt, exceed2sur
   uex = 0.0
   exceed = 0.0
   ∑_exceed = 0.0 # [mm]
-  ∑_deficit = 0.0 
+  ∑_deficit = 0.0
+
   ## 1. 超饱和，则排出去；一般采用顶层排出，如果是底部排出则补给wa
   if exceed2surf
     # 1.1 超饱和的部分，作为地表径流
