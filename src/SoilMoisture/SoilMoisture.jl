@@ -8,7 +8,7 @@ include("Retention_van_Genuchten.jl")
 include("Retention.jl")
 
 include("Equilibrium.jl")
-include("EquationRichards.jl")
+include("Equation_Richards.jl")
 include("Equation_Zeng2009.jl")
 include("soil_moisture_Bonan.jl")
 include("soil_moisture_Bonan_Q0.jl")

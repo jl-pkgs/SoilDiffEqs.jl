@@ -36,6 +36,7 @@ include("SoilParam.jl")
 include("Soil.jl")
 
 include("SoilMoisture/SoilMoisture.jl")
+include("SPAC.jl")
 
 include("SoilTemperature/soil_properties_thermal.jl")
 include("SoilTemperature/soil_temperature.jl")
