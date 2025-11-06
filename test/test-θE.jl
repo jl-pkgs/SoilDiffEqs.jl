@@ -1,6 +1,4 @@
 using SoilDifferentialEquations, Test
-# using Plots
-# gr(framestyle=:box)
 
 function main_θE(z₋ₕ, z₊ₕ, zwt, ψ_sat, par)
   N = length(z₋ₕ)
@@ -22,7 +20,8 @@ end
 
 # @testset "cal_θE" 
 begin
-  Δz = fill(10., 50) # 10cm x 50 layers = 3m
+  N = 50
+  Δz = fill(10., N) # 10cm x 50 layers = 3m
   soil = soil_depth_init(Δz) # 向下为负
   (; z₋ₕ, z₊ₕ) = soil
 
@@ -35,19 +34,38 @@ begin
   ψ_sat = -15.3 # cm
   param_van1980 = ParamVanGenuchten(;
     # θ_sat=0.38,
-    θ_sat=0.426,
     # θ_res=0.325,
+    θ_sat=0.426,
     θ_res=0.15,
     α=0.027,
     n=1.23,
   )
-  zwt = -3 * 1e2 # cm
+  zwt = -2.0 * 1e2 # cm
   θE_campbell = main_θE(z₋ₕ, z₊ₕ, zwt, ψ_sat, param_campbell)
   θE_van1980 = main_θE(z₋ₕ, z₊ₕ, zwt, ψ_sat, param_van1980)
 
   @test GOF(θE_van1980, θE_campbell).R2 >= 0.995
-  # plot(ylabel="Depth (cm)", xlabel="θE")
-  # plot!(θE_campbell, soil.z[1:end], label="Campbell θE", linewidth=1)
-  # plot!(θE_van1980, soil.z[1:end], label="Van1980 θE", linewidth=1)
-  # hline!([zwt], label="zwt", linewidth=0.4)
 end
+
+
+# begin
+#   zwt = -4.0 * 1e2 # cm
+#   θE_campbell_4 = main_θE(z₋ₕ, z₊ₕ, zwt, ψ_sat, param_campbell)
+# end
+
+
+# # 这里最后一层是地下水
+# begin
+#   using Plots
+#   gr(framestyle=:box)
+
+#   plot(ylabel="Depth (cm)", xlabel="θE")
+#   inds = 1:N
+#   plot!(θE_campbell[inds], soil.z[inds], label="θE (zwt = -2m)", linewidth=1)
+#   plot!(θE_campbell_4[inds], soil.z[inds], label="θE (zwt = -4m)", linewidth=1)
+
+#   # plot!(θE_van1980[inds], soil.z[inds], label="Van1980 θE", linewidth=1)
+#   hline!([-200.], label="", linewidth=0.4, color=:blue, linestyle=:dash)
+#   hline!([-400.], label="", linewidth=0.4, color=:red, linestyle=:dash)
+#   savefig("Figure_θE.pdf")
+# end
