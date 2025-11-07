@@ -1,10 +1,10 @@
-export AbstractSoilParam, ParamVanGenuchten, ParamCampbell
+export AbstractSoilParam, VanGenuchten, Campbell
 export SoilParam, get_soilpar
 
 using Parameters
 abstract type AbstractSoilParam{T<:Real} end
 
-@with_kw mutable struct ParamVanGenuchten{T<:Real} <: AbstractSoilParam{T}
+@with_kw mutable struct VanGenuchten{T<:Real} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   θ_res::T = 0.075       # [m3 m-3]
   Ksat::T = 34.0         # [cm h-1]
@@ -13,7 +13,7 @@ abstract type AbstractSoilParam{T<:Real} end
   m::T = 1.0 - 1.0 / n
 end
 
-@with_kw mutable struct ParamCampbell{T<:Real} <: AbstractSoilParam{T}
+@with_kw mutable struct Campbell{T<:Real} <: AbstractSoilParam{T}
   θ_sat::T = 0.287       # [m3 m-3]
   # θ_res::T = 0.075     # [m3 m-3]
   ψ_sat::T = -10.0       # [cm]
@@ -27,9 +27,9 @@ function build_param(; method_retention::String="van_Genuchten", use_m::Bool=fal
   if method_retention == "van_Genuchten"
     _m = use_m ? m : T(1) .- T(1) ./ n
     ψ_sat .= T(0) # update 20250517
-    return ParamVanGenuchten{T}.(θ_sat, θ_res, Ksat, α, n, _m)
+    return VanGenuchten{T}.(θ_sat, θ_res, Ksat, α, n, _m)
   elseif method_retention == "Campbell"
-    return ParamCampbell{T}.(θ_sat, ψ_sat, Ksat, b)
+    return Campbell{T}.(θ_sat, ψ_sat, Ksat, b)
   end
 end
 
@@ -62,22 +62,22 @@ end
 
 function SoilParam{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
   if method_retention == "van_Genuchten"
-    P = ParamVanGenuchten{FT}
+    P = VanGenuchten{FT}
     param = SoilParam{FT,P}(; method_retention, kw...)
     param.ψ_sat .= FT(0) # update 20250517
   elseif method_retention == "Campbell"
-    P = ParamCampbell{FT}
+    P = Campbell{FT}
     param = SoilParam{FT,P}(; method_retention, kw...)
   end
   return param
 end
 
 
-function SoilParam(N::Int, par::ParamCampbell{T};
+function SoilParam(N::Int, par::Campbell{T};
   same_layer::Bool=true, kw...) where {T<:Real}
   
   (; θ_sat, ψ_sat, Ksat, b) = par
-  SoilParam{T,ParamCampbell{T}}(; N,
+  SoilParam{T,Campbell{T}}(; N,
     θ_sat=fill(θ_sat, N),
     ψ_sat=fill(ψ_sat, N),
     Ksat=fill(Ksat, N),
@@ -85,13 +85,13 @@ function SoilParam(N::Int, par::ParamCampbell{T};
     method_retention="Campbell", same_layer, kw...)
 end
 
-function SoilParam(N::Int, par::ParamVanGenuchten{T};
+function SoilParam(N::Int, par::VanGenuchten{T};
   use_m::Bool=false, 
   same_layer::Bool=true, kw...) where {T<:Real}
 
   (; θ_sat, θ_res, Ksat, α, n, m) = par
   _m = use_m ? m : (1 - 1 / n)
-  SoilParam{T,ParamVanGenuchten{T}}(; N,
+  SoilParam{T,VanGenuchten{T}}(; N,
     ψ_sat = fill(T(0), N), # update 20250517
     θ_sat=fill(θ_sat, N),
     θ_res=fill(θ_res, N),

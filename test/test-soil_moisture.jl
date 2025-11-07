@@ -6,9 +6,9 @@ using OrdinaryDiffEqTsit5
 
 function init_soil()
   N = 150
-  # par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34.0, α=0.027, n=3.96, m=1.0)
-  par = ParamVanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=14.0, α=0.027, n=3.96, m=1.0)
-  # par = ParamVanGenuchten(θ_sat=0.387, θ_res=0.075, Ksat=34.0, α=0.075, n=1.8)
+  # par = VanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=34.0, α=0.027, n=3.96, m=1.0)
+  par = VanGenuchten(θ_sat=0.287, θ_res=0.075, Ksat=14.0, α=0.027, n=3.96, m=1.0)
+  # par = VanGenuchten(θ_sat=0.387, θ_res=0.075, Ksat=34.0, α=0.075, n=1.8)
   param = SoilParam(N, par; use_m=true)
 
   Δz = fill(0.01, N)

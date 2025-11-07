@@ -59,7 +59,7 @@ dir_root = @__DIR__
 f_SM_Batesville = "$(dir_root)/../data/SM_AR_Batesville_8_WNW_2024.csv" |> abspath
 
 export Soil
-export ParamVanGenuchten, van_Genuchten, van_Genuchten_K, van_Genuchten_ψ
+export VanGenuchten, van_Genuchten, van_Genuchten_K, van_Genuchten_ψ
 export soil_moisture!, soil_moisture_Q0!
 export soil_temperature!, soil_temperature_F0!
 export TsoilEquation, TsoilEquation_partial

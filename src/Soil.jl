@@ -1,5 +1,14 @@
 export Soil
 
+
+# @with_kw_noshow mutable struct SoilThermal{FT}
+# end
+
+# @with_kw_noshow mutable struct SoilHydraulic{FT,P<:AbstractSoilParam{FT}}
+# end
+
+
+
 @with_kw_noshow mutable struct Soil{FT,P<:AbstractSoilParam{FT}}
   N::Int = 10                        # layers of soil
   ibeg::Int = 1                      # index of the first layer，边界层条件指定
@@ -77,11 +86,12 @@ export Soil
   timestep::Int = 0                  # 迭代次数
 end
 
+
 function Soil{FT}(; method_retention::String="van_Genuchten", kw...) where {FT<:Real}
   if method_retention == "van_Genuchten"
-    P = ParamVanGenuchten{FT}
+    P = VanGenuchten{FT}
   elseif method_retention == "Campbell"
-    P = ParamCampbell{FT}
+    P = Campbell{FT}
   end
   Soil{FT,P}(; method_retention, kw...)
 end

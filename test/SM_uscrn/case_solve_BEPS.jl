@@ -39,7 +39,7 @@ function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
   θ[1:i0-1] .= θ0[1]
 
   par = get_soilpar(soil_type)
-  par = ParamVanGenuchten(;
+  par = VanGenuchten(;
     θ_sat=0.20,
     θ_res=0.03,
     Ksat=1.04,

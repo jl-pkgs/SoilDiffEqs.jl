@@ -1,4 +1,4 @@
-function cal_se(θ::Real, par::ParamCampbell)
+function cal_se(θ::Real, par::Campbell)
   (; θ_sat) = par
   θ_res = 0.0
   se = (θ - θ_res) / (θ_sat - θ_res)
@@ -6,7 +6,7 @@ function cal_se(θ::Real, par::ParamCampbell)
 end
 
 @testset "Retention_∂K∂θ" begin
-  par = ParamCampbell()
+  par = Campbell()
   θ1, θ2 = 0.21, 0.22
   se1 = cal_se(θ1, par)
   se2 = cal_se(θ2, par)
@@ -28,7 +28,7 @@ end
 
 
 @testset "Retention_∂ψ∂θ" begin
-  par = ParamCampbell()
+  par = Campbell()
   θ1, θ2 = 0.21, 0.22
   ψ1 = Retention_ψ(θ1, par)
   ψ2 = Retention_ψ(θ2, par)  

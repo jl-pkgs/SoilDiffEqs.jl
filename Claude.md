@@ -184,8 +184,8 @@ Creates soil with specified retention curve method:
 ```julia
 soil = Soil{Float64}(; method_retention="van_Genuchten", N=10, ...)
 ```
-- `"van_Genuchten"` → uses `ParamVanGenuchten{FT}`
-- `"Campbell"` → uses `ParamCampbell{FT}`
+- `"van_Genuchten"` → uses `VanGenuchten{FT}`
+- `"Campbell"` → uses `Campbell{FT}`
 
 ### `Soil(Δz)` (Lines 89-100)
 Convenience constructor from layer thicknesses:

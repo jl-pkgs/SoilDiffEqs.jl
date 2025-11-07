@@ -26,13 +26,13 @@ begin
   (; z₋ₕ, z₊ₕ) = soil
 
   ## param from Bonan 2019, Table 8.3, sandy clay
-  param_campbell = ParamCampbell(;
+  param_campbell = Campbell(;
     ψ_sat=-15.3, # cm
     θ_sat=0.426,
     b=10.4
   )
   ψ_sat = -15.3 # cm
-  param_van1980 = ParamVanGenuchten(;
+  param_van1980 = VanGenuchten(;
     # θ_sat=0.38,
     # θ_res=0.325,
     θ_sat=0.426,

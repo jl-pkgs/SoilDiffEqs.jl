@@ -1,5 +1,5 @@
 """
-    van_Genuchten(ψ::T, par::ParamVanGenuchten{T})
+    van_Genuchten(ψ::T, par::VanGenuchten{T})
 
 van Genuchten (1980) relationships
 
@@ -28,7 +28,7 @@ param = (soil_texture=2,
   Ksat = 0.0443 / 3600)
 ```
 """
-@inline function van_Genuchten(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+@inline function van_Genuchten(ψ::T, par::VanGenuchten{T}) where {T<:Real}
   θ = van_Genuchten_θ(ψ, par)
   K = van_Genuchten_K(θ, par)
   ∂θ∂ψ = van_Genuchten_∂θ∂ψ(ψ, par)
@@ -36,7 +36,7 @@ param = (soil_texture=2,
 end
 
 # @fastmath 
-function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}; ψ_min::T=T(-1e7)) where {T<:Real}
+function van_Genuchten_θ(ψ::T, par::VanGenuchten{T}; ψ_min::T=T(-1e7)) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   ψ <= ψ_min && return θ_res
 
@@ -49,7 +49,7 @@ function van_Genuchten_θ(ψ::T, par::ParamVanGenuchten{T}; ψ_min::T=T(-1e7)) w
 end
 
 # @fastmath 
-function van_Genuchten_K(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+function van_Genuchten_K(θ::T, par::VanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat, Ksat, m) = par
   Se::T = (θ - θ_res) / (θ_sat - θ_res)
   Se = clamp(Se, T(0.0), T(1.0))
@@ -61,7 +61,7 @@ end
 
 # @fastmath 
 # ψmin = -1e7cm, CLM5, Eq. 7.53
-function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
+function van_Genuchten_ψ(θ::T, par::VanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   if θ <= θ_res
     return ψ_min # Return a very high negative number indicating very dry conditions
@@ -75,7 +75,7 @@ function van_Genuchten_ψ(θ::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) wher
   end
 end
 
-function van_Genuchten_ψ_Se(Se::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
+function van_Genuchten_ψ_Se(Se::T, par::VanGenuchten{T}; ψ_min=T(-1e7)) where {T<:Real}
   (; α, n, m) = par
   Se <= 0.0 && return ψ_min
   Se >= 1.0 && return T(0.0)
@@ -84,7 +84,7 @@ function van_Genuchten_ψ_Se(Se::T, par::ParamVanGenuchten{T}; ψ_min=T(-1e7)) w
 end
 
 # @fastmath 
-function van_Genuchten_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<:Real}
+function van_Genuchten_∂θ∂ψ(ψ::T, par::VanGenuchten{T})::T where {T<:Real}
   (; θ_res, θ_sat, α, n, m) = par
   if ψ <= 0.0
     num = α * m * n * (θ_sat - θ_res) * (α * abs(ψ))^(n - 1)
@@ -96,9 +96,9 @@ function van_Genuchten_∂θ∂ψ(ψ::T, par::ParamVanGenuchten{T})::T where {T<
   return ∂θ∂ψ
 end
 
-van_Genuchten_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = T(1.0) / van_Genuchten_∂θ∂ψ(ψ, par)
+van_Genuchten_∂ψ∂θ(ψ::T, par::VanGenuchten{T}) where {T<:Real} = T(1.0) / van_Genuchten_∂θ∂ψ(ψ, par)
 
-@inline function van_Genuchten_∂K∂Se(Se::T, par::ParamVanGenuchten{T}) where {T<:Real}
+@inline function van_Genuchten_∂K∂Se(Se::T, par::VanGenuchten{T}) where {T<:Real}
   (; Ksat, m) = par
   f = 1 - (1 - Se^(1 / m))^m
   term1 = f^2 / (2 * sqrt(Se))
@@ -106,7 +106,7 @@ van_Genuchten_∂ψ∂θ(ψ::T, par::ParamVanGenuchten{T}) where {T<:Real} = T(1
   return Ksat * (term1 + term2)
 end
 
-@inline function van_Genuchten_∂K∂θ(θ::T, par::ParamVanGenuchten{T}) where {T<:Real}
+@inline function van_Genuchten_∂K∂θ(θ::T, par::VanGenuchten{T}) where {T<:Real}
   (; θ_res, θ_sat) = par
   Se = (θ - θ_res) / (θ_sat - θ_res)
   return van_Genuchten_∂K∂Se(Se, par) / (θ_sat - θ_res)

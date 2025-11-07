@@ -680,7 +680,7 @@ end
 == 5.2 从 Van Genuchten 参数转换
 
 ```julia
-function estimate_GA_parameters(vg::ParamVanGenuchten{FT}) where FT
+function estimate_GA_parameters(vg::VanGenuchten{FT}) where FT
     (; θ_sat, θ_res, Ksat, α, n, m) = vg
 
     # 方法 1: Morel-Seytoux (1978)

@@ -52,7 +52,7 @@ function soil_Updateθ!(soil::Soil{T, P}, dt::T) where {T<:Real, P<:AbstractSoil
   return nothing
 end
 
-function clamp_θ!(soil::Soil{T,ParamVanGenuchten{T}}, θ::AbstractVector{T}) where {T<:Real}
+function clamp_θ!(soil::Soil{T,VanGenuchten{T}}, θ::AbstractVector{T}) where {T<:Real}
   (; θ_res, θ_sat) = soil.param
   i0 = max(soil.ibeg - 1, 1)
   N = soil.N
@@ -62,7 +62,7 @@ function clamp_θ!(soil::Soil{T,ParamVanGenuchten{T}}, θ::AbstractVector{T}) wh
   end
 end
 
-function clamp_θ!(soil::Soil{T,ParamCampbell{T}}, θ::AbstractVector{T}) where {T<:Real}
+function clamp_θ!(soil::Soil{T,Campbell{T}}, θ::AbstractVector{T}) where {T<:Real}
   (; θ_sat) = soil.param
   _θ_res::T = T(0.01)
   i0 = max(soil.ibeg - 1, 1)

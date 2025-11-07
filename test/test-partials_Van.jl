@@ -1,11 +1,11 @@
-function cal_se(θ::Real, par::ParamVanGenuchten)
+function cal_se(θ::Real, par::VanGenuchten)
   (; θ_sat, θ_res) = par
   se = (θ - θ_res) / (θ_sat - θ_res)
   return se
 end
 
 @testset "Retention_∂K∂θ" begin
-  par = ParamVanGenuchten()
+  par = VanGenuchten()
   θ1, θ2 = 0.21, 0.22
   se1 = cal_se(θ1, par)
   se2 = cal_se(θ2, par)
@@ -27,7 +27,7 @@ end
 
 
 @testset "Retention_∂ψ∂θ" begin
-  par = ParamVanGenuchten()
+  par = VanGenuchten()
   θ1, θ2 = 0.21, 0.22
   ψ1 = Retention_ψ(θ1, par)
   ψ2 = Retention_ψ(θ2, par)  

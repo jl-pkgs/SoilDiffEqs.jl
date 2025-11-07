@@ -1,18 +1,18 @@
-const TypeRetention = Union{Type{ParamVanGenuchten},Type{ParamCampbell}}
+const TypeRetention = Union{Type{VanGenuchten},Type{Campbell}}
 
-function Base.Vector(x::ParamVanGenuchten)
+function Base.Vector(x::VanGenuchten)
   (; θ_sat, θ_res, Ksat, α, n, m) = x
   [θ_sat, θ_res, Ksat, α, n, m]
 end
 
-function Base.Vector(x::ParamCampbell)
+function Base.Vector(x::Campbell)
   (; θ_sat, ψ_sat, Ksat, b) = x
   [θ_sat, ψ_sat, Ksat, b]
 end
 Base.collect(x::AbstractSoilParam) = Vector(x)
 
 
-function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1; verbose=false)
+function get_soilpar(::Type{VanGenuchten}, soil_type::Int=1; verbose=false)
   # Bonan 2019, Table 8.3
   soilparam = [
     # θ_sat, θ_res, α (cm⁻¹), n, Ksat (cm h⁻¹), ID_USDA, ID_Bonan, name
@@ -31,15 +31,15 @@ function get_soilpar(::Type{ParamVanGenuchten}, soil_type::Int=1; verbose=false)
   ]
   verbose && println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
   θ_sat, θ_res, α, n, Ksat = soilparam[soil_type, :]
-  ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
+  VanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 end
 
-# function get_soilpar(::Type{ParamVanGenuchten}, theta::AbstractVector)
+# function get_soilpar(::Type{VanGenuchten}, theta::AbstractVector)
 #   θ_sat, θ_res, Ksat, α, n = theta[1:5]
-#   ParamVanGenuchten(; θ_sat, θ_res, α, n, Ksat)
+#   VanGenuchten(; θ_sat, θ_res, α, n, Ksat)
 # end
 
-function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1; verbose=false)
+function get_soilpar(::Type{Campbell}, soil_type::Int=1; verbose=false)
   # Bonan 2019, Table 8.3
   soilparam = [
     # θ_sat, ψ_sat (cm), b, Ksat (cm h⁻¹), ID_USDA, ID_Bonan, name
@@ -58,22 +58,22 @@ function get_soilpar(::Type{ParamCampbell}, soil_type::Int=1; verbose=false)
   ]
   verbose && println("[Soil Texture]: ", USDA.SoilTexture(soil_type))
   θ_sat, ψ_sat, b, Ksat = soilparam[soil_type, :]
-  ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
+  Campbell(; θ_sat, ψ_sat, b, Ksat)
 end
 
-# function get_soilpar(::Type{ParamCampbell}, theta::AbstractVector)
+# function get_soilpar(::Type{Campbell}, theta::AbstractVector)
 #   θ_sat, ψ_sat, b, Ksat = theta[1:4]
-#   ParamCampbell(; θ_sat, ψ_sat, b, Ksat)
+#   Campbell(; θ_sat, ψ_sat, b, Ksat)
 # end
 
 function get_soilpar(soil_type::Int=1; method_retention::String="van_Genuchten")
-  method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
-  method_retention == "Campbell" && (P = ParamCampbell)
+  method_retention == "van_Genuchten" && (P = VanGenuchten)
+  method_retention == "Campbell" && (P = Campbell)
   get_soilpar(P, soil_type)
 end
 
 # function get_soilpar(theta::AbstractVector; method_retention::String="van_Genuchten")
-#   method_retention == "van_Genuchten" && (P = ParamVanGenuchten)
-#   method_retention == "Campbell" && (P = ParamCampbell)
+#   method_retention == "van_Genuchten" && (P = VanGenuchten)
+#   method_retention == "Campbell" && (P = Campbell)
 #   get_soilpar(P, theta)
 # end
