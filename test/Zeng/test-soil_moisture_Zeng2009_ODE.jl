@@ -1,5 +1,4 @@
 using SoilDifferentialEquations, Test
-
 using OrdinaryDiffEqTsit5
 using Plots
 gr(framestyle=:box, legend=:topright)
@@ -7,7 +6,7 @@ gr(framestyle=:box, legend=:topright)
 includet("main_pkgs.jl")
 
 begin
-  Δ = 0.02
+  Δ = 0.10
   dt = 3600
   N = floor(Int, 2 / Δ)
   dz = fill(Δ, N) # 2m
@@ -18,17 +17,18 @@ begin
   @time soil_ode = solve_ode(dt)
   # soil_zeng = solve_zeng(dt)
   error_SM(soil_ode) |> display
-  ∂K₊ₕ∂θ = _cal_K(soil_ode)
+  # ∂K₊ₕ∂θ = _cal_K(soil_ode)
 
   soil_zeng = init_soil(; zwt=-2.5, dt);
   (; ∂K₊ₕ∂θ, ∂ψ∂θ, ∂qᵢ∂θᵢ, ∂qᵢ∂θᵢ₊₁) = soil_moisture_Zeng2009(soil_zeng;)
 
   error_SM(soil_zeng) |> display
   "ok"
-  # θ_zeng = soil_zeng.θ
+  θ_zeng = soil_zeng.θ
+
   θ_ode = soil_ode.θ
   plot(θ_ode, soil_ode.z[1:N], label="θ_ode", legend=:bottomright)
-  # plot!(θ_zeng, soil_zeng.z[1:N], label="θ_zeng")
+  plot!(θ_zeng, soil_zeng.z[1:N], label="θ_zeng")
 end
 
 

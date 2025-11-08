@@ -34,6 +34,7 @@ end
 function init_soil(; zwt=-0.5, dt=3600)
   wa = 4000.0 # [mm]
   soil = Soil(dz; θ=deepcopy(θ), zwt, wa, dt, method_retention="Campbell")
+  soil.sink = θ .* 0 .+ 0.002 # [cm h-1]
   return soil
 end
 

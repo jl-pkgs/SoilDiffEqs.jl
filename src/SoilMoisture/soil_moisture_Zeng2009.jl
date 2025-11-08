@@ -5,6 +5,7 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0; ∂K₊ₕ∂θ2=not
   (; N, jwt, ibeg) = soil
   (; ψ, θ, K₊ₕ, ψE, sink) = soil
   (; θ_sat, θ_res, param) = soil.param
+  soil.θ_prev[1:N] .= θ[1:N]
   # θ_res .= 0.0
   cal_K!(soil, θ)
   # cal_ψ!(soil, θ)
@@ -97,7 +98,7 @@ function soil_moisture_Zeng2009(soil::Soil{FT}, Q0::FT=0.0; ∂K₊ₕ∂θ2=not
 
   tridiagonal_solver!(a, b, c, d, e, f, dθ; ibeg, N=N + 1)
   for j in 1:N
-    θ[j] += dθ[j] * Δz[j] # update θ
+    θ[j] += dθ[j] # update θ
   end
   return (; Q, ∂K₊ₕ∂θ, ∂ψ∂θ, ∂qᵢ∂θᵢ, ∂qᵢ∂θᵢ₊₁)
 end

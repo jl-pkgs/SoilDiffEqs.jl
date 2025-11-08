@@ -18,7 +18,7 @@ include("Solve_SM.jl")
 
 
 function error_SM(soil::Soil{T}) where {T<:Real}
-  (; N, Q0) = soil
+  (; N, Q0, sink) = soil
   θ_prev = soil.θ_prev
   θ_next = soil.θ
   dt = soil.dt / 3600 # [s] -> [h]
@@ -32,14 +32,16 @@ function error_SM(soil::Soil{T}) where {T<:Real}
 
   # 中间插的思路（最精确的解法），计算误差
   dθ = 0.0
+  ET = 0.0
   for i in 1:N
     Q[i] = 0.5 * (Q_prev[i] + Q_next[i])
     θ[i] = 0.5 * (θ_prev[i] + θ_next[i])
-    dθ += (θ_next[i] - θ_prev[i]) * Δz[i] # in cm
+    ET += sink[i] * dt  # in cm
+    dθ += (θ_next[i] - θ_prev[i]) * Δz[i]  # in cm
   end
   QN = Q[N]
   
-  obs = (QN - Q0) * dt # cm
+  obs = (QN - Q0) * dt - ET # cm
   sim = dθ
 
   bias = sim - obs

@@ -13,12 +13,12 @@ using SoilDifferentialEquations, Test
   # z₊ₕ = soil.z₊ₕ
   soil = Soil(dz; θ=deepcopy(θ), zwt=-0.5, wa)
   soil_moisture_Zeng2009(soil)
-  @test maximum(soil.θ) ≈ 0.30971723734024975
+  @test maximum(soil.θ) ≈ 0.30485861867012487
   # plot(soil.θ, soil.z[1:end])
 
   soil = Soil(dz; θ, zwt=-5.0, wa)
   @time soil_moisture_Zeng2009(soil)
-  @test maximum(soil.θ) ≈ 0.3114803901871861
+  @test maximum(soil.θ) ≈ 0.305740195093593
 end
 
 @testset "cal_Q_Zeng2009!" begin

@@ -214,6 +214,49 @@ $
   r & = q_(i-1)^n - q_i^(n+1) + e_i
 $
 
+- *i=N+1时（地下水层，Zeng2009方案）：*
+
+在Zeng2009方案中，为了考虑土壤水与地下水的相互作用，增加了第N+1层（地下水层）。该层位于地下水位$z_"wt"$附近。
+
+*几何设置*：
+- 第N+1层中心位置：$z_(N+1) = 0.5(z_"wt" + z_N)$（地下水位与第N层中心的中点）
+- 第N+1层厚度：$Delta z_"gw" = |z_"wt" - z_N|$（当$"jwt" >= N$时）
+
+*质量守恒方程*：
+
+第N+1层只有来自第N层的入流$q_N$，没有出流（$q_(N+1) = 0$），且不考虑蒸发/蒸腾（$e_(N+1) = 0$）：
+
+$
+  (Delta theta_(N+1)) / (Delta t) Delta z_"gw" = -q_N^(n+1) + 0 - 0 = -q_N^(n+1)
+$
+
+*线性化*：
+
+$
+  q_N^(n+1) = q_N^n + pdv(q_N, theta_N) Delta theta_N + pdv(q_N, theta_(N+1)) Delta theta_(N+1)
+$
+
+代入质量守恒方程：
+
+$
+  (Delta z_"gw") / (Delta t) Delta theta_(N+1) = -q_N^n - pdv(q_N, theta_N) Delta theta_N - pdv(q_N, theta_(N+1)) Delta theta_(N+1)
+$
+
+整理得：
+
+$
+  -pdv(q_N, theta_N) Delta theta_N - [pdv(q_N, theta_(N+1)) + (Delta z_"gw") / (Delta t)] Delta theta_(N+1) = q_N^n
+$
+
+*三角矩阵系数*：
+
+$
+  a_(N+1) & = -pdv(q_N, theta_N) \
+  b_(N+1) & = -pdv(q_N, theta_(N+1)) - (Delta z_"gw") / (Delta t) \
+  c_(N+1) & = 0 \
+  r_(N+1) & = q_N^n
+$
+
 // #pagebreak()
 
 === 1.4 给水度（specific yield）
