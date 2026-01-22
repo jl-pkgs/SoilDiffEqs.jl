@@ -1,6 +1,6 @@
 using SoilDifferentialEquations, Plots, Test, RTableTools, Dates
 using OrdinaryDiffEqTsit5
-import HydroTools: sceua, GOF, of_KGE, of_NSE
+import ModelParams: sceua, GOF, of_KGE, of_NSE
 using Optim
 includet("main_Tsoil.jl")
 

@@ -1,7 +1,7 @@
 module SoilDifferentialEquations
 
 # using OrdinaryDiffEqTsit5
-import HydroTools: sceua, GOF, of_KGE, of_NSE
+import ModelParams: sceua, GOF, of_KGE, of_NSE
 using Parameters
 using Reexport
 # using DiffEqBase
@@ -66,7 +66,7 @@ export TsoilEquation, TsoilEquation_partial
 export RichardsEquation, RichardsEquation_partial
 export soil_properties_thermal
 
-# HydroTools
+# ModelParams
 export sceua, GOF, of_KGE, of_NSE
 export soil_depth_init, θ_S, ρ_wat, K0
 

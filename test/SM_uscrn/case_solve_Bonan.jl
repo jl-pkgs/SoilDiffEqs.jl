@@ -3,8 +3,9 @@ import RTableTools: fread
 
 begin
   d = fread(f_SM_Batesville)
-  ibeg = 2
+  ibeg = 3
   yobs_full = d[:, 3:end] |> Matrix #|> drop_missing
+
   yobs = yobs_full[:, max(ibeg - 1, 1):end] # [time, depth]
   θ0 = yobs_full[1, max(ibeg - 1, 1):end]
   θ_surf = yobs_full[:, ibeg-1]
@@ -82,3 +83,9 @@ end
   @test test_ModSim(; method_retention="Campbell", same_layer=false) >= 0.7
   @test test_ModSim(; method_retention="van_Genuchten", same_layer=false) >= 0.1
 end
+
+test_ModSim(; method_retention="van_Genuchten", same_layer=false, maxn=20_000)
+
+
+test_ModSim(; method_retention="Campbell", same_layer=false, maxn=5_000)
+

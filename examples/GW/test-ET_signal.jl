@@ -1,5 +1,5 @@
 using SoilDifferentialEquations, Test
-using HydroTools
+using ModelParams
 using OrdinaryDiffEqTsit5
 using Plots, Dates
 # gr(framestyle=:box, legend=:bottomleft)

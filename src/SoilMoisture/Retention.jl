@@ -112,8 +112,8 @@ end
 
 function Init_ψ0(soil::Soil{T}, θ::T) where {T<:Real}
   # ibeg = 1, ψ0; ibeg = 2, ψ1
-  i = max(soil.ibeg - 1, 1)
-  return Retention_ψ(θ, soil.param.param[i]) # ψ0
+  i0 = max(soil.ibeg - 1, 1)
+  return Retention_ψ(θ, soil.param.param[i0]) # ψ0
 end
 
 
