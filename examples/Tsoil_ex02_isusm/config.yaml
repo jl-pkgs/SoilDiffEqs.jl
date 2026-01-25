@@ -1,0 +1,49 @@
+# 数据配置
+data:
+  file: "data/isusm_TS_202207.csv"
+  time_col: "time"
+  obs_start_col: 4
+  time_steps: 240
+
+# 模拟参数配置
+simulation:
+  dt: 3600.0
+
+# 模型网格配置 (CLM 5.0 标准分层方案)
+model:
+  # 采用 CLM 标准 10 层水文方案
+  # 总深度约 3.43m。前8层约1.4m，完全覆盖观测深度(70cm)。
+  layers_thickness: 
+    - 0.0175
+    - 0.0276
+    - 0.0455
+    - 0.0750
+    - 0.1236
+    - 0.2038
+    - 0.3360
+    - 0.5539
+    - 0.9133
+    - 1.1370
+
+  # 观测深度 (cm)
+  # 代码会自动插值对比，无需网格对齐
+  depths_cm: [5, 10, 30, 50, 70]
+  
+  # 边界条件设置
+  Tsurf_layer_index: 1 # 使用第1层观测(5cm)作为上边界温度
+  soil_type: 7
+
+# 优化/率定配置
+optimization:
+  enable: true
+  method: "SCE-UA"
+  max_iterations: 50000
+  bounds:
+    kappa: [0.1, 10.0]
+    cv: [1.0e6, 5.0e6]
+
+# 输出配置
+output:
+  plot: true
+  plot_size: [1200, 800]
+  save_fig: "result_simulation.png"
