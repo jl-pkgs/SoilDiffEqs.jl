@@ -35,8 +35,9 @@ function init_soil(; Tsurf=20.0, dt=3600.0, soil_type=1, k=3)
   Tsoil = deepcopy(Tsoil0)
 
   κ, cv = soil_properties_thermal(Δz, Tsoil, m_liq, m_ice; soil_type)
+  param = SoilParam{Float64}(; N, κ, cv)
   Soil{Float64}(; N, ibeg=inds_obs[k], inds_obs=inds_obs[k:end],
-    dt, z, z₊ₕ, Δz, Δz₊ₕ, κ, cv, Tsurf, Tsoil)
+    dt, z, z₊ₕ, Δz, Δz₊ₕ, param, Tsurf, Tsoil)
 end
 
 function goal(theta; kw...)

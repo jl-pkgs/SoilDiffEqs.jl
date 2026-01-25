@@ -2,6 +2,10 @@
 
 This document provides instructions for AI agents working on the SoilDiffEqs.jl repository.
 
+## 代码编写原则
+
+- linux极简主义；同时排版符合代码规范，排版美观
+
 ## 1. Project Overview
 SoilDiffEqs.jl implements solvers for soil water movement (Richards equation) and heat transfer.
 - **Core Physics**: Richards equation, Darcy's law, Van Genuchten / Campbell retention curves.

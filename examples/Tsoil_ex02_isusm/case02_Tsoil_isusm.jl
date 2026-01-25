@@ -4,7 +4,7 @@ import ModelParams: sceua, GOF, of_KGE, of_NSE
 import NetCDFTools: approx
 import Ipaper: set_seed
 
-includet("main_Tsoil.jl")
+include("main_Tsoil.jl")
 
 solver = Tsit5()
 # solver = Rosenbrock23()
@@ -12,7 +12,8 @@ solver = Tsit5()
 
 ## 加载数据
 begin
-  d = fread("$dir_soil/data/isusm_TS_202207.csv")[1:24*10, :]
+  # d = fread("$dir_soil/data/isusm_TS_202207.csv")[1:24*10, :]
+  d = fread("data/TS_isusm_202207.csv")[1:24*10, :]
   t = d.time
 
   ibeg = 3
@@ -23,8 +24,8 @@ begin
   Tsoil0 = approx(inds_obs, yobs_full[1, :], 1:nlayer)
 
   soil = init_soil(; soil_type=7)
-  theta0 = [soil.κ; soil.cv]
-  # theta = theta0
+  theta0 = [soil.param.κ; soil.param.cv]
+  theta = theta0
 
   yobs = yobs_full[:, ibeg:end]
   ysim = model_Tsoil_sim(soil, Tsurf, theta; method="ODE", solver)
@@ -42,11 +43,11 @@ end
 
 ## 优化模型参数
 begin
-  x0 = [soil.κ; soil.cv]
+  x0 = [soil.param.κ; soil.param.cv]
   lower = [fill(0.1, nlayer); fill(1.0, nlayer) * 1e6]
   upper = [fill(10.0, nlayer); fill(5.0, nlayer) * 1e6]
 
   f(theta) = goal(theta; method="ODE", solver)
   # f(theta) = goal(theta; method="Bonan")
-  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(5e4))
+  @time theta, feval, exitflag = sceua(f, x0, lower, upper; maxn=Int(10000)) # Reduced from 5e4 for testing
 end
