@@ -14,6 +14,7 @@ include("soil_moisture_Bonan.jl")
 include("soil_moisture_Bonan_Q0.jl")
 include("soil_moisture_BEPS.jl")
 include("soil_moisture_Zeng2009.jl")
+include("clm5_utils.jl")
 include("Solve_SM.jl")
 
 

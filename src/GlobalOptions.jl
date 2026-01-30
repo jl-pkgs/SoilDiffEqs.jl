@@ -15,19 +15,19 @@ end
 options = Options()
 
 # 函数用于修改选项
-function set_option!(; kw...)
+function set_option!(opt::Options; kw...)
   for (key, value) in kw
-    setfield!(options, key, value)
-    # setindex!(options, value, key)
-    # options[key] = value
+    hasproperty(opt, key) || throw(ArgumentError("未知选项: $(key)"))
+    setproperty!(opt, key, value)
   end
-  options
+  opt
 end
 
+set_option!(; kw...) = set_option!(options; kw...)
+
 # 函数用于获取选项
-function get_option(key)
-  return options[key]
-end
+get_option(key::Symbol) = getproperty(options, key)
+get_option(key::AbstractString) = getproperty(options, Symbol(key))
 
 export Options, options, set_option!, get_option
 

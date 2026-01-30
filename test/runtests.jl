@@ -28,3 +28,4 @@ include("test-solve_SM.jl")
 
 include("SM_uscrn/case_solve_BEPS.jl")
 include("SM_uscrn/case_solve_Bonan.jl")
+include("SM_uscrn/case_solve_Bonan_CLM5.jl")

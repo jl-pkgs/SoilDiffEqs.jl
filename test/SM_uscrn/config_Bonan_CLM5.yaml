@@ -1,0 +1,27 @@
+# Config for CLM5 soil moisture test (Bonan)
+
+data:
+  # Path relative to this config file
+  file: "../../data/SM_AR_Batesville_8_WNW_2024.csv"
+  # Use all rows if <= 0
+  time_steps: 0
+  # Observation columns start (time, P_CALC, SM_5, SM_10, ...)
+  # obs_start_col: 3
+  # Observation depths (cm)
+  # depths_cm: [5, 10, 20, 50, 100]
+
+model:
+  soil_type: 8
+  same_layer: false
+  method_retention: ["Campbell", "van_Genuchten"]
+  ibeg: 2
+  layer_scheme: "exp_k"  # "full" | "two_layer" | "trend" | "exp_k"
+  two_step: true
+  # dt: 3600.0
+  # method_solve: "Bonan"
+  # Index in depths_cm used as surface boundary (1-based)
+  # surface_obs_index: 1
+
+optimization:
+  enable: true
+  maxn: 10000
