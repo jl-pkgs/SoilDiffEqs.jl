@@ -79,8 +79,8 @@ function init_soil_clm5(; θ0, dt=3600.0, soil_type=7, method_retention="Campbel
 end
 
 # 6) Run simulation
-dt::Float64 = Float64(get(model_cfg, "dt", 3600.0))
-soil_type::Int = get(model_cfg, "soil_type", 7)
+dt = Float64(get(model_cfg, "dt", 3600.0))
+soil_type = Int(get(model_cfg, "soil_type", 7))
 method_default = method_retention_cfg isa AbstractVector ? method_retention_cfg[1] : method_retention_cfg
 scheme::String = get(model_cfg, "layer_scheme", "full")
 two_step::Bool = get(model_cfg, "two_step", false)
