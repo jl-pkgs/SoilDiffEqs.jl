@@ -65,7 +65,7 @@ same_layer::Bool = get(model_cfg, "same_layer", true)
 method_retention_cfg = get(model_cfg, "method_retention", "Campbell")
 
 # Calibration uses observed depths (exclude surface by default)
-ibeg::Int = get(model_cfg, "ibeg", 2)  # 2 -> exclude 5cm (surface)
+ibeg = Int(get(model_cfg, "ibeg", 2))  # 2 -> exclude 5cm (surface)
 yobs = θ_obs[:, ibeg:end]
 set_option!(; yobs, θ_surf, ibeg=1, same_layer, method_solve)
 
