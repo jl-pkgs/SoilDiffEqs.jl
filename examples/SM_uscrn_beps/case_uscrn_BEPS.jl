@@ -74,7 +74,7 @@ set_option!(; same_layer=true, method_retention="van_Genuchten")
 options
 
 begin
-  # d = d[1:24*7*4, ]
+  d = d[1:24*7, :] # smoke-test
   ibeg = 3
   N_fake = 1
   i0 = max(ibeg - 1, 1) - N_fake
@@ -101,7 +101,7 @@ end
 #   goal(theta0)
 # end
 
-@time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=2_000)
+@time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
 # SM_UpdateParam!(soil, theta)
 # include("main_plot.jl")
 # plot_result(theta)

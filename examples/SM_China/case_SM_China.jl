@@ -39,15 +39,15 @@ lower, upper = SM_paramBound(soil)
 theta0 = SM_param2theta(soil)
 ysim = model_sim(theta0;)
 
-ysim = model_sim(theta;)
+# ysim = model_sim(theta;) # theta undefined; run after optimization
 
-goal(theta0; ibeg)
+goal(theta0)
 plot_result(theta0)
 
 
 begin
-  f(theta) = goal(theta; ibeg)
-  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(1e4))
+  f(theta) = goal(theta)
+  @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=10_000)
 end
 
 f_theta = "$(@__DIR__)/theta"

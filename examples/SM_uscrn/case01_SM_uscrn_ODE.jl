@@ -2,7 +2,7 @@ using SoilDifferentialEquations, Test, Dates, Ipaper
 using LazyArtifacts
 import RTableTools: fread
 # using OrdinaryDiffEqTsit5
-includet("main_optim.jl")
+include("main_optim.jl")
 include("main_plot.jl")
 
 begin
@@ -46,4 +46,4 @@ end
 
 plot_result(theta)
 SM_UpdateParam!(soil, theta);
-goal(theta; same_layer)
+goal(theta)

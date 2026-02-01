@@ -30,10 +30,10 @@ function goal(theta;)
   n = ncol - ibeg + 1
   ∑ = 0.0
   
-  for i in 1:ncol
+  for i in ibeg:ncol
     obs = @view yobs[:, i]
     sim = @view ysim[:, i]
-    ∑ += -of_KGE(obs, sim)
+    ∑ += -of_NSE(obs, sim)
   end
   return ∑ / n # mean of NSE
 end

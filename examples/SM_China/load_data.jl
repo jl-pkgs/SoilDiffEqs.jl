@@ -15,7 +15,7 @@ end
 
 
 begin
-  d = fread("./examples/SM_China/SM_J1193.csv")
+  d = fread(joinpath(@__DIR__, "SM_J1193.csv"))
 
   dates = d[:, 1]
   _depths = [10, 20, 30, 40, 50, 60, 80, 100]
