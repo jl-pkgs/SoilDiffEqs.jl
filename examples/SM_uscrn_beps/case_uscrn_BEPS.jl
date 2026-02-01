@@ -102,7 +102,14 @@ end
 # end
 
 @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
-# SM_UpdateParam!(soil, theta)
-# include("main_plot.jl")
-# plot_result(theta)
-# plot_result(theta0)
+SM_UpdateParam!(soil, theta)
+
+# Plot
+include("main_plot.jl")
+dates = d[:, :time]
+depths = -z[ibeg:end] .* 100  # 从 ibeg 开始的深度
+plot_result(; ysim, yobs, dates, depths, filename="plot_optimized.png")
+
+# 初始参数 plot
+ysim0 = model_sim(theta0)
+plot_result(; ysim=ysim0, yobs, dates, depths, filename="plot_initial.png")

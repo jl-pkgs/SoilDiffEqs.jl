@@ -44,6 +44,11 @@ begin
   @time theta, feval, exitflag = sceua(f, theta0, lower, upper; maxn=Int(2e4))
 end
 
-plot_result(theta)
+# Plot
+include("main_plot.jl")
+dates = d[:, :time]
+depths = [5, 10, 20, 50, 100]  # vars_SM 对应的深度
+plot_result(; ysim, yobs, dates, var_names=string.(vars_SM), filename="plot_optimized.png")
+
 SM_UpdateParam!(soil, theta);
 goal(theta)

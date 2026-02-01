@@ -17,3 +17,6 @@ data
 *debug*
 *backup*
 deprecated
+
+*.log
+theta

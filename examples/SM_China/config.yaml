@@ -26,13 +26,11 @@ model:
   method_solve: "Bonan"
   # 时间步长（秒）
   dt: 3600.0
-  # 模拟起始层（1-based）
-  # ibeg=4 表示：第1层(5cm虚拟层), 第2层(10cm)作为输入, 第3层(20cm)开始模拟
-  ibeg: 4
   # 土壤层厚度设置（cm）
   layer_thickness_cm: [5.0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-  # 表层输入数据对应的深度索引（在 target_depths_cm 中的位置）
-  surface_depth_index: 2  # 10cm 作为表层输入
+  # 表层输入数据对应的深度（cm）
+  # 该深度作为边界层条件，模拟从下一个深度开始
+  surface_depth_cm: 10  # 10cm 作为表层输入，从20cm开始模拟和验证
 
 optimization:
   # 是否启用优化
@@ -47,3 +45,5 @@ output:
   theta_file: "theta"
   # 是否保存图表
   save_plot: true
+  # 图表保存路径
+  plot_file: "plot.png"
