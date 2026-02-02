@@ -2,6 +2,9 @@
 
 SoilDiffEqs.jl 是一个用于求解土壤水热运动微分方程的 Julia 软件包，实现了 Richards 方程、土壤热传导方程以及地下水动态模拟。
 
+> **AGENTS.md**更新方法
+读取最近3次的commit，翻阅相关代码，更新AGENTS.md
+
 > **代码编写准则**：
 
 **(a) 代码编写遵循Linux极简主义哲学，同时符合代码排版规范**
@@ -132,12 +135,16 @@ SoilDiffEqs.jl/
 │   └── SM_uscrn/                       # USCRN 数据测试
 │
 ├── examples/                           # 示例代码
-│   ├── SM_China/                       # 中国站点模拟（YAML 配置驱动）
-│   │   ├── case_SM_China.jl            # 主运行脚本（简化版）
-│   │   ├── case_SM_China.yaml          # YAML 配置文件
-│   │   ├── case_SM_uscrn.jl            # USCRN站点模拟示例
+│   ├── SM/                             # 土壤水分模拟示例（YAML 配置驱动）
+│   │   ├── case_SM_China.jl            # 中国站点模拟脚本
+│   │   ├── case_SM_China.yaml          # 中国站点配置文件
+│   │   ├── case_SM_uscrn.jl            # USCRN站点模拟脚本
 │   │   ├── case_SM_uscrn.yaml          # USCRN配置文件
-│   │   └── images/                     # 输出图表目录
+│   │   ├── case_uscrn_BEPS.jl          # BEPS求解器示例
+│   │   ├── case_uscrn_BEPS.yaml        # BEPS配置文件
+│   │   ├── data/                       # 数据目录
+│   │   ├── images/                     # 输出图表目录
+│   │   └── output/                     # 优化结果输出目录
 │   ├── Tsoil_ex01_CUG/                 # 温度模拟示例
 │   ├── Tsoil_ex02_isusm/               # ISUSM 温度模拟示例
 │   ├── main_plot.jl                    # 通用绘图功能
@@ -294,7 +301,7 @@ end
 用于 YAML 配置文件管理:
 
 ```julia
-@with_kw struct Config
+@with_kw mutable struct Config
   # data: 数据相关配置
   file::String              # 数据文件路径
   col_time::Int = 1         # 时间列索引
@@ -311,6 +318,9 @@ end
   method_solve::String = "Bonan"              # 求解方法: "Bonan" 或 "ODE"
   dt::Float64 = 3600.0
   zs_center::Vector{Float64}  # 模拟层中心深度 [cm]
+  
+  # 自定义土壤参数（可选，用于覆盖标准参数）
+  soil_params::Union{Dict{String,Float64},Nothing} = nothing
 
   # optimization: 优化配置
   optim::Bool = false
@@ -455,7 +465,7 @@ using SoilDifferentialEquations, Ipaper, RTableTools
 include("../main_plot.jl")
 
 # 加载配置
-cfg_file = "examples/SM_China/case_SM_China.yaml"
+cfg_file = "examples/SM/case_SM_China.yaml"
 config = load_config(cfg_file)
 
 # 加载并插值观测数据
@@ -530,7 +540,7 @@ using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
 using LazyArtifacts
 include("../main_plot.jl")
 
-cfg_file = "examples/SM_China/case_SM_uscrn.yaml"
+cfg_file = "examples/SM/case_SM_uscrn.yaml"
 config = load_config(cfg_file)
 
 # 加载 USCRN 数据（通过 artifact）
@@ -550,7 +560,55 @@ soil, θ_surf, yobs = InitSoil(config, data_obs)
 # ... 优化和绘图
 ```
 
-### 7.7 土壤质地分类（USDA）
+### 7.7 BEPS 求解器示例
+
+BEPS (Boreal Ecosystem Productivity Simulator) 土壤水分求解器示例，支持自定义土壤参数：
+
+配置文件示例 (`case_uscrn_BEPS.yaml`):
+```yaml
+# SM_uscrn BEPS 土壤水模拟配置文件
+# BEPS 求解器专用配置，包含优化后的土壤参数
+
+data:
+  col_time: 1            # 时间列索引
+  col_obs_start: 3       # 土壤水分数据起始列（跳过P_CALC）
+  scale_factor: 1.0      # 数据已经是标准单位
+
+  z_bound_top: 5         # 上边界层深度 [cm]
+  zs_obs_orgin: [5, 10, 20, 50, 100]
+  zs_obs: [5, 10, 20, 50, 100]
+
+model:
+  soil_type: 7                             # 基础土壤类型（会被自定义参数覆盖）
+  same_layer: true                         # BEPS 使用统一参数
+  method_retention: "van_Genuchten"
+  method_solve: "BEPS"                     # 使用 BEPS 求解器
+  dt: 3600.0                               # 时间步长（秒）
+  zs_center: [1.25, 5, 10, 20, 50, 100]    # 层中心深度 [cm]
+
+  # BEPS 优化的土壤参数（关键！）
+  soil_params:
+    theta_sat: 0.30     # 饱和含水量
+    theta_res: 0.03     # 残余含水量
+    ksat: 1.04          # 饱和导水率 [cm/h]
+    alpha: 0.036        # 进气值倒数 [cm^-1]
+    n: 1.56             # 孔隙分布指数
+
+optimization:
+  enable: true
+  maxn: 2000                              # BEPS 收敛较快
+  objective: "KGE"                         # BEPS 使用 KGE
+
+output:
+  plot_file: "plot_BEPS.png"
+```
+
+**关键特性：**
+- `method_solve: "BEPS"` 启用 BEPS 求解器
+- `soil_params` 字段用于覆盖标准土壤类型参数
+- BEPS 使用内部迭代直至收敛，通常需要较少的 SCE-UA 迭代次数
+
+### 7.8 土壤质地分类（USDA）
 
 使用 `USDA` 模块进行土壤质地分类：
 
