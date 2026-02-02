@@ -21,11 +21,13 @@ model:
   dt: 3600.0                               # 时间步长（秒）
   zs_center: [2.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] # zs_center in model
 
+
 optimization:
   enable: true     # 是否启用优化
-  maxn: 100        # 最大迭代次数
+  maxn: 10000        # 最大迭代次数
   objective: "NSE" # 目标函数: "NSE" | "KGE"
+
 
 output:
   # 图表保存路径，留空则不绘图
-  plot_file: ""
+  plot_file: "images/plot_final.png"

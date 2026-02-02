@@ -8,9 +8,9 @@ d = fread(joinpath(@__DIR__, "SM_J1193.csv"))
 dates = d[:, 1]
 _A = d[:, 2:end] ./ 100 |> Matrix |> drop_missing
 
-zs_obs = [10, 20, 30, 40, 50, 60, 80, 100]
+zs_obs = [10.0, 20, 30, 40, 50, 60, 80, 100]
 zs_center = collect(10:10:100.)
-A = interp_depth(_A, zs_obs, zs_center)
+A = interp_data_depths(_A, zs_obs, zs_center)
 
 # ========== Model Functions ==========
 function model_sim(theta)
@@ -25,8 +25,7 @@ function goal(theta)
   yobs = options.yobs
   ysim = model_sim(theta)
   ncol = size(yobs, 2)
-  n = ncol - ibeg + 1
-  sum(i -> -of_NSE(view(yobs, :, i), view(ysim, :, i)), ibeg:ncol) / n
+  sum(i -> -of_NSE(view(yobs, :, i), view(ysim, :, i)), 1:ncol) / ncol
 end
 
 
@@ -51,12 +50,12 @@ end
 
 # ========== Main ==========
 # 配置：10cm作为边界层，从20cm开始模拟
-z_bound_top = 10
-ibeg = find_ibeg()
+z_bound_top = 10.0
+ibeg = 3  # 模型第3层对应20cm（与A的第2列对齐）
 
-θ_surf = A[:, surface_idx]
+θ_surf = A[:, 1]        # 第1列（10cm）作为边界层输入
 θ0 = A[1, :]
-yobs = A[:, ibeg-1:end]
+yobs = A[:, 2:end]      # 从第2列开始（20-100cm）对应模型的活跃层
 
 set_option!(; method_retention="van_Genuchten", yobs, θ_surf, ibeg, same_layer=false)
 
@@ -66,7 +65,7 @@ theta0 = SM_param2theta(soil)
 
 println("Initial NSE: $(-goal(theta0))")
 ysim0 = model_sim(theta0)
-plot_result(; ysim=ysim0, yobs, dates, depths=zs_center, ibeg, filename=joinpath(@__DIR__, "plot_initial.png"))
+plot_result(; ysim=ysim0, yobs, dates, depths=zs_center[2:end], fout=joinpath(@__DIR__, "plot_initial.png"))
 
 # Optimize
 @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
@@ -77,4 +76,4 @@ theta = deserialize(joinpath(@__DIR__, "theta"))
 
 SM_UpdateParam!(soil, theta)
 ysim_opt = model_sim(theta)
-plot_result(; ysim=ysim_opt, yobs, dates, depths=z_center, ibeg, filename=joinpath(@__DIR__, "plot_optimized.png"))
+plot_result(; ysim=ysim_opt, yobs, dates, depths=zs_center[2:end], fout=joinpath(@__DIR__, "plot_optimized.png"))

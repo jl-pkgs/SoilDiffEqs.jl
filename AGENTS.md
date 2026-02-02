@@ -2,18 +2,15 @@
 
 SoilDiffEqs.jl 是一个用于求解土壤水热运动微分方程的 Julia 软件包，实现了 Richards 方程、土壤热传导方程以及地下水动态模拟。
 
+> **代码编写准则**：
 
-**代码编写准则**：
-
-代码编写遵循Linux极简主义哲学，同时符合代码排版规范
+**(a) 代码编写遵循Linux极简主义哲学，同时符合代码排版规范**
 
 Linux极简主义哲学的核心原则：
 
 1. 一个程序只做一件事，并把它做好
-2. 每个程序的输出应该作为另一个程序的输入（管道哲学）
-3. 简洁至上
-4. 不要重复造轮子
-5. 优先使用文本流
+2. 简洁至上
+3. 不要重复造轮子
 
 应用到Julia代码中：
 
@@ -22,6 +19,11 @@ Linux极简主义哲学的核心原则：
 3. 清晰的命名，自解释的代码
 4. 减少重复代码
 5. 使用标准库和现有工具
+
+**(b) 代码责任制**
+
+谁修改谁负责，修改后的代码，一定要测试。
+
 
 ## julia独有的语法
 
@@ -74,6 +76,7 @@ SoilDiffEqs.jl/
 │   ├── GlobalOptions.jl                # 全局选项配置
 │   ├── Soil.jl                         # 核心 Soil 数据结构
 │   ├── SoilParam.jl                    # 土壤参数定义
+│   ├── Config.jl                       # 配置管理，支持 YAML 配置文件（新增）
 │   ├── soil_texture.jl                 # USDA 土壤质地分类
 │   ├── tridiagonal_solver.jl           # 三对角矩阵求解器
 │   ├── solver.jl                       # 自定义 ODE solver (实验性)
@@ -126,7 +129,11 @@ SoilDiffEqs.jl/
 │
 ├── examples/                           # 示例代码
 │   ├── SM_uscrn/                       # USCRN 站点模拟
-│   ├── SM_China/                       # 中国站点模拟
+│   ├── SM_China/                       # 中国站点模拟（已重构，支持 YAML 配置）
+│   │   ├── run_config.jl               # 基于配置的主运行脚本
+│   │   ├── config.yaml                 # YAML 配置文件
+│   │   ├── src/main_plot.jl            # 绘图功能
+│   │   └── src/main_config.jl          # 配置辅助函数
 │   ├── Tsoil_ex01_CUG/                 # 温度模拟示例
 │   └── common/SoilConfig.jl            # 配置工具
 │
@@ -276,7 +283,42 @@ function clamp_θ!(soil::Soil{T,Campbell{T}}, ...) where {T<:Real}
 end
 ```
 
-### 5.2 网格系统 (交错网格)
+### 5.2 Config 结构体（新增）
+
+用于 YAML 配置文件管理:
+
+```julia
+@with_kw struct Config
+  # data: 数据相关配置
+  file::String              # 数据文件路径
+  time_col::Int = 1         # 时间列索引
+  obs_start_col::Int = 2    # 观测数据起始列
+  scale_factor::Float64 = 1.0
+  zs_obs_orgin::Vector{Float64}  # 原始观测深度 [cm]
+  zs_obs::Vector{Float64}        # 插值后观测深度 [cm]
+  z_bound_top::Float64 = 10.0    # 顶层边界层深度 [cm]
+
+  # model: 模型参数配置
+  soil_type::Int = 7
+  same_layer::Bool = false
+  method_retention::String = "van_Genuchten"  # 持水曲线方法
+  method_solve::String = "Bonan"              # 求解方法: "Bonan" 或 "ODE"
+  dt::Float64 = 3600.0
+  zs_center::Vector{Float64}  # 模拟层中心深度 [cm]
+
+  # optimization: 优化配置
+  optim::Bool = false
+  maxn::Int = 100
+  objective::String = "NSE"   # 目标函数: "NSE" 或 "KGE"
+
+  # output: 输出配置
+  plot_file::String = ""
+end
+```
+
+使用 `load_config(cfg_file)` 从 YAML 加载配置。
+
+### 5.3 网格系统 (交错网格)
 
 - **状态变量** (θ, ψ, T): 定义在层中心 `z[i]`
 - **通量变量** (Q, K, F): 定义在层界面 `z₊ₕ[i]`
@@ -292,7 +334,7 @@ end
         | --- | --- ||  |z₊ₕ[N] (底部)
 ```
 
-### 5.3 土壤参数模型
+### 5.4 土壤参数模型
 
 支持两种土壤水分特征曲线模型:
 
@@ -372,6 +414,44 @@ u0 = soil.θ[soil.ibeg:soil.N]  # 初始状态
 tspan = (0.0, 3600.0)          # 时间范围 [s]
 prob = ODEProblem(RichardsEquation, u0, tspan, soil)
 sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6)
+```
+
+### 7.5 使用 YAML 配置运行（新增）
+
+```julia
+# 加载配置
+config = load_config("examples/SM_China/config.yaml")
+
+# 运行完整模拟（包含数据加载、模拟、优化、绘图）
+include("examples/SM_China/run_config.jl")
+```
+
+配置文件示例 (`config.yaml`):
+```yaml
+data:
+  file: "theta/theta_647.csv"
+  time_col: 1
+  obs_start_col: 2
+  scale_factor: 0.01
+  zs_obs_orgin: [5, 10, 20, 50, 100]
+  zs_obs: [10, 20, 50, 100]      # 顶层10cm作为边界条件
+  z_bound_top: 10.0
+
+model:
+  soil_type: 7
+  same_layer: false
+  method_retention: "van_Genuchten"
+  method_solve: "Bonan"          # 或 "ODE"
+  dt: 3600.0
+  zs_center: [0, -5, -15, -30, -60, -100, -150, -200]
+
+optimization:
+  enable: true
+  maxn: 100
+  objective: "NSE"               # 或 "KGE"
+
+output:
+  plot_file: "images/plot.png"
 ```
 
 ---

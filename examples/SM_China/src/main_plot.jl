@@ -15,16 +15,15 @@ plot_sim(i; ysim, yobs, dates, depths) = begin
   plot!(p, t, ysim[:, i]; label="SIM")
 end
 
-plot_result(; ysim, yobs, dates, depths, ibeg, filename=nothing) = begin
+plot_result(; ysim, yobs, dates, depths, fout=nothing) = begin
   nlys = size(ysim, 2)
   # yobs 和 ysim 从第1层开始，对应 depths[ibeg-1:end]
-  plot_depths = depths[ibeg-1:ibeg-1+nlys-1]
-  plots = [plot_sim(i; ysim, yobs, dates, depths=plot_depths) for i in 1:nlys]
+  plots = [plot_sim(i; ysim, yobs, dates, depths=depths) for i in 1:nlys]
   p = plot(plots..., size=(1400, 800))
   
-  if filename !== nothing
-    savefig(p, filename)
-    println("Plot saved: $filename")
+  if fout !== nothing
+    savefig(p, fout)
+    println("Plot saved: $fout")
   end
   p
 end
