@@ -1,0 +1,38 @@
+# SM_uscrn BEPS 土壤水模拟配置文件
+# BEPS 求解器专用配置，包含优化后的土壤参数
+
+data:
+  col_time: 1            # 时间列索引
+  col_obs_start: 3       # 土壤水分数据起始列（跳过P_CALC）
+  scale_factor: 1.0      # 数据已经是标准单位
+
+  z_bound_top: 5         # 上边界层深度 [cm]
+  zs_obs_orgin: [5, 10, 20, 50, 100]
+  zs_obs: [5, 10, 20, 50, 100]
+
+
+model:
+  soil_type: 7                             # 基础土壤类型（会被自定义参数覆盖）
+  same_layer: true                         # BEPS 使用统一参数
+  method_retention: "van_Genuchten"
+  method_solve: "BEPS"                     # 使用 BEPS 求解器
+  dt: 3600.0                               # 时间步长（秒）
+  zs_center: [1.25, 5, 10, 20, 50, 100]    # 层中心深度 [cm]
+
+  # BEPS 优化的土壤参数（关键！）
+  soil_params:
+    theta_sat: 0.30     # 饱和含水量
+    theta_res: 0.03     # 残余含水量
+    ksat: 1.04          # 饱和导水率 [cm/h]
+    alpha: 0.036        # 进气值倒数 [cm^-1]
+    n: 1.56             # 孔隙分布指数
+
+
+optimization:
+  enable: true
+  maxn: 2000                              # BEPS 收敛较快
+  objective: "KGE"                         # BEPS 使用 KGE
+
+
+output:
+  plot_file: "plot_BEPS.png"

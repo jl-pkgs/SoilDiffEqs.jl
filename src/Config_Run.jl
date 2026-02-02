@@ -1,7 +1,7 @@
 function InitSoil(config::Config, data_obs::AbstractMatrix{T}) where {T<:Real}
   (; zs_obs, z_bound_top,
     zs_center, dt,
-    soil_type, method_retention, same_layer) = config
+    soil_type, method_retention, same_layer, soil_params) = config
 
   z₊ₕ = center_to_face(zs_center)
   Δz = face_to_thickness(z₊ₕ) ./ 100.0 # [cm] -> [m]
@@ -21,7 +21,20 @@ function InitSoil(config::Config, data_obs::AbstractMatrix{T}) where {T<:Real}
   θ[1:n] .= θ0[1:n]
   θ[n+1:N] .= θ0[end]
 
-  par = get_soilpar(soil_type; method_retention)
+  # 使用自定义参数或标准参数
+  if soil_params !== nothing && method_retention == "van_Genuchten"
+    par = VanGenuchten{Float64}(
+      θ_sat = soil_params["theta_sat"],
+      θ_res = soil_params["theta_res"],
+      Ksat  = soil_params["ksat"],
+      α     = soil_params["alpha"],
+      n     = soil_params["n"],
+      m     = 1.0 - 1.0/soil_params["n"]
+    )
+  else
+    par = get_soilpar(soil_type; method_retention)
+  end
+  
   param = SoilParam(N, par; use_m=false, method_retention, same_layer)
   soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, method_retention, param)
   cal_ψ!(soil)
@@ -33,9 +46,16 @@ end
 function SM_simulate(config::Config, data_obs::AbstractMatrix{T}, theta) where {T<:Real}
   soil, θ_surf, yobs = InitSoil(config, data_obs)
   SM_UpdateParam!(soil, theta)
-  ysim = config.method_solve == "Bonan" ?
-         solve_SM_Bonan(soil, θ_surf) :
-         solve_SM_ODE(soil, θ_surf; solver=Tsit5()) # [ibeg:N]
+  
+  if config.method_solve == "Bonan"
+    ysim = solve_SM_Bonan(soil, θ_surf)
+  elseif config.method_solve == "ODE"
+    ysim = solve_SM_ODE(soil, θ_surf; solver=Tsit5())
+  elseif config.method_solve == "BEPS"
+    ysim = soil_moisture_BEPS(soil, θ_surf)
+  else
+    error("Unknown method_solve: $(config.method_solve)")
+  end
   ysim, yobs
 end
 

@@ -21,6 +21,9 @@ using Parameters, YAML
   method_solve::String = "Bonan"
   dt::Float64 = 3600.0
   zs_center::Vector{Float64} = Float64[]
+  
+  # 自定义土壤参数（可选，用于覆盖标准参数）
+  soil_params::Union{Dict{String,Float64},Nothing} = nothing
 
   ## optimization
   optim::Bool = false
@@ -54,6 +57,12 @@ function load_config(cfg_file)
   method_solve = get(model_cfg, "method_solve", "Bonan")
   dt = Float64(get(model_cfg, "dt", 3600.0))
   zs_center = Float64.(get(model_cfg, "zs_center", Float64[]))
+  
+  # 自定义土壤参数
+  soil_params = get(model_cfg, "soil_params", nothing)
+  if soil_params !== nothing
+    soil_params = Dict{String,Float64}(k => Float64(v) for (k, v) in soil_params)
+  end
 
   ## optimization
   optim = Bool(get(opt_cfg, "enable", false))
@@ -66,8 +75,8 @@ function load_config(cfg_file)
 
   Config(;
     file, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
-    soil_type, same_layer, method_retention, method_solve, dt, zs_center,           # model
-    optim, maxn, of_fun, # optimization
+    soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params,  # model
+    optim, maxn, objective, of_fun, # optimization
     plot_file # output
   )
 end

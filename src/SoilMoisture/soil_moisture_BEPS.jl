@@ -1,25 +1,27 @@
 ## 速度太慢，不具有可行性
 """
 边界条件隐含在`soil`中：ψ0, Q0
+初始条件使用 soil.θ
 """
-function soil_moisture_BEPS(soil::Soil{FT}, θ0::AbstractVector{FT}, θ_surf::AbstractVector{FT}; method="ψ0") where {FT}
+function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::AbstractVector{FT}; method="ψ0") where {FT}
   (; ibeg, N) = soil
-  i0 = max(ibeg - 1, 1)
-  soil.θ[i0:end] .= θ0
 
   ntime = length(θ_surf)
   nlayer = N - ibeg + 1
   res = zeros(ntime, nlayer)
 
   @inbounds for i = 1:ntime
-    r = soil_moisture_BEPS(soil, θ_surf[i]; method)
+    r = _soil_moisture_BEPS_step(soil, θ_surf[i]; method)
     res[i, :] .= r[ibeg:end]
   end
   res
 end
 
 
-function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::FT; method="ψ0") where {FT}
+"""
+BEPS单步求解内部函数
+"""
+function _soil_moisture_BEPS_step(soil::Soil{FT}, θ_surf::FT; method="ψ0") where {FT}
   (; ψ0, Q, ibeg, ψ) = soil
   kstep = soil.dt # 3600s
   ∑t = 0.0

@@ -132,10 +132,11 @@ SoilDiffEqs.jl/
 │   └── SM_uscrn/                       # USCRN 数据测试
 │
 ├── examples/                           # 示例代码
-│   ├── SM_uscrn/                       # USCRN 站点模拟
 │   ├── SM_China/                       # 中国站点模拟（YAML 配置驱动）
 │   │   ├── case_SM_China.jl            # 主运行脚本（简化版）
-│   │   ├── config.yaml                 # YAML 配置文件
+│   │   ├── case_SM_China.yaml          # YAML 配置文件
+│   │   ├── case_SM_uscrn.jl            # USCRN站点模拟示例
+│   │   ├── case_SM_uscrn.yaml          # USCRN配置文件
 │   │   └── images/                     # 输出图表目录
 │   ├── Tsoil_ex01_CUG/                 # 温度模拟示例
 │   ├── Tsoil_ex02_isusm/               # ISUSM 温度模拟示例
@@ -379,7 +380,7 @@ end
 | 函数                                   | 说明                                              |
 | -------------------------------------- | ------------------------------------------------- |
 | `InitSoil(config, data_obs)`           | 从配置初始化土壤对象，返回 `(soil, θ_surf, yobs)` |
-| `SM_simulate(config, data_obs, theta)` | 运行完整模拟，返回 `(ysim, yobs)`                 |
+| `SM_simulate(config, data_obs, theta; θ0=nothing)` | 运行完整模拟，返回 `(ysim, yobs)`。支持 `method_solve`: `"Bonan"`, `"ODE"`, `"BEPS"` |
 | `SM_goal(config, data_obs, theta)`     | 计算优化目标函数值（用于 SCE-UA）                 |
 
 **InitSoil 工作流程**：
@@ -451,18 +452,16 @@ sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6)
 
 ```julia
 using SoilDifferentialEquations, Ipaper, RTableTools
-import ModelParams: sceua
-using OrdinaryDiffEqTsit5
 include("../main_plot.jl")
 
 # 加载配置
-cfg_file = "examples/SM_China/config.yaml"
+cfg_file = "examples/SM_China/case_SM_China.yaml"
 config = load_config(cfg_file)
 
 # 加载并插值观测数据
 d = fread(joinpath(dirname(cfg_file), config.file))
-A_origin = d[:, 2:end] |> Matrix |> drop_missing
-data_obs = interp_data_depths(A_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
+data_origin = d[:, 2:end] |> Matrix |> drop_missing
+data_obs = interp_data_depths(data_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
 
 # 初始化土壤对象
 soil, θ_surf, yobs = InitSoil(config, data_obs)
@@ -471,44 +470,87 @@ soil, θ_surf, yobs = InitSoil(config, data_obs)
 if config.optim
     lower, upper = SM_paramBound(soil)
     theta0 = SM_param2theta(soil)
-    theta_opt, _, _ = sceua(theta -> SM_goal(config, data_obs, theta), theta0, lower, upper; maxn=config.maxn)
+    println("Optimizing (SCE-UA, $(config.objective), maxn=$(config.maxn))...")
+    @time theta_opt, feval, _ = sceua(theta -> SM_goal(config, data_obs, theta),
+        theta0, lower, upper; maxn=config.maxn)
+    
+    f = joinpath(dirname(cfg_file), "output/theta")
+    serialize(f, theta_opt)
     SM_UpdateParam!(soil, theta_opt)
+else
+    println("Initial loss: $(SM_goal(config, data_obs, SM_param2theta(soil)))")
 end
 
 # 模拟并绘图
-ysim, yobs = SM_simulate(config, data_obs, SM_param2theta(soil))
-plot_result(; ysim, yobs, dates=d[:, 1], depths=round.(Int, -soil.z[soil.inds_obs] .* 100), fout=config.plot_file)
+if !isempty(config.plot_file)
+    theta = SM_param2theta(soil)
+    ysim, yobs = SM_simulate(config, data_obs, theta)
+    depths = round.(Int, -soil.z[soil.inds_obs] .* 100)
+    fout = joinpath(dirname(cfg_file), config.plot_file)
+    plot_result(; ysim, yobs, dates=d[:, 1], depths, fout)
+end
 ```
 
-配置文件示例 (`config.yaml`):
+配置文件示例 (`case_SM_China.yaml`):
 ```yaml
+# SM_China 土壤水模拟配置文件
 data:
-  file: "theta/theta_647.csv"
-  col_time: 1
-  col_obs_start: 2
-  scale_factor: 0.01
-  zs_obs_orgin: [5, 10, 20, 50, 100]
-  zs_obs: [10, 20, 50, 100]      # 顶层10cm作为边界条件
-  z_bound_top: 10.0
+  file: "data/SM_J1193.csv"     # 数据文件路径（相对于配置文件）
+  col_time: 1                   # 时间列索引
+  col_obs_start: 2              # 观测数据起始列
+  scale_factor: 0.01            # 数据缩放因子
+
+  z_bound_top: 10               # 上边界层深度 [cm]
+  zs_obs_orgin: [10, 20, 30, 40, 50, 60, 80, 100]  # 原始观测深度
+  zs_obs: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] # 插值后深度
 
 model:
-  soil_type: 7
-  same_layer: false
-  method_retention: "van_Genuchten"
-  method_solve: "Bonan"          # 或 "ODE"
-  dt: 3600.0
-  zs_center: [0, -5, -15, -30, -60, -100, -150, -200]
+  soil_type: 7                             # 土壤类型
+  same_layer: false                        # 是否各层使用相同参数
+  method_retention: "van_Genuchten"        # 土壤持水曲线方法
+  method_solve: "Bonan"                    # 求解方法: "Bonan" | "ODE" | "BEPS"
+  dt: 3600.0                               # 时间步长（秒）
+  zs_center: [2.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 optimization:
-  enable: true
-  maxn: 100
-  objective: "NSE"               # 或 "KGE"
+  enable: true      # 是否启用优化
+  maxn: 10000       # 最大迭代次数
+  objective: "NSE"  # 目标函数: "NSE" | "KGE"
 
 output:
-  plot_file: "images/plot.png"
+  plot_file: "images/plot_final.png"  # 图表保存路径，留空则不绘图
 ```
 
-### 7.6 土壤质地分类（USDA）
+### 7.6 USCRN 站点模拟示例
+
+USCRN (U.S. Climate Reference Network) 数据模拟示例 (`case_SM_uscrn.jl`):
+
+```julia
+using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
+using LazyArtifacts
+include("../main_plot.jl")
+
+cfg_file = "examples/SM_China/case_SM_uscrn.yaml"
+config = load_config(cfg_file)
+
+# 加载 USCRN 数据（通过 artifact）
+site_index = 3
+vars_SM = Symbol.(["SOIL_MOISTURE_5", "SOIL_MOISTURE_10", ...])
+f_uscrn2024 = artifact"USCRN2024" * "/USCRN_hourly_2024_sp54_Apr-Jun.csv"
+df = fread(f_uscrn2024)
+sites = unique_sort(df.site)
+SITE = sites[site_index]
+d = df[df.site.==SITE, [:time; vars_SM]]
+
+# 数据准备和模拟流程与 case_SM_China.jl 相同
+data_origin = d[:, 2:end] |> Matrix |> drop_missing
+data_obs = interp_data_depths(data_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
+
+soil, θ_surf, yobs = InitSoil(config, data_obs)
+# ... 优化和绘图
+```
+
+### 7.7 土壤质地分类（USDA）
 
 使用 `USDA` 模块进行土壤质地分类：
 
