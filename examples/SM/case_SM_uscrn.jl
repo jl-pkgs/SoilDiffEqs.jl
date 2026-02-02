@@ -23,16 +23,15 @@ end
 
 # Main execution
 site_index = 3  # 站点索引
-
 d, SITE = load_uscrn_data(site_index)
+
 data_origin = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_origin .* scale_factor, zs_obs_orgin, zs_obs)
 
-output_dir = joinpath(dirname(cfg_file), "output")
+outdir = joinpath(dirname(cfg_file), "output")
+# Run simulation with SM_main (log file auto-named from config file)
 SM_main(config, data_obs, SITE, d.time; 
-  method_retention="van_Genuchten",
-  output_dir, plot_fun=plot_result)
+  method_retention="van_Genuchten", outdir, plot_fun=plot_result)
 
 SM_main(config, data_obs, SITE, d.time;
-  method_retention="Campbell",
-  output_dir, plot_fun=plot_result)
+  method_retention="Campbell", outdir, plot_fun=plot_result)

@@ -5,6 +5,8 @@ using Parameters, YAML
 @with_kw mutable struct Config
   ## data
   file::String = ""
+  fileConfig::String = ""
+
   col_time::Int = 1
   col_obs_start::Int = 2
 
@@ -21,7 +23,7 @@ using Parameters, YAML
   method_solve::String = "Bonan"
   dt::Float64 = 3600.0
   zs_center::Vector{Float64} = Float64[]
-  
+
   # 自定义土壤参数（可选，用于覆盖标准参数）
   soil_params::Union{Dict{String,Float64},Nothing} = nothing
 
@@ -33,10 +35,13 @@ using Parameters, YAML
 
   # output
   plot_file::String = ""
+
+  # internal
+  config_file::String = ""  # 配置文件路径（用于日志命名）
 end
 
-function load_config(cfg_file)
-  cfg = YAML.load_file(cfg_file)
+function load_config(fileConfig::String)
+  cfg = YAML.load_file(fileConfig)
   data_cfg = get(cfg, "data", Dict())
   model_cfg = get(cfg, "model", Dict())
   opt_cfg = get(cfg, "optimization", Dict())
@@ -57,7 +62,7 @@ function load_config(cfg_file)
   method_solve = get(model_cfg, "method_solve", "Bonan")
   dt = Float64(get(model_cfg, "dt", 3600.0))
   zs_center = Float64.(get(model_cfg, "zs_center", Float64[]))
-  
+
   # 自定义土壤参数
   soil_params = get(model_cfg, "soil_params", nothing)
   if soil_params !== nothing
@@ -74,10 +79,11 @@ function load_config(cfg_file)
   plot_file = cfg["output"]["plot_file"]
 
   Config(;
-    file, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
+    file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
     soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params,  # model
     optim, maxn, objective, of_fun, # optimization
-    plot_file # output
+    plot_file, # output
+    config_file=fileConfig  # internal
   )
 end
 

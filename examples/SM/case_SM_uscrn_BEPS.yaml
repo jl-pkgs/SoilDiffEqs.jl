@@ -30,7 +30,7 @@ model:
 
 optimization:
   enable: true
-  maxn: 2000                              # BEPS 收敛较快
+  maxn: 100                              # BEPS 收敛较快
   objective: "KGE"                         # BEPS 使用 KGE
 
 
