@@ -2,7 +2,7 @@
 using Parameters, YAML
 
 # z: 全部都采用cm
-@with_kw struct Config
+@with_kw mutable struct Config
   ## data
   file::String = ""
   col_time::Int = 1

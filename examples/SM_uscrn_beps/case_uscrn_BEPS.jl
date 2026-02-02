@@ -74,7 +74,7 @@ set_option!(; same_layer=true, method_retention="van_Genuchten")
 options
 
 begin
-  d = d[1:24*7, :] # smoke-test
+  d = d[1:24*15, :]
   ibeg = 3
   N_fake = 1
   i0 = max(ibeg - 1, 1) - N_fake
@@ -104,12 +104,15 @@ end
 @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
 SM_UpdateParam!(soil, theta)
 
-# Plot
-include("main_plot.jl")
+# Plot (使用统一的 main_plot.jl)
+include("../main_plot.jl")
 dates = d[:, :time]
 depths = -z[ibeg:end] .* 100  # 从 ibeg 开始的深度
-plot_result(; ysim, yobs, dates, depths, filename="plot_optimized.png")
+
+img_dir = joinpath(@__DIR__, "images")
+mkpath(img_dir)
+plot_result(; ysim, yobs, dates, depths, fout=joinpath(img_dir, "plot_optimized.png"))
 
 # 初始参数 plot
 ysim0 = model_sim(theta0)
-plot_result(; ysim=ysim0, yobs, dates, depths, filename="plot_initial.png")
+plot_result(; ysim=ysim0, yobs, dates, depths, fout=joinpath(img_dir, "plot_initial.png"))

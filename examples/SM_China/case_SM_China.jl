@@ -1,9 +1,7 @@
 using SoilDifferentialEquations, Ipaper, RTableTools
-import ModelParams: sceua
-using OrdinaryDiffEqTsit5
 include("../main_plot.jl")
 
-cfg_file = isempty(ARGS) ? joinpath(@__DIR__, "config.yaml") : ARGS[1]
+cfg_file = isempty(ARGS) ? joinpath(@__DIR__, "case_SM_China.yaml") : ARGS[1]
 config = load_config(cfg_file)
 
 (; file, scale_factor,
@@ -12,8 +10,8 @@ config = load_config(cfg_file)
 
 # Load data
 d = fread(joinpath(dirname(cfg_file), file))
-A_origin = d[:, 2:end] |> Matrix |> drop_missing
-data_obs = interp_data_depths(A_origin .* scale_factor, zs_obs_orgin, zs_obs)
+data_origin = d[:, 2:end] |> Matrix |> drop_missing
+data_obs = interp_data_depths(data_origin .* scale_factor, zs_obs_orgin, zs_obs)
 
 soil, θ_surf, yobs = InitSoil(config, data_obs) # θ_surf: boundary layer
 

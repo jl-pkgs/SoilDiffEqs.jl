@@ -1,7 +1,7 @@
 # SM_China 土壤水模拟配置文件
 
 data:
-  file: "SM_J1193.csv" # 数据文件路径（相对于此配置文件）
+  file: "data/SM_J1193.csv" # 数据文件路径（相对于此配置文件）
   col_time: 1          # 时间列索引（1-based）
   col_obs_start: 2     # 观测数据起始列（1-based），时间列之后
   scale_factor: 0.01   # 数据缩放因子

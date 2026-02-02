@@ -22,6 +22,9 @@ plot_result(; ysim, yobs, dates, depths, fout=nothing) = begin
   p = plot(plots..., size=(1400, 800))
   
   if fout !== nothing
+    indir = dirname(fout)
+    mkpath(indir)
+    
     savefig(p, fout)
     println("Plot saved: $fout")
   end
