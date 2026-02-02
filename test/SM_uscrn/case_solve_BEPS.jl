@@ -6,7 +6,7 @@ function model_sim(theta)
   (; θ_surf, θ0) = options
   soil = init_soil(; θ0, soil_type=8)
   SM_UpdateParam!(soil, theta) # update param
-  ysim = soil_moisture_BEPS(soil, θ0, θ_surf)
+  ysim = soil_moisture_BEPS(soil, θ_surf)
   return ysim
 end
 
