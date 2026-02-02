@@ -24,6 +24,8 @@ Linux极简主义哲学的核心原则：
 
 谁修改谁负责，修改后的代码，一定要测试。
 
+改完代码不测试，是不负责任的流氓。
+
 
 ## julia独有的语法
 
@@ -291,8 +293,8 @@ end
 @with_kw struct Config
   # data: 数据相关配置
   file::String              # 数据文件路径
-  time_col::Int = 1         # 时间列索引
-  obs_start_col::Int = 2    # 观测数据起始列
+  col_time::Int = 1         # 时间列索引
+  col_obs_start::Int = 2    # 观测数据起始列
   scale_factor::Float64 = 1.0
   zs_obs_orgin::Vector{Float64}  # 原始观测深度 [cm]
   zs_obs::Vector{Float64}        # 插值后观测深度 [cm]
@@ -430,8 +432,8 @@ include("examples/SM_China/run_config.jl")
 ```yaml
 data:
   file: "theta/theta_647.csv"
-  time_col: 1
-  obs_start_col: 2
+  col_time: 1
+  col_obs_start: 2
   scale_factor: 0.01
   zs_obs_orgin: [5, 10, 20, 50, 100]
   zs_obs: [10, 20, 50, 100]      # 顶层10cm作为边界条件

@@ -5,11 +5,13 @@ using Parameters, YAML
 @with_kw struct Config
   ## data
   file::String = ""
-  time_col::Int = 1
-  obs_start_col::Int = 2
+  col_time::Int = 1
+  col_obs_start::Int = 2
+
   scale_factor::Float64 = 1.0
-  zs_obs_orgin::Vector{Float64} = Float64[]
-  zs_obs::Vector{Float64} = Float64[]
+
+  zs_obs_orgin::Vector{Float64} = Float64[]  # 原始观测深度
+  zs_obs::Vector{Float64} = Float64[]        # 插值后的观测深度
   z_bound_top::Float64 = 10.0                # top boundary layer depth [cm]
 
   ## model
@@ -38,8 +40,8 @@ function load_config(cfg_file)
 
   ## data
   file = get(data_cfg, "file", "")
-  time_col = Int(get(data_cfg, "time_col", 1))
-  obs_start_col = Int(get(data_cfg, "obs_start_col", 2))
+  col_time = Int(get(data_cfg, "col_time", 1))
+  col_obs_start = Int(get(data_cfg, "col_obs_start", 2))
   scale_factor = Float64(get(data_cfg, "scale_factor", 1.0))
   zs_obs_orgin = Float64.(data_cfg["zs_obs_orgin"])
   zs_obs = Float64.(get(data_cfg, "zs_obs", zs_obs_orgin))
@@ -63,7 +65,7 @@ function load_config(cfg_file)
   plot_file = cfg["output"]["plot_file"]
 
   Config(;
-    file, time_col, obs_start_col, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
+    file, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
     soil_type, same_layer, method_retention, method_solve, dt, zs_center,           # model
     optim, maxn, of_fun, # optimization
     plot_file # output

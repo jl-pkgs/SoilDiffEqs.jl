@@ -130,8 +130,8 @@ isfile(data_file) || (data_file = joinpath(dirname(cfg_file), cfg["data"]["file"
 
 d = fread(data_file)
 nsteps::Int = cfg["data"]["time_steps"]
-t::Vector = d[1:nsteps, cfg["data"]["time_col"]]
-yobs_full::Matrix{Float64} = Matrix{Float64}(d[1:nsteps, cfg["data"]["obs_start_col"]:end])
+t::Vector = d[1:nsteps, cfg["data"]["col_time"]]
+yobs_full::Matrix{Float64} = Matrix{Float64}(d[1:nsteps, cfg["data"]["col_obs_start"]:end])
 println("Data: $data_file ($nsteps steps)")
 
 # 3. 设置网格

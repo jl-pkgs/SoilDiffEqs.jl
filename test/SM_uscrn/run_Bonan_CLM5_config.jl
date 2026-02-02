@@ -38,8 +38,8 @@ if nsteps > 0
 end
 
 # columns: time, P_CALC, SM_5, SM_10, SM_20, SM_50, SM_100
-obs_start_col::Int = get(data_cfg, "obs_start_col", 3)
-θ_obs = obs[:, obs_start_col:end] |> Matrix
+col_obs_start::Int = get(data_cfg, "col_obs_start", 3)
+θ_obs = obs[:, col_obs_start:end] |> Matrix
 z_obs = Float64.(get(data_cfg, "depths_cm", [5, 10, 20, 50, 100])) ./ 100.0
 
 # 3) CLM5 soil layers (center depths, meters)
