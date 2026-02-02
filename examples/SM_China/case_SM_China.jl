@@ -1,79 +1,48 @@
 using SoilDifferentialEquations, Ipaper, RTableTools
-using Printf, Dates
 import ModelParams: sceua
-include("src/main_plot.jl")
+using OrdinaryDiffEqTsit5
+include("../main_plot.jl")
 
-# ========== Data Loading ==========
-d = fread(joinpath(@__DIR__, "SM_J1193.csv"))
-dates = d[:, 1]
-_A = d[:, 2:end] ./ 100 |> Matrix |> drop_missing
+cfg_file = isempty(ARGS) ? joinpath(@__DIR__, "config.yaml") : ARGS[1]
+config = load_config(cfg_file)
 
-zs_obs = [10.0, 20, 30, 40, 50, 60, 80, 100]
-zs_center = collect(10:10:100.)
-A = interp_data_depths(_A, zs_obs, zs_center)
+(; file, scale_factor,
+  zs_obs_orgin, zs_obs,
+  dt, maxn, objective, of_fun, plot_file) = config
 
-# ========== Model Functions ==========
-function model_sim(theta)
-  soil = init_soil(; θ0, soil_type=8)
-  SM_UpdateParam!(soil, theta)
-  method = options.method_solve
-  method == "Bonan" ? solve_SM_Bonan(soil, options.θ_surf) : 
-    solve_SM_ODE(soil, options.θ_surf; solver=Tsit5())
+# Load data
+d = fread(joinpath(dirname(cfg_file), file))
+A_origin = d[:, 2:end] |> Matrix |> drop_missing
+data_obs = interp_data_depths(A_origin .* scale_factor, zs_obs_orgin, zs_obs)
+
+soil, θ_surf, yobs = InitSoil(config, data_obs) # θ_surf: boundary layer
+
+# Run
+if config.optim
+  lower, upper = SM_paramBound(soil)
+  theta0 = SM_param2theta(soil)
+
+  println("Optimizing (SCE-UA, $objective, maxn=$maxn)...")
+  @time theta_opt, feval, _ = sceua(theta -> SM_goal(config, data_obs, theta),
+    theta0, lower, upper; maxn)
+
+  f = joinpath(dirname(cfg_file), "output/theta")
+  serialize(f, theta_opt)
+  SM_UpdateParam!(soil, theta_opt) # update soil with optimized param
+else
+  println("Initial loss: $(SM_goal(config, data_obs, SM_param2theta(soil)))")
 end
 
-function goal(theta)
-  yobs = options.yobs
-  ysim = model_sim(theta)
-  ncol = size(yobs, 2)
-  sum(i -> -of_NSE(view(yobs, :, i), view(ysim, :, i)), 1:ncol) / ncol
+# Plot
+if !isempty(plot_file)
+  dates = d[:, 1]
+  depths = round.(Int, -soil.z[soil.inds_obs] .* 100) # [m] -> [cm]
+
+  theta = SM_param2theta(soil)
+  ysim, yobs = SM_simulate(config, data_obs, theta)
+
+  fout = joinpath(dirname(cfg_file), plot_file)
+  plot_result(; ysim, yobs, dates, depths, fout)
 end
 
-
-# ========== Init Soil ==========
-function init_soil(; θ0=0.3, dt=3600.0, soil_type=7)
-  Δz = [5.0; repeat([10], 10)] ./ 100
-  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
-  N = length(Δz)
-  (; method_retention, same_layer, ibeg) = options
-  
-  θ = fill(0.2, N)
-  θ[2:end] .= θ0
-  θ[1] = θ0[1]
-  
-  par = get_soilpar(soil_type; method_retention)
-  param = SoilParam(N, par; use_m=false, method_retention, same_layer)
-  soil = Soil{Float64}(; N, ibeg, dt, z, z₊ₕ, Δz, Δz₊ₕ, θ, method_retention, param)
-  cal_ψ!(soil)
-  cal_K!(soil)
-  soil
-end
-
-# ========== Main ==========
-# 配置：10cm作为边界层，从20cm开始模拟
-z_bound_top = 10.0
-ibeg = 3  # 模型第3层对应20cm（与A的第2列对齐）
-
-θ_surf = A[:, 1]        # 第1列（10cm）作为边界层输入
-θ0 = A[1, :]
-yobs = A[:, 2:end]      # 从第2列开始（20-100cm）对应模型的活跃层
-
-set_option!(; method_retention="van_Genuchten", yobs, θ_surf, ibeg, same_layer=false)
-
-soil = init_soil(; θ0, soil_type=7)
-lower, upper = SM_paramBound(soil)
-theta0 = SM_param2theta(soil)
-
-println("Initial NSE: $(-goal(theta0))")
-ysim0 = model_sim(theta0)
-plot_result(; ysim=ysim0, yobs, dates, depths=zs_center[2:end], fout=joinpath(@__DIR__, "plot_initial.png"))
-
-# Optimize
-@time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
-println("Optimized. feval=$feval")
-
-serialize(joinpath(@__DIR__, "theta"), theta)
-theta = deserialize(joinpath(@__DIR__, "theta"))
-
-SM_UpdateParam!(soil, theta)
-ysim_opt = model_sim(theta)
-plot_result(; ysim=ysim_opt, yobs, dates, depths=zs_center[2:end], fout=joinpath(@__DIR__, "plot_optimized.png"))
+# Iteration =  12, nEvals = 10739, Best Cost = -0.80769

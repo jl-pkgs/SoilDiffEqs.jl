@@ -78,10 +78,12 @@ SoilDiffEqs.jl/
 │   ├── GlobalOptions.jl                # 全局选项配置
 │   ├── Soil.jl                         # 核心 Soil 数据结构
 │   ├── SoilParam.jl                    # 土壤参数定义
-│   ├── Config.jl                       # 配置管理，支持 YAML 配置文件（新增）
-│   ├── soil_texture.jl                 # USDA 土壤质地分类
+│   ├── Config.jl                       # 配置管理，支持 YAML 配置文件
+│   ├── Config_Run.jl                   # 基于配置的运行接口（InitSoil, SM_simulate 等）
+│   ├── soil_texture.jl                 # USDA 土壤质地分类（枚举类型、中英文支持）
 │   ├── tridiagonal_solver.jl           # 三对角矩阵求解器
 │   ├── solver.jl                       # 自定义 ODE solver (实验性)
+│   ├── ultilize.jl                     # 工具函数（深度插值、索引查找）
 │   ├── case_Bonan2019.jl               # Bonan 2019 测试案例
 │   ├── SPAC.jl                         # 陆面过程综合模拟器
 │   │
@@ -131,13 +133,14 @@ SoilDiffEqs.jl/
 │
 ├── examples/                           # 示例代码
 │   ├── SM_uscrn/                       # USCRN 站点模拟
-│   ├── SM_China/                       # 中国站点模拟（已重构，支持 YAML 配置）
-│   │   ├── run_config.jl               # 基于配置的主运行脚本
+│   ├── SM_China/                       # 中国站点模拟（YAML 配置驱动）
+│   │   ├── case_SM_China.jl            # 主运行脚本（简化版）
 │   │   ├── config.yaml                 # YAML 配置文件
-│   │   ├── src/main_plot.jl            # 绘图功能
-│   │   └── src/main_config.jl          # 配置辅助函数
+│   │   └── images/                     # 输出图表目录
 │   ├── Tsoil_ex01_CUG/                 # 温度模拟示例
-│   └── common/SoilConfig.jl            # 配置工具
+│   ├── Tsoil_ex02_isusm/               # ISUSM 温度模拟示例
+│   ├── main_plot.jl                    # 通用绘图功能
+│   └── common/SoilConfig.jl            # 配置工具（旧版）
 │
 └── docs/                               # 文档
     ├── 模型手册.md                      # 详细使用手册
@@ -312,13 +315,14 @@ end
   optim::Bool = false
   maxn::Int = 100
   objective::String = "NSE"   # 目标函数: "NSE" 或 "KGE"
+  of_fun::Function = of_NSE   # 目标函数实现（根据 objective 自动设置）
 
   # output: 输出配置
   plot_file::String = ""
 end
 ```
 
-使用 `load_config(cfg_file)` 从 YAML 加载配置。
+使用 `load_config(cfg_file)` 从 YAML 加载配置。配置文件中 `optimization.enable` 映射到 `optim` 字段，`optimization.objective` 决定 `of_fun` 的值（NSE→`of_NSE`，KGE→`of_KGE`）。
 
 ### 5.3 网格系统 (交错网格)
 
@@ -367,6 +371,31 @@ end
 | ---------------------- | ----------------- | -------------- |
 | `soil_temperature!`    | Tsurf (Dirichlet) | 已知地表温度   |
 | `soil_temperature_F0!` | F0 (Neumann)      | 已知地表热通量 |
+
+### 6.3 基于配置的高阶 API（新增）
+
+位于 `src/Config_Run.jl`，简化批量模拟 workflow：
+
+| 函数                                   | 说明                                              |
+| -------------------------------------- | ------------------------------------------------- |
+| `InitSoil(config, data_obs)`           | 从配置初始化土壤对象，返回 `(soil, θ_surf, yobs)` |
+| `SM_simulate(config, data_obs, theta)` | 运行完整模拟，返回 `(ysim, yobs)`                 |
+| `SM_goal(config, data_obs, theta)`     | 计算优化目标函数值（用于 SCE-UA）                 |
+
+**InitSoil 工作流程**：
+1. 从 `zs_center` 计算网格结构 (`Δz`, `z`, `z₊ₕ`)
+2. 根据 `z_bound_top` 确定模拟起始层 (`ibeg`)
+3. 提取边界层数据 (`θ_surf`) 和观测数据 (`yobs`)
+4. 根据 `soil_type` 获取土壤参数
+5. 创建并初始化 `Soil` 对象
+
+### 6.4 工具函数
+
+位于 `src/ultilize.jl`：
+
+| 函数                             | 说明                   |
+| -------------------------------- | ---------------------- |
+| `interp_data_depths(A, z, zout)` | 按深度插值观测数据矩阵 |
 
 ---
 
@@ -418,14 +447,37 @@ prob = ODEProblem(RichardsEquation, u0, tspan, soil)
 sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6)
 ```
 
-### 7.5 使用 YAML 配置运行（新增）
+### 7.5 使用 YAML 配置运行
 
 ```julia
-# 加载配置
-config = load_config("examples/SM_China/config.yaml")
+using SoilDifferentialEquations, Ipaper, RTableTools
+import ModelParams: sceua
+using OrdinaryDiffEqTsit5
+include("../main_plot.jl")
 
-# 运行完整模拟（包含数据加载、模拟、优化、绘图）
-include("examples/SM_China/run_config.jl")
+# 加载配置
+cfg_file = "examples/SM_China/config.yaml"
+config = load_config(cfg_file)
+
+# 加载并插值观测数据
+d = fread(joinpath(dirname(cfg_file), config.file))
+A_origin = d[:, 2:end] |> Matrix |> drop_missing
+data_obs = interp_data_depths(A_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
+
+# 初始化土壤对象
+soil, θ_surf, yobs = InitSoil(config, data_obs)
+
+# 运行优化（如果启用）
+if config.optim
+    lower, upper = SM_paramBound(soil)
+    theta0 = SM_param2theta(soil)
+    theta_opt, _, _ = sceua(theta -> SM_goal(config, data_obs, theta), theta0, lower, upper; maxn=config.maxn)
+    SM_UpdateParam!(soil, theta_opt)
+end
+
+# 模拟并绘图
+ysim, yobs = SM_simulate(config, data_obs, SM_param2theta(soil))
+plot_result(; ysim, yobs, dates=d[:, 1], depths=round.(Int, -soil.z[soil.inds_obs] .* 100), fout=config.plot_file)
 ```
 
 配置文件示例 (`config.yaml`):
@@ -454,6 +506,31 @@ optimization:
 
 output:
   plot_file: "images/plot.png"
+```
+
+### 7.6 土壤质地分类（USDA）
+
+使用 `USDA` 模块进行土壤质地分类：
+
+```julia
+using SoilDifferentialEquations.USDA
+
+# 通过砂粒、粉粒含量判断质地类型
+texture = soil_texture(60.0, 20.0)  # → SANDY_LOAM (9)
+
+# 枚举类型常量
+# CLAY(1), SILTY_CLAY(2), SANDY_CLAY(3), CLAY_LOAM(4), SILTY_CLAY_LOAM(5),
+# SANDY_CLAY_LOAM(6), LOAM(7), SILTY_LOAM(8), SANDY_LOAM(9), SILT(10),
+# LOAMY_SAND(11), SAND(12)
+
+# 通过名称获取枚举（支持中英文）
+parse_soil_type(7)              # → LOAM
+parse_soil_type("LOAM")         # → LOAM
+parse_soil_type("壤土")          # → LOAM
+parse_soil_type(:SILTY_LOAM)    # → SILTY_LOAM
+
+# 通过ID获取枚举
+soil_type_from_id(7)  # → LOAM
 ```
 
 ---
