@@ -10,6 +10,7 @@ using OffsetArrays
 using StructArrays
 using ProgressMeter
 
+include("ultilize.jl")
 include("GlobalOptions.jl")
 @reexport using .GlobalOptions
 

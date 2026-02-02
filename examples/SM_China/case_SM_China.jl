@@ -1,23 +1,16 @@
 using SoilDifferentialEquations, Ipaper, RTableTools
 using Printf, Dates
 import ModelParams: sceua
-include("main_plot.jl")
+include("src/main_plot.jl")
 
 # ========== Data Loading ==========
 d = fread(joinpath(@__DIR__, "SM_J1193.csv"))
 dates = d[:, 1]
 _A = d[:, 2:end] ./ 100 |> Matrix |> drop_missing
 
-function interp_depth(x, A, xout)
-  ntime = size(A, 1)
-  yout = zeros(ntime, length(xout))
-  for i in 1:ntime
-    yout[i, :] .= approx(x, view(A, i, :), xout)
-  end
-  yout
-end
-
-A = interp_depth([10, 20, 30, 40, 50, 60, 80, 100], _A, 10:10:100.)
+zs_obs = [10, 20, 30, 40, 50, 60, 80, 100]
+zs_center = collect(10:10:100.)
+A = interp_depth(_A, zs_obs, zs_center)
 
 # ========== Model Functions ==========
 function model_sim(theta)
@@ -58,10 +51,8 @@ end
 
 # ========== Main ==========
 # 配置：10cm作为边界层，从20cm开始模拟
-surface_depth_cm = 10
-target_depths = collect(10:10:100.)
-surface_idx = findfirst(==(surface_depth_cm), target_depths)
-ibeg = surface_idx + 2  # 自动计算：从surface的下一层开始
+z_bound_top = 10
+ibeg = find_ibeg()
 
 θ_surf = A[:, surface_idx]
 θ0 = A[1, :]
@@ -75,7 +66,7 @@ theta0 = SM_param2theta(soil)
 
 println("Initial NSE: $(-goal(theta0))")
 ysim0 = model_sim(theta0)
-plot_result(; ysim=ysim0, yobs, dates, depths=target_depths, ibeg, filename=joinpath(@__DIR__, "plot_initial.png"))
+plot_result(; ysim=ysim0, yobs, dates, depths=zs_center, ibeg, filename=joinpath(@__DIR__, "plot_initial.png"))
 
 # Optimize
 @time theta, feval, exitflag = sceua(goal, theta0, lower, upper; maxn=10_000)
@@ -86,4 +77,4 @@ theta = deserialize(joinpath(@__DIR__, "theta"))
 
 SM_UpdateParam!(soil, theta)
 ysim_opt = model_sim(theta)
-plot_result(; ysim=ysim_opt, yobs, dates, depths=target_depths, ibeg, filename=joinpath(@__DIR__, "plot_optimized.png"))
+plot_result(; ysim=ysim_opt, yobs, dates, depths=z_center, ibeg, filename=joinpath(@__DIR__, "plot_optimized.png"))

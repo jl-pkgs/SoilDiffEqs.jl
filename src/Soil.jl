@@ -1,13 +1,11 @@
 export Soil
-
+using Statistics
 
 # @with_kw_noshow mutable struct SoilThermal{FT}
 # end
 
 # @with_kw_noshow mutable struct SoilHydraulic{FT,P<:AbstractSoilParam{FT}}
 # end
-
-
 
 @with_kw_noshow mutable struct Soil{FT,P<:AbstractSoilParam{FT}}
   N::Int = 10                        # layers of soil
@@ -212,20 +210,31 @@ function cal_Δz(z)
 end
 
 # "face to center"
-# function C2F(z::AbstractVector)
-#   N = length(z)
-#   z₊ₕ = zeros(N)
-#   d = zeros(N)
+function center_to_face(z::AbstractVector)
+  mean(z) > 0 && (z = -z) # 注意: 模型中向下为负
+  N = length(z)
+  z₊ₕ = zeros(N)
+  d = zeros(N)
 
-#   z₊ₕ[1] = z[1] * 2
-#   d[1] = z[1] * 2
+  z₊ₕ[1] = z[1] * 2
+  d[1] = z[1] * 2
 
-#   @inbounds for i = 2:N
-#     d[i] = 2(z[i] - z[i-1]) - d[i-1]
-#     z₊ₕ[i] = z₊ₕ[i-1] + d[i]
-#   end
-#   z₊ₕ
-# end
+  @inbounds for i = 2:N
+    d[i] = 2(z[i] - z[i-1]) - d[i-1]
+    z₊ₕ[i] = z₊ₕ[i-1] + d[i]
+  end
+  z₊ₕ
+end
+
+function face_to_thickness(z₊ₕ::AbstractVector)
+  N = length(z₊ₕ)
+  Δz = zeros(N)
+  Δz[1] = abs(z₊ₕ[1])
+  @inbounds for i = 2:N
+    Δz[i] = abs.(z₊ₕ[i] - z₊ₕ[i-1])
+  end
+  Δz
+end
 
 # "center to face"
 # function F2C(z₊ₕ::AbstractVector)
@@ -238,7 +247,7 @@ end
 #   z
 # end
 # export cal_Δz₊ₕ, C2F, F2C
-export cal_Δz
+export cal_Δz, center_to_face, face_to_thickness
 
 # Δz = [2, 4, 6, 10]
 # z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)

@@ -7,7 +7,7 @@ __pycache__
 *.pdf
 .vscode/*
 
-examples
+# examples
 # *.ipynb
 
 data
@@ -17,6 +17,7 @@ data
 *debug*
 *backup*
 deprecated
+temp
 
 *.log
 theta
