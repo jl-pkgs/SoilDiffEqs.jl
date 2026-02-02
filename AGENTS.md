@@ -333,7 +333,7 @@ end
 end
 ```
 
-使用 `load_config(cfg_file)` 从 YAML 加载配置。配置文件中 `optimization.enable` 映射到 `optim` 字段，`optimization.objective` 决定 `of_fun` 的值（NSE→`of_NSE`，KGE→`of_KGE`）。
+使用 `load_config(fileConfig)` 从 YAML 加载配置。配置文件中 `optimization.enable` 映射到 `optim` 字段，`optimization.objective` 决定 `of_fun` 的值（NSE→`of_NSE`，KGE→`of_KGE`）。
 
 ### 5.3 网格系统 (交错网格)
 
@@ -387,11 +387,11 @@ end
 
 位于 `src/Config_Run.jl`，简化批量模拟 workflow：
 
-| 函数                                   | 说明                                              |
-| -------------------------------------- | ------------------------------------------------- |
-| `InitSoil(config, data_obs)`           | 从配置初始化土壤对象，返回 `(soil, θ_surf, yobs)` |
+| 函数                                               | 说明                                                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `InitSoil(config, data_obs)`                       | 从配置初始化土壤对象，返回 `(soil, θ_surf, yobs)`                                    |
 | `SM_simulate(config, data_obs, theta; θ0=nothing)` | 运行完整模拟，返回 `(ysim, yobs)`。支持 `method_solve`: `"Bonan"`, `"ODE"`, `"BEPS"` |
-| `SM_goal(config, data_obs, theta)`     | 计算优化目标函数值（用于 SCE-UA）                 |
+| `SM_goal(config, data_obs, theta)`                 | 计算优化目标函数值（用于 SCE-UA）                                                    |
 
 **InitSoil 工作流程**：
 1. 从 `zs_center` 计算网格结构 (`Δz`, `z`, `z₊ₕ`)
@@ -465,11 +465,11 @@ using SoilDifferentialEquations, Ipaper, RTableTools
 include("../main_plot.jl")
 
 # 加载配置
-cfg_file = "examples/SM/case_SM_China.yaml"
-config = load_config(cfg_file)
+fileConfig = "examples/SM/case_SM_China.yaml"
+config = load_config(fileConfig)
 
 # 加载并插值观测数据
-d = fread(joinpath(dirname(cfg_file), config.file))
+d = fread(joinpath(dirname(fileConfig), config.file))
 data_origin = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
 
@@ -484,7 +484,7 @@ if config.optim
     @time theta_opt, feval, _ = sceua(theta -> SM_goal(config, data_obs, theta),
         theta0, lower, upper; maxn=config.maxn)
     
-    f = joinpath(dirname(cfg_file), "output/theta")
+    f = joinpath(dirname(fileConfig), "output/theta")
     serialize(f, theta_opt)
     SM_UpdateParam!(soil, theta_opt)
 else
@@ -496,7 +496,7 @@ if !isempty(config.plot_file)
     theta = SM_param2theta(soil)
     ysim, yobs = SM_simulate(config, data_obs, theta)
     depths = round.(Int, -soil.z[soil.inds_obs] .* 100)
-    fout = joinpath(dirname(cfg_file), config.plot_file)
+    fout = joinpath(dirname(fileConfig), config.plot_file)
     plot_result(; ysim, yobs, dates=d[:, 1], depths, fout)
 end
 ```
@@ -540,8 +540,8 @@ using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
 using LazyArtifacts
 include("../main_plot.jl")
 
-cfg_file = "examples/SM/case_SM_uscrn.yaml"
-config = load_config(cfg_file)
+fileConfig = "examples/SM/case_SM_uscrn.yaml"
+config = load_config(fileConfig)
 
 # 加载 USCRN 数据（通过 artifact）
 site_index = 3

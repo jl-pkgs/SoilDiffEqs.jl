@@ -2,8 +2,8 @@ using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
 using LazyArtifacts
 include("../main_plot.jl")
 
-cfg_file = isempty(ARGS) ? joinpath(@__DIR__, "case_SM_uscrn_BEPS.yaml") : ARGS[1]
-config = load_config(cfg_file)
+fileConfig = isempty(ARGS) ? joinpath(@__DIR__, "case_SM_BEPS_uscrn.yaml") : ARGS[1]
+config = load_config(fileConfig)
 
 (; zs_obs_orgin, zs_obs, scale_factor) = config
 

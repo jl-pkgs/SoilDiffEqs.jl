@@ -30,4 +30,4 @@ optimization:
 
 output:
   # 图表保存路径，留空则不绘图
-  plot_file: "images/plot_final.png"
+  plot_file: "plot_final.png"

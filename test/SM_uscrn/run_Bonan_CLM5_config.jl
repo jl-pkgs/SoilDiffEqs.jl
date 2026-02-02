@@ -12,9 +12,9 @@ Usage:
 """
 
 # 1) Load config
-cfg_file::String = isempty(ARGS) ? joinpath(@__DIR__, "config_Bonan_CLM5.yaml") : ARGS[1]
-cfg::Dict{String, Any} = YAML.load_file(cfg_file)
-println("Config: $cfg_file")
+fileConfig::String = isempty(ARGS) ? joinpath(@__DIR__, "config_Bonan_CLM5.yaml") : ARGS[1]
+cfg::Dict{String, Any} = YAML.load_file(fileConfig)
+println("Config: $fileConfig")
 
 data_cfg = get(cfg, "data", Dict{String, Any}())
 model_cfg = get(cfg, "model", Dict{String, Any}())
@@ -28,7 +28,7 @@ opt_cfg = get(cfg, "optimization", Dict{String, Any}())
 # 2) Load observation data
 file::String = data_cfg["file"]
 if !isfile(file)
-  file = joinpath(dirname(cfg_file), file)
+  file = joinpath(dirname(fileConfig), file)
 end
 obs = fread(file)
 

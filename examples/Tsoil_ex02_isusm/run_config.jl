@@ -120,13 +120,13 @@ end
 # =============================================================================
 
 # 1. 加载配置
-cfg_file::String = isempty(ARGS) ? joinpath(@__DIR__, "config.yaml") : ARGS[1]
-cfg::Dict{String, Any} = YAML.load_file(cfg_file)
-println("Config: $cfg_file")
+fileConfig::String = isempty(ARGS) ? joinpath(@__DIR__, "config.yaml") : ARGS[1]
+cfg::Dict{String, Any} = YAML.load_file(fileConfig)
+println("Config: $fileConfig")
 
 # 2. 加载数据
 data_file::String = cfg["data"]["file"]
-isfile(data_file) || (data_file = joinpath(dirname(cfg_file), cfg["data"]["file"]))
+isfile(data_file) || (data_file = joinpath(dirname(fileConfig), cfg["data"]["file"]))
 
 d = fread(data_file)
 nsteps::Int = cfg["data"]["time_steps"]
