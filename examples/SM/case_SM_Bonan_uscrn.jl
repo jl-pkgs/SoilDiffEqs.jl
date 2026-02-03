@@ -1,11 +1,9 @@
-using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
+using SoilDifferentialEquations, Ipaper, RTableTools, Dates
 using LazyArtifacts
 include("../main_plot.jl")
 
 fileConfig = isempty(ARGS) ? joinpath(@__DIR__, "case_SM_Bonan_uscrn.yaml") : ARGS[1]
 config = load_config(fileConfig)
-
-(; zs_obs_orgin, zs_obs, scale_factor) = config
 
 # Load USCRN data from artifact
 function load_uscrn_data(site_index::Int)
@@ -22,16 +20,14 @@ function load_uscrn_data(site_index::Int)
 end
 
 # Main execution
+(; zs_obs_orgin, zs_obs, scale_factor) = config
+
 site_index = 3  # 站点索引
 d, SITE = load_uscrn_data(site_index)
-
 data_origin = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_origin .* scale_factor, zs_obs_orgin, zs_obs)
 
-outdir = joinpath(dirname(fileConfig), "output")
-# Run simulation with SM_main (log file auto-named from config file)
-SM_main(config, data_obs, SITE, d.time; 
-  method_retention="van_Genuchten", outdir, plot_fun=plot_result)
 
-SM_main(config, data_obs, SITE, d.time;
-  method_retention="Campbell", outdir, plot_fun=plot_result)
+plot_fun = plot_result
+SM_main(config, data_obs, SITE, d.time; plot_fun, method_retention="van_Genuchten")
+SM_main(config, data_obs, SITE, d.time; plot_fun, method_retention="Campbell")

@@ -1,3 +1,7 @@
+using Serialization: serialize
+export InitSoil, SM_simulate, SM_goal, SM_main
+
+
 function InitSoil(config::Config, data_obs::AbstractMatrix{T}) where {T<:Real}
   (; zs_obs, z_bound_top,
     zs_center, dt,
@@ -74,24 +78,24 @@ end
 
 
 
-function log(io, msg)
-  println(msg)
-  if !isnothing(io)
-    println(io, msg)
-    flush(io)
-  end
+function guess_outdir(config::Config, outdir=nothing)
+  isnothing(outdir) ? joinpath(dirname(config.file), "outdir") : outdir
 end
 
 function open_log(config::Config, log_file=nothing)
-  (; fileConfig) = config
-  isnothing(log_file) && (log_file = replace(fileConfig, r"\.yaml$" => ".log"))
+  isnothing(log_file) && (log_file = replace(config.fileConfig, r"\.yaml$" => ".log"))
   io = open(log_file, "a")
   return io
 end
 
+
 function SM_main(config::Config, data_obs::AbstractMatrix{T}, site_name::AbstractString, dates::AbstractVector;
-  method_retention=nothing, outdir="", log_file=nothing,
+  method_retention=nothing,
+  outdir=nothing, log_file=nothing,
   plot_fun=nothing, plot_initial=false, plot_kw...) where {T<:Real}
+
+  outdir = guess_outdir(config, outdir)
+  io = open_log(config, log_file)
 
   !isempty(outdir) && mkpath(outdir)
   !isnothing(method_retention) && (config.method_retention = method_retention)
@@ -103,22 +107,20 @@ function SM_main(config::Config, data_obs::AbstractMatrix{T}, site_name::Abstrac
   lower, upper = SM_paramBound(soil)
   theta0 = SM_param2theta(soil)
 
-  loss0 = round(SM_goal(config, data_obs, theta0), digits=4)
-
-  io = open_log(config, log_file)
+  loss0 = SM_goal(config, data_obs, theta0) |> x -> round(x, digits=4)
   log(io, "[$site_name] $method_retention/$(config.method_solve) $objective maxn=$maxn init=$loss0")
 
   t0 = time()
   theta_opt, feval, _ = sceua(theta -> SM_goal(config, data_obs, theta), theta0, lower, upper; maxn)
   log(io, "done $(round(time()-t0, digits=1))s feval=$feval")
 
-  Serialization.serialize(joinpath(outdir, "theta_$(site_name)_$(method_retention)"), theta_opt)
+  serialize("$outdir/theta_$(site_name)_$(method_retention)", theta_opt)
   SM_UpdateParam!(soil, theta_opt)
 
   if !isempty(plot_file) && !isnothing(plot_fun)
     depths = round.(Int, -soil.z[soil.inds_obs] .* 100)
 
-    fout = joinpath(outdir, "$(method_retention)_$(plot_file)")
+    fout = "$outdir/$(method_retention)_$(plot_file)"
     ysim, yobs = SM_simulate(config, data_obs, SM_param2theta(soil))
     plot_fun(; ysim, yobs, dates, depths, fout, plot_kw...)
 
@@ -126,18 +128,24 @@ function SM_main(config::Config, data_obs::AbstractMatrix{T}, site_name::Abstrac
       base, ext = splitext(plot_file)
       initial_plot_file = "$(base)_initial$(ext)"
 
-      fout = joinpath(outdir, "$(method_retention)_$(initial_plot_file)")
+      fout = "$outdir/$(method_retention)_$(initial_plot_file)"
       ysim0, _ = SM_simulate(config, data_obs, theta0)
       plot_fun(; ysim=ysim0, yobs, dates, depths, fout, plot_kw...)
     end
   end
 
   best_cost = SM_goal(config, data_obs, SM_param2theta(soil))
-
   log(io, "best $objective=$(round(-best_cost, digits=6))")
   !isnothing(io) && close(io)
+
   return soil, theta_opt, best_cost
 end
 
 
-export InitSoil, SM_simulate, SM_goal, SM_main
+function log(io, msg)
+  println(msg)
+  if !isnothing(io)
+    println(io, msg)
+    flush(io)
+  end
+end

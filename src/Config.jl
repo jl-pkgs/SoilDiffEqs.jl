@@ -48,6 +48,8 @@ function load_config(fileConfig::String)
 
   ## data
   file = get(data_cfg, "file", "")
+  !isabspath(file) && (file = joinpath(dirname(fileConfig), file)) # make sure: abspath
+
   col_time = Int(get(data_cfg, "col_time", 1))
   col_obs_start = Int(get(data_cfg, "col_obs_start", 2))
   scale_factor = Float64(get(data_cfg, "scale_factor", 1.0))

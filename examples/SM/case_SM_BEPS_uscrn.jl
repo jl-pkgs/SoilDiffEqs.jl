@@ -1,5 +1,4 @@
-using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
-using LazyArtifacts
+using SoilDifferentialEquations, Ipaper, RTableTools, Dates, LazyArtifacts
 include("../main_plot.jl")
 
 fileConfig = isempty(ARGS) ? joinpath(@__DIR__, "case_SM_BEPS_uscrn.yaml") : ARGS[1]
@@ -28,9 +27,7 @@ d = d[1:24*15, :]  # Limit to 15 days for faster optimization
 # Prepare observation data
 data_org = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_org .* scale_factor, zs_obs_orgin, zs_obs)
-
 outdir = joinpath(@__DIR__, "output")
 
-# Run simulation with SM_main (BEPS solver is specified in config, log file auto-named)
 SM_main(config, data_obs, SITE, d.time;
   outdir, plot_fun=plot_result, plot_initial=true)
