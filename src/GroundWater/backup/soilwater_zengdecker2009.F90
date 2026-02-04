@@ -168,7 +168,7 @@ subroutine soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
 
         smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
         watsat            =>    soilstate_inst%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-        hksat             =>    soilstate_inst%hksat_col           , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
+        hKsat             =>    soilstate_inst%hKsat_col           , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
         bsw               =>    soilstate_inst%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
         sucsat            =>    soilstate_inst%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
         eff_porosity      =>    soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
@@ -307,7 +307,7 @@ subroutine soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
                   (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
           endif
           s1 = min(1._r8, s1)
-          s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
+          s2 = hKsat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
 
           ! replace fracice with impedance factor, as in zhao 97,99
           if (origflag == 1) then
@@ -320,7 +320,7 @@ subroutine soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
                 (1._r8/(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
 
           !compute un-restricted hydraulic conductivity
-          !call soil_water_retention_curve%soil_hk(hksat(c,j), imped(c,j), s1, bsw(c,j), hktmp, dhkds)
+          !call soil_water_retention_curve%soil_hk(hKsat(c,j), imped(c,j), s1, bsw(c,j), hktmp, dhkds)
           !if(hktmp/=hk(c,j))write(10,*)'diff',hktmp,hk(c,j)
           !    call endrun('bad in hk')
           !endif    
@@ -518,12 +518,12 @@ subroutine soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
           s1 = min(1._r8, s_node)
 
           !scs: this is the expression for unsaturated hk
-          ka = imped(c,jwt(c)+1)*hksat(c,jwt(c)+1) &
+          ka = imped(c,jwt(c)+1)*hKsat(c,jwt(c)+1) &
                 *s1**(2._r8*bsw(c,jwt(c)+1)+3._r8)
 
           !compute unsaturated hk, this shall be tested later, because it
           !is not bit for bit
-          !call soil_water_retention_curve%soil_hk(hksat(c,jwt(c)+1), s1, bsw(c,jwt(c)+1), ka)
+          !call soil_water_retention_curve%soil_hk(hKsat(c,jwt(c)+1), s1, bsw(c,jwt(c)+1), ka)
           !apply ice impedance
           !ka = imped(c,jwt(c)+1) * ka 
           ! Recharge rate qcharge to groundwater (positive to aquifer)

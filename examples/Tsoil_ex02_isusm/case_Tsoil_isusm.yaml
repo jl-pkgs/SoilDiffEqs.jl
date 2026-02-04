@@ -1,0 +1,33 @@
+# Tsoil_isusm 土壤温度模拟配置文件
+# 数据: Iowa State University Soil Moisture Network (ISUSM) 2022年7月
+
+model:
+  model_type: "Tsoil"
+  soil_type: 7                # LOAM
+  dt: 3600.0
+  
+  # 均匀网格配置
+  # dz=5cm, nlayer=27层覆盖 135cm
+  # zs_center = 2.5:5:132.5 cm
+  zs_center: [2.5, 7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5, 52.5, 57.5, 62.5, 67.5, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5, 102.5, 107.5, 112.5, 117.5, 122.5, 127.5, 132.5]
+  
+  method_solve: "Bonan"        # 使用 Bonan 求解器（ODE 较慢）
+
+data:
+  file: "../../data/TS_isusm_202207.csv"
+  col_time: 1
+  col_obs_start: 4             # 跳过 time, Ta, prcp，从 sv_t04 开始
+  scale_factor: 1.0
+  
+  # 原始观测深度 (inch -> cm)
+  # 4"=10.16cm, 12"=30.48cm, 14"=35.56cm, ..., 52"=132.08cm
+  # Tsurf 使用第2个观测层 12inch=30.48cm，最接近模拟层第7层 (32.5cm)
+  z_bound_top: 32.5            # 32.5cm 处，对应 12inch 观测层
+
+optimization:
+  enable: true
+  maxn: 10000
+  objective: "NSE"
+
+output:
+  plot_file: "plot_Tsoil_isusm.png"

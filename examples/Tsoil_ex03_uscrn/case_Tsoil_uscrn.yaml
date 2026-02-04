@@ -1,0 +1,39 @@
+# Tsoil_USCRN 土壤温度模拟配置文件
+# 数据: US Climate Reference Network (USCRN) 2024年4-6月
+
+model:
+  model_type: "Tsoil"
+  soil_type: 7
+  dt: 3600.0
+  
+  # USCRN 标准层: SUR_TEMP(地表), 5cm, 10cm, 20cm, 50cm, 100cm
+  # 模拟层中心: 第1层虚拟(1.25cm), 5cm, 10cm, 20cm, 50cm, 100cm
+  zs_center: [1.25, 5, 10, 20, 50, 100]
+  
+  method_solve: "Bonan"
+
+# USCRN 数据源配置
+data:
+  artifact: "USCRN2024"
+  file: "USCRN_hourly_2024_sp54_Apr-Jun.csv"
+  # 使用 5cm 层作为 Tsurf (对应 SOIL_TEMP_5)
+  z_bound_top: 5
+  # 温度变量列名
+  vars_TS: ["SUR_TEMP", "SOIL_TEMP_5", "SOIL_TEMP_10", "SOIL_TEMP_20", "SOIL_TEMP_50", "SOIL_TEMP_100"]
+  col_time: 1                  # 时间列将由脚本处理
+  scale_factor: 1.0
+
+# 多站点配置
+sites:
+  # 可选: 指定站点索引列表，或 "all" 处理所有站点
+  indices: "all"
+  # 限制处理的站点数量 (用于测试，设为 null 处理所有)
+  max_sites: null
+
+optimization:
+  enable: true
+  maxn: 5000
+  objective: "NSE"
+
+output:
+  plot_file: "plot_Tsoil_uscrn.png"

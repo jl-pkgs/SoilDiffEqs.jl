@@ -145,7 +145,7 @@ struct RichardsParameters{FT, HCM, A, B}
     θ_r::A  # 或写作 theta_r
     
     "孔隙度/饱和含水量 (m³/m³)"
-    ν::A    # nu，等同于 theta_sat
+    ν::A    # nu，等同于 θ_sat
     
     "比储水量 (1/m)"
     S_s::A  # specific storage
@@ -201,7 +201,7 @@ model:
     
     parameters:  # 可选覆盖
       theta_r: 0.078
-      nu: 0.40          # 即 theta_sat
+      nu: 0.40          # 即 θ_sat
       vg_alpha: 0.036   # 1/cm
       vg_n: 1.56
       K_sat: 1.04       # cm/h

@@ -3,6 +3,9 @@ using Parameters, YAML
 
 # z: 全部都采用cm
 @with_kw mutable struct Config
+  ## 模型类型: "SM" | "Tsoil"
+  model_type::String = "SM"
+
   ## data
   file::String = ""
   fileConfig::String = ""
@@ -19,12 +22,12 @@ using Parameters, YAML
   ## model
   soil_type::Int = 7
   same_layer::Bool = false
-  method_retention::String = "van_Genuchten"
-  method_solve::String = "Bonan"
+  method_retention::String = "van_Genuchten"  # SM 特有
+  method_solve::String = "Bonan"              # SM/Tsoil 通用: "Bonan" | "ODE"
   dt::Float64 = 3600.0
   zs_center::Vector{Float64} = Float64[]
 
-  # 自定义土壤参数（可选，用于覆盖标准参数）
+  # 自定义土壤参数（可选，用于覆盖标准参数）- SM 特有
   soil_params::Union{Dict{String,Float64},Nothing} = nothing
 
   ## optimization
@@ -53,11 +56,23 @@ function load_config(fileConfig::String)
   col_time = Int(get(data_cfg, "col_time", 1))
   col_obs_start = Int(get(data_cfg, "col_obs_start", 2))
   scale_factor = Float64(get(data_cfg, "scale_factor", 1.0))
-  zs_obs_orgin = Float64.(data_cfg["zs_obs_orgin"])
-  zs_obs = Float64.(get(data_cfg, "zs_obs", zs_obs_orgin))
-  z_bound_top = Float64(data_cfg["z_bound_top"])
+  
+  # zs_obs_orgin 和 zs_obs 对 SM 是必需的，对 Tsoil 可选
+  model_type = get(model_cfg, "model_type", "SM")
+  if haskey(data_cfg, "zs_obs_orgin")
+    zs_obs_orgin = Float64.(data_cfg["zs_obs_orgin"])
+    zs_obs = Float64.(get(data_cfg, "zs_obs", zs_obs_orgin))
+  else
+    # Tsoil 模式：使用 zs_center 作为默认值
+    zs_center_temp = Float64.(get(model_cfg, "zs_center", Float64[]))
+    zs_obs_orgin = zs_center_temp
+    zs_obs = zs_center_temp
+  end
+  z_bound_top = Float64(get(data_cfg, "z_bound_top", 
+    haskey(model_cfg, "z_bound_top") ? model_cfg["z_bound_top"] : 10.0))
 
   ## model
+  # model_type 已在上面解析
   soil_type = Int(get(model_cfg, "soil_type", 7))
   same_layer = Bool(get(model_cfg, "same_layer", false))
   method_retention = get(model_cfg, "method_retention", "van_Genuchten")
@@ -81,6 +96,7 @@ function load_config(fileConfig::String)
   plot_file = cfg["output"]["plot_file"]
 
   Config(;
+    model_type,  # 模型类型
     file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
     soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params,  # model
     optim, maxn, objective, of_fun, # optimization

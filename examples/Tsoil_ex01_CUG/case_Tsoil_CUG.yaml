@@ -1,0 +1,28 @@
+# Tsoil_CUG 土壤温度模拟配置文件
+# 数据: 中国地质大学 (CUG) 2023年6月土壤温度观测
+
+model:
+  model_type: "Tsoil"         # 模型类型: 土壤温度模拟
+  soil_type: 7                # 土壤类型 (7=LOAM)
+  dt: 3600.0                  # 时间步长 (秒)
+  
+  # 模拟层中心深度 (cm)
+  # 对应原始数据: TS_0cm, TS_5cm, TS_10cm, TS_15cm, TS_20cm, TS_40cm, TS_80cm, TS_160cm, TS_320cm
+  zs_center: [0, 5, 10, 15, 20, 40, 80, 160, 320]
+  
+  method_solve: "Bonan"       # 求解方法: "Bonan" | "ODE"
+
+data:
+  file: "../../data/TS_CUG_202306.csv"  # 数据文件路径
+  col_time: 1                 # 时间列索引
+  col_obs_start: 2            # 观测数据起始列 (TS_0cm)
+  scale_factor: 1.0           # 数据缩放因子
+  z_bound_top: 5              # 上边界层深度 (cm)，使用第2层(5cm)作为 Tsurf
+
+optimization:
+  enable: true                # 启用参数优化
+  maxn: 5000                  # 最大迭代次数
+  objective: "NSE"            # 目标函数: "NSE" | "KGE"
+
+output:
+  plot_file: "plot_Tsoil_CUG.png"  # 输出图表路径
