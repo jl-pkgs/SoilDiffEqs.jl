@@ -71,6 +71,7 @@ function load_config(fileConfig::String)
     zs_obs_orgin = zs_center_temp
     zs_obs = zs_center_temp
   end
+
   z_bound_top = Float64(get(data_cfg, "z_bound_top",
     haskey(model_cfg, "z_bound_top") ? model_cfg["z_bound_top"] : 10.0))
 

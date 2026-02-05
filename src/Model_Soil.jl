@@ -107,20 +107,17 @@ function setup(config::Config, data_obs::AbstractMatrix{T}) where {T<:Real}
 end
 
 
-function Soil_main(config::Config, data_obs::AbstractMatrix{T}, site_name::AbstractString, dates::AbstractVector;
+function Soil_main(config::Config, data_obs::AbstractMatrix{T}, SITE::AbstractString, dates::AbstractVector;
   maxn::Int=1000,
   method_retention=nothing,
-  outdir=nothing, log_file=nothing,
-  plot_fun=nothing, plot_initial=false, plot_kw...) where {T<:Real}
+  outdir=nothing, plot_fun=nothing, plot_initial=false, plot_kw...) where {T<:Real}
 
   ## parameter
   outdir = guess_outdir(config, outdir)
-  io = open_log(config, log_file)
 
   !isempty(outdir) && mkpath(outdir)
   !isnothing(method_retention) && (config.method_retention = method_retention)
   method_retention = config.method_retention
-  (; objective, plot_file) = config
 
   ## state and forcing 
   soil, state, θ_top, yobs = setup(config, data_obs)
@@ -129,18 +126,13 @@ function Soil_main(config::Config, data_obs::AbstractMatrix{T}, site_name::Abstr
   lower, upper = SM_paramBound(soil)
   theta0 = SM_param2theta(soil)
 
-  loss0 = Soil_goal(config, theta0, state, θ_top, yobs) |> x -> round(x, digits=4)
-  log(io, "[$site_name] $method_retention/$(config.method_solve) $objective maxn=$maxn init=$loss0")
-
-  t0 = time()
   theta_opt, feval, _ = sceua(theta -> Soil_goal(config, theta, state, θ_top, yobs),
     theta0, lower, upper; maxn)
-  log(io, "done $(round(time()-t0, digits=1))s feval=$feval")
 
-  serialize("$outdir/theta_$(site_name)_$(method_retention)", theta_opt)
-  SM_UpdateParam!(soil, theta_opt)
+  serialize("$outdir/theta_$(SITE)_$(method_retention)", theta_opt)
 
   ## visualization
+  (; plot_file) = config
   if !isempty(plot_file) && !isnothing(plot_fun)
     depths = round.(Int, -soil.z[soil.inds_obs] .* 100)
 
@@ -158,9 +150,7 @@ function Soil_main(config::Config, data_obs::AbstractMatrix{T}, site_name::Abstr
     end
   end
 
+  SM_UpdateParam!(soil, theta_opt) # update soil params
   best_cost = Soil_goal(config, theta_opt, state, θ_top, yobs)
-  log(io, "best $objective=$(round(-best_cost, digits=6))")
-  !isnothing(io) && close(io)
-
   return soil, theta_opt, best_cost
 end
