@@ -91,24 +91,24 @@ end
 
 
 
-function ModSim_SM(soil, θ_surf; method="Bonan", kw...)
+function ModSim_SM(soil, θ_top; method="Bonan", kw...)
   if method == "Bonan"
-    ysim = solve_SM_Bonan(soil, θ_surf;)
+    ysim = solve_SM_Bonan(soil, θ_top;)
   elseif method == "ODE"
-    ysim = solve_SM_ODE(soil, θ_surf; kw...)
+    ysim = solve_SM_ODE(soil, θ_top; kw...)
   end
   ysim
 end
 
 
-function solve_SM_Bonan(soil::Soil{FT}, θ_surf::AbstractVector{FT}) where {FT<:Real}
+function solve_SM_Bonan(soil::Soil{FT}, θ_top::AbstractVector{FT}) where {FT<:Real}
   (; N, ibeg, inds_obs, sink) = soil
-  ntime = length(θ_surf)
+  ntime = length(θ_top)
   R = zeros(ntime, N - ibeg + 1)
-  R[1, :] .= soil.θ[ibeg:end]
+  R[1, :] .= soil.θ[ibeg:N]
 
   for i = 2:ntime
-    ψ0 = Init_ψ0(soil, θ_surf[i])
+    ψ0 = Init_ψ0(soil, θ_top[i])
     soil_moisture!(soil, sink, ψ0; debug=false)
 
     @inbounds for j in ibeg:N # copy θ
@@ -129,10 +129,10 @@ solver = Tsit5()
 solver = Rosenbrock23()
 solver = Rodas5(autodiff=false)  
 """
-function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=false)
+function solve_SM_ODE(soil, θ_top; solver, reltol=1e-3, abstol=1e-3, verbose=false)
   (; N, inds_obs, ibeg, dt) = soil
 
-  ntime = length(θ_surf)
+  ntime = length(θ_top)
   u0 = soil.θ[ibeg:N]
 
   _Equation(dθ, θ, p, t) = RichardsEquation_partial(dθ, θ, p, t)
@@ -143,7 +143,7 @@ function solve_SM_ODE(soil, θ_surf; solver, reltol=1e-3, abstol=1e-3, verbose=f
   R[1, :] .= soil.θ[ibeg:N]
 
   for i = 2:ntime
-    soil.θ0 = θ_surf[i]
+    soil.θ0 = θ_top[i]
     prob.u0 .= soil.θ[ibeg:N]
 
     sol = _solve(prob, solver; reltol, abstol, saveat=dt)

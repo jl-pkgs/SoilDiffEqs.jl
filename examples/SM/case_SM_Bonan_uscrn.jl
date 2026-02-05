@@ -29,5 +29,7 @@ data_obs = interp_data_depths(data_origin .* scale_factor, zs_obs_orgin, zs_obs)
 
 
 plot_fun = plot_result
-SM_main(config, data_obs, SITE, d.time; plot_fun, method_retention="van_Genuchten")
-SM_main(config, data_obs, SITE, d.time; plot_fun, method_retention="Campbell")
+maxn = 10000
+
+Soil_main(config, data_obs, SITE, d.time; maxn, plot_fun, method_retention="van_Genuchten")
+Soil_main(config, data_obs, SITE, d.time; maxn, plot_fun, method_retention="Campbell")

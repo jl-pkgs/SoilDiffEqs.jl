@@ -27,7 +27,7 @@ model:
 
 optimization:
   enable: true                             # 启用优化
-  maxn: 1000                              # 最大迭代次数
+  maxn: 10000                              # 最大迭代次数
   objective: "NSE"                         # 目标函数: "NSE" | "KGE"
 
 

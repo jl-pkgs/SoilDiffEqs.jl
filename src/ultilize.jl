@@ -31,22 +31,3 @@ function find_layer_indices(z_bound_top::T, zs_sim::V, zs_obs=nothing) where {T<
   itop = findfirst(==(z_bound_top), abs.(zs_obs))     # 观测层中上边界层索引
   return (; ibeg, itop)
 end
-
-
-function guess_outdir(config::Config, outdir=nothing)
-  isnothing(outdir) ? joinpath(dirname(config.file), "outdir") : outdir
-end
-
-function open_log(config::Config, log_file=nothing)
-  isnothing(log_file) && (log_file = replace(config.fileConfig, r"\.yaml$" => ".log"))
-  io = open(log_file, "a")
-  return io
-end
-
-function log(io, msg)
-  println(msg)
-  if !isnothing(io)
-    println(io, msg)
-    flush(io)
-  end
-end

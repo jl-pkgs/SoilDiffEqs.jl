@@ -12,7 +12,7 @@ function soil_moisture_BEPS(soil::Soil{FT}, θ_surf::AbstractVector{FT}; method=
 
   @inbounds for i = 1:ntime
     r = _soil_moisture_BEPS_step(soil, θ_surf[i]; method)
-    res[i, :] .= r[ibeg:end]
+    res[i, :] .= r[ibeg:N]
   end
   res
 end

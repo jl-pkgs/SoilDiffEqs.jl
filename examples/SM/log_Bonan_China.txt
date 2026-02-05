@@ -1,0 +1,42 @@
+(base) ➜  SoilDiffEqs.jl git:(master) ✗ julia --project examples/SM/case_SM_Bonan_China.jl
+Precompiling SoilDifferentialEquations finished.
+  2 dependencies successfully precompiled in 7 seconds. 201 already precompiled.
+[SM_J1193] van_Genuchten/Bonan NSE maxn=10000 init=0.1086
+Iteration =   0, nEvals = 555, Best Cost = 0.10859
+Iteration =   1, nEvals = 1313, Best Cost = 0.10859
+Iteration =   2, nEvals = 2274, Best Cost = 0.10859
+Iteration =   3, nEvals = 3273, Best Cost = 0.10859
+Iteration =   4, nEvals = 4218, Best Cost = 0.07393
+Iteration =   5, nEvals = 5139, Best Cost = 0.00961
+Iteration =   6, nEvals = 5970, Best Cost = -0.16511
+Iteration =   7, nEvals = 6759, Best Cost = -0.60743
+Iteration =   8, nEvals = 7543, Best Cost = -0.66486
+Iteration =   9, nEvals = 8370, Best Cost = -0.67766
+Iteration =  10, nEvals = 9217, Best Cost = -0.73870
+Iteration =  11, nEvals = 9983, Best Cost = -0.77693
+Iteration =  12, nEvals = 10739, Best Cost = -0.80769
+done 162.2s feval=-0.8076908094138207
+Plot saved: /mnt/z/GitHub/cug-hydro/SoilDiffEqs.jl/examples/SM/data/outdir/van_Genuchten_plot_final.png
+best NSE=0.807691
+
+
+[SM_J1193] Campbell/Bonan NSE maxn=10000 init=0.6019
+Iteration =   0, nEvals = 445, Best Cost = 0.44618
+Iteration =   1, nEvals = 1058, Best Cost = 0.44618
+Iteration =   2, nEvals = 1754, Best Cost = -0.34330
+Iteration =   3, nEvals = 2452, Best Cost = -0.59537
+Iteration =   4, nEvals = 3155, Best Cost = -0.63138
+Iteration =   5, nEvals = 3865, Best Cost = -0.73226
+Iteration =   6, nEvals = 4557, Best Cost = -0.75529
+Iteration =   7, nEvals = 5223, Best Cost = -0.79124
+Iteration =   8, nEvals = 5889, Best Cost = -0.79796
+Iteration =   9, nEvals = 6529, Best Cost = -0.80793
+Iteration =  10, nEvals = 7187, Best Cost = -0.81274
+Iteration =  11, nEvals = 7822, Best Cost = -0.81691
+Iteration =  12, nEvals = 8402, Best Cost = -0.82243
+Iteration =  13, nEvals = 8947, Best Cost = -0.83099
+Iteration =  14, nEvals = 9508, Best Cost = -0.84602
+Iteration =  15, nEvals = 10157, Best Cost = -0.85043
+done 97.6s feval=-0.850427468749983
+Plot saved: /mnt/z/GitHub/cug-hydro/SoilDiffEqs.jl/examples/SM/data/outdir/Campbell_plot_final.png
+best NSE=0.850427

@@ -29,5 +29,6 @@ data_org = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_org .* scale_factor, zs_obs_orgin, zs_obs)
 outdir = joinpath(@__DIR__, "output")
 
-SM_main(config, data_obs, SITE, d.time;
-  outdir, plot_fun=plot_result, plot_initial=true)
+
+Soil_main(config, data_obs, SITE, d.time;
+  maxn=10000, outdir, plot_fun=plot_result, plot_initial=true);

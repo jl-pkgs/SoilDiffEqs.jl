@@ -18,6 +18,7 @@ using Parameters, YAML
   zs_obs_orgin::Vector{Float64} = Float64[]  # 原始观测深度
   zs_obs::Vector{Float64} = Float64[]        # 插值后的观测深度
   z_bound_top::Float64 = 10.0                # top boundary layer depth [cm]
+  itop::Int = 1                              # [derived] index of top boundary 
 
   ## model
   soil_type::Int = 7
@@ -26,6 +27,7 @@ using Parameters, YAML
   method_solve::String = "Bonan"              # SM/Tsoil 通用: "Bonan" | "ODE"
   dt::Float64 = 3600.0
   zs_center::Vector{Float64} = Float64[]
+  grid::NamedTuple = (;)
 
   # 自定义土壤参数（可选，用于覆盖标准参数）- SM 特有
   soil_params::Union{Dict{String,Float64},Nothing} = nothing
@@ -43,6 +45,7 @@ using Parameters, YAML
   config_file::String = ""  # 配置文件路径（用于日志命名）
 end
 
+
 function load_config(fileConfig::String)
   cfg = YAML.load_file(fileConfig)
   data_cfg = get(cfg, "data", Dict())
@@ -56,7 +59,7 @@ function load_config(fileConfig::String)
   col_time = Int(get(data_cfg, "col_time", 1))
   col_obs_start = Int(get(data_cfg, "col_obs_start", 2))
   scale_factor = Float64(get(data_cfg, "scale_factor", 1.0))
-  
+
   # zs_obs_orgin 和 zs_obs 对 SM 是必需的，对 Tsoil 可选
   model_type = get(model_cfg, "model_type", "SM")
   if haskey(data_cfg, "zs_obs_orgin")
@@ -68,7 +71,7 @@ function load_config(fileConfig::String)
     zs_obs_orgin = zs_center_temp
     zs_obs = zs_center_temp
   end
-  z_bound_top = Float64(get(data_cfg, "z_bound_top", 
+  z_bound_top = Float64(get(data_cfg, "z_bound_top",
     haskey(model_cfg, "z_bound_top") ? model_cfg["z_bound_top"] : 10.0))
 
   ## model
@@ -79,6 +82,7 @@ function load_config(fileConfig::String)
   method_solve = get(model_cfg, "method_solve", "Bonan")
   dt = Float64(get(model_cfg, "dt", 3600.0))
   zs_center = Float64.(get(model_cfg, "zs_center", Float64[]))
+
 
   # 自定义土壤参数
   soil_params = get(model_cfg, "soil_params", nothing)
@@ -95,14 +99,44 @@ function load_config(fileConfig::String)
   # output
   plot_file = cfg["output"]["plot_file"]
 
+  ## grid info
+  z₊ₕ = center_to_face(zs_center)
+  Δz = face_to_thickness(z₊ₕ) ./ 100.0 # [cm] -> [m]
+  z, z₋ₕ, z₊ₕ, Δz₊ₕ = soil_depth_init(Δz)
+  N = length(Δz)
+
+  itop = findfirst(==(z_bound_top), abs.(zs_obs))        # index of obs top boundary layer  
+  ibeg = findfirst(==(z_bound_top), abs.(zs_center)) + 1 # index of soil modelling start
+  grid = (; z, z₊ₕ, Δz, Δz₊ₕ, N, ibeg, itop)
+
   Config(;
     model_type,  # 模型类型
-    file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, # data
-    soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params,  # model
+    file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, itop, # data
+    soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params, grid, # model
     optim, maxn, objective, of_fun, # optimization
     plot_file, # output
     config_file=fileConfig  # internal
   )
+end
+
+
+
+function guess_outdir(config::Config, outdir=nothing)
+  isnothing(outdir) ? joinpath(dirname(config.file), "outdir") : outdir
+end
+
+function open_log(config::Config, log_file=nothing)
+  isnothing(log_file) && (log_file = replace(config.fileConfig, r"\.yaml$" => ".log"))
+  io = open(log_file, "a")
+  return io
+end
+
+function log(io, msg)
+  println(msg)
+  if !isnothing(io)
+    println(io, msg)
+    flush(io)
+  end
 end
 
 
