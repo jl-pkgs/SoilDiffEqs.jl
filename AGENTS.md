@@ -1,5 +1,7 @@
 # SoilDiffEqs.jl Agent Guidelines
 
+> **最后更新**: 2026-02-05, commit: b53d0e0 
+
 SoilDiffEqs.jl 是一个用于求解土壤水热运动微分方程的 Julia 软件包，实现了 Richards 方程、土壤热传导方程以及地下水动态模拟。
 
 > **AGENTS.md**更新方法
@@ -60,7 +62,7 @@ SoilDiffEqs.jl/
 │   ├── Soil.jl                         # 核心 Soil 数据结构
 │   ├── SoilParam.jl                    # 土壤参数定义
 │   ├── Config.jl                       # 配置管理，支持 YAML 配置文件
-│   ├── Config_Run.jl                   # 基于配置的运行接口（InitSoil, SM_simulate 等）
+│   ├── Model_Soil.jl                   # 基于配置的运行接口（setup, Soil_predict, Soil_main 等）
 │   ├── soil_texture.jl                 # USDA 土壤质地分类（枚举类型、中英文支持）
 │   ├── tridiagonal_solver.jl           # 三对角矩阵求解器
 │   ├── solver.jl                       # 自定义 ODE solver (实验性)
@@ -114,17 +116,23 @@ SoilDiffEqs.jl/
 │
 ├── examples/                           # 示例代码
 │   ├── SM/                             # 土壤水分模拟示例（YAML 配置驱动）
-│   │   ├── case_SM_China.jl            # 中国站点模拟脚本
-│   │   ├── case_SM_China.yaml          # 中国站点配置文件
-│   │   ├── case_SM_uscrn.jl            # USCRN站点模拟脚本
-│   │   ├── case_SM_uscrn.yaml          # USCRN配置文件
-│   │   ├── case_uscrn_BEPS.jl          # BEPS求解器示例
-│   │   ├── case_uscrn_BEPS.yaml        # BEPS配置文件
+│   │   ├── case_SM_Bonan_China.jl      # Bonan求解器中国站点示例
+│   │   ├── case_SM_Bonan_China.yaml    # Bonan求解器中国站点配置
+│   │   ├── case_SM_Bonan_uscrn.jl      # Bonan求解器USCRN示例
+│   │   ├── case_SM_Bonan_uscrn.yaml    # Bonan求解器USCRN配置
+│   │   ├── BEPS/                       # BEPS求解器示例
+│   │   │   ├── case_SM_BEPS_uscrn.jl
+│   │   │   └── case_SM_BEPS_uscrn.yaml
 │   │   ├── data/                       # 数据目录
 │   │   ├── images/                     # 输出图表目录
 │   │   └── output/                     # 优化结果输出目录
-│   ├── Tsoil_ex01_CUG/                 # 温度模拟示例
-│   ├── Tsoil_ex02_isusm/               # ISUSM 温度模拟示例
+│   ├── Tsoil/                          # 土壤温度模拟示例
+│   │   ├── case_Tsoil_CUG.jl           # CUG 站点温度模拟
+│   │   ├── case_Tsoil_CUG.yaml         # CUG 配置文件
+│   │   ├── case_Tsoil_isusm.jl         # ISUSM 温度模拟
+│   │   ├── case_Tsoil_isusm.yaml       # ISUSM 配置文件
+│   │   ├── case_Tsoil_uscrn_03.jl      # USCRN 温度模拟
+│   │   └── case_Tsoil_uscrn_03.yaml    # USCRN 温度配置文件
 │   ├── main_plot.jl                    # 通用绘图功能
 │   └── common/SoilConfig.jl            # 配置工具（旧版）
 │
@@ -280,27 +288,33 @@ end
 
 ```julia
 @with_kw mutable struct Config
-  # data: 数据相关配置
-  file::String              # 数据文件路径
-  col_time::Int = 1         # 时间列索引
-  col_obs_start::Int = 2    # 观测数据起始列
-  scale_factor::Float64 = 1.0
-  zs_obs_orgin::Vector{Float64}  # 原始观测深度 [cm]
-  zs_obs::Vector{Float64}        # 插值后观测深度 [cm]
-  z_bound_top::Float64 = 10.0    # 顶层边界层深度 [cm]
+  ## 模型类型: "SM" | "Tsoil"
+  model_type::String = "SM"
 
-  # model: 模型参数配置
+  ## data: 数据相关配置
+  file::String = ""              # 数据文件路径
+  fileConfig::String = ""        # 配置文件路径
+  col_time::Int = 1              # 时间列索引
+  col_obs_start::Int = 2         # 观测数据起始列
+  scale_factor::Float64 = 1.0
+  zs_obs_orgin::Vector{Float64}  # 原始观测深度 [cm]，Tsoil可选
+  zs_obs::Vector{Float64}        # 插值后观测深度 [cm]，Tsoil可选
+  z_bound_top::Float64 = 10.0    # 顶层边界层深度 [cm]
+  itop::Int = 1                  # [derived] 上边界层在观测数据中的索引
+
+  ## model: 模型参数配置
   soil_type::Int = 7
   same_layer::Bool = false
-  method_retention::String = "van_Genuchten"  # 持水曲线方法
-  method_solve::String = "Bonan"              # 求解方法: "Bonan" 或 "ODE"
+  method_retention::String = "van_Genuchten"  # 持水曲线方法（SM特有）
+  method_solve::String = "Bonan"              # 求解方法: "Bonan" | "ODE" | "BEPS"
   dt::Float64 = 3600.0
-  zs_center::Vector{Float64}  # 模拟层中心深度 [cm]
+  zs_center::Vector{Float64}     # 模拟层中心深度 [cm]
+  grid::NamedTuple               # [derived] 预计算的网格信息 (z, z₊ₕ, Δz, Δz₊ₕ, N, ibeg, itop)
   
-  # 自定义土壤参数（可选，用于覆盖标准参数）
+  # 自定义土壤参数（可选，用于覆盖标准参数）- SM 特有
   soil_params::Union{Dict{String,Float64},Nothing} = nothing
 
-  # optimization: 优化配置
+  ## optimization: 优化配置
   optim::Bool = false
   maxn::Int = 100
   objective::String = "NSE"   # 目标函数: "NSE" 或 "KGE"
@@ -308,10 +322,19 @@ end
 
   # output: 输出配置
   plot_file::String = ""
+
+  # internal
+  config_file::String = ""  # 配置文件路径（用于日志命名）
 end
 ```
 
 使用 `load_config(fileConfig)` 从 YAML 加载配置。配置文件中 `optimization.enable` 映射到 `optim` 字段，`optimization.objective` 决定 `of_fun` 的值（NSE→`of_NSE`，KGE→`of_KGE`）。
+
+**Config 网格计算**: `load_config` 会自动计算并填充 `grid` 字段，包含：
+- `z`, `z₊ₕ`, `Δz`, `Δz₊ₕ`: 深度和厚度数组
+- `N`: 土壤层数
+- `ibeg`: 模拟起始层索引（`z_bound_top` 对应的下一层）
+- `itop`: 上边界层在观测数据中的索引
 
 ### 5.3 网格系统 (交错网格)
 
@@ -361,30 +384,48 @@ end
 | `soil_temperature!`    | Tsurf (Dirichlet) | 已知地表温度   |
 | `soil_temperature_F0!` | F0 (Neumann)      | 已知地表热通量 |
 
-### 6.3 基于配置的高阶 API（新增）
+### 6.3 基于配置的高阶 API
 
-位于 `src/Config_Run.jl`，简化批量模拟 workflow：
+位于 `src/Model_Soil.jl`，简化批量模拟 workflow：
 
-| 函数                                               | 说明                                                                                 |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `InitSoil(config, data_obs)`                       | 从配置初始化土壤对象，返回 `(soil, θ_surf, yobs)`                                    |
-| `SM_simulate(config, data_obs, theta; θ0=nothing)` | 运行完整模拟，返回 `(ysim, yobs)`。支持 `method_solve`: `"Bonan"`, `"ODE"`, `"BEPS"` |
-| `SM_goal(config, data_obs, theta)`                 | 计算优化目标函数值（用于 SCE-UA）                                                    |
+| 函数                                                          | 说明                                                                                  |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `setup(config, data_obs)`                                     | 初始化土壤对象和状态，返回 `(soil, state, θ_top, yobs)`                               |
+| `Soil_predict(config, theta, state, θ_top)`                   | 运行预测模拟，返回 `ysim`。支持 `method_solve`: `"Bonan"`, `"ODE"`, `"BEPS"`        |
+| `Soil_goal(config, theta, state, θ_top, yobs)`                | 计算优化目标函数值（用于 SCE-UA）                                                     |
+| `Soil_main(config, data_obs, SITE, dates; maxn, plot_fun...)` | 完整的优化和可视化流程，包括参数优化、结果保存和绘图                                  |
 
-**InitSoil 工作流程**：
-1. 从 `zs_center` 计算网格结构 (`Δz`, `z`, `z₊ₕ`)
-2. 根据 `z_bound_top` 确定模拟起始层 (`ibeg`)
-3. 提取边界层数据 (`θ_surf`) 和观测数据 (`yobs`)
-4. 根据 `soil_type` 获取土壤参数
-5. 创建并初始化 `Soil` 对象
+**setup 工作流程**：
+1. 调用 `init_SM(config)` 创建土壤对象
+2. 使用 `observe_to_state` 将观测数据映射到模型状态
+3. 提取上边界层数据 (`θ_top`) 和下层观测数据 (`yobs`)
+4. 返回初始化后的对象
 
-### 6.4 工具函数
+**Soil_predict 支持的求解器**：
+- `"Bonan"`: 使用 `solve_SM_Bonan` 求解
+- `"ODE"`: 使用 `solve_SM_ODE` 求解（需要加载 OrdinaryDiffEqTsit5）
+- `"BEPS"`: 使用 `soil_moisture_BEPS` 求解
+
+### 6.4 求解器接口（SoilMoisture/Solve_SM.jl）
+
+| 函数                                                   | 说明                                              |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `solve_SM_Bonan(soil, θ_top)`                          | Bonan 隐式求解器，逐时间步求解 Richards 方程      |
+| `solve_SM_ODE(soil, θ_top; solver, reltol, abstol)`    | ODE 求解器接口，支持 Tsit5, Rosenbrock23 等       |
+| `ModSim_SM(soil, θ_top; method, kw...)`                | 统一求解器接口，method 可选 "Bonan" 或 "ODE"      |
+| `SM_param2theta(soil)`                                 | 将 soil 参数转换为优化向量 theta                  |
+| `SM_UpdateParam!(soil, theta)`                         | 用优化向量 theta 更新 soil 参数                   |
+| `SM_paramBound(soil)`                                  | 返回参数优化上下界 `(lower, upper)`               |
+
+### 6.5 工具函数
 
 位于 `src/ultilize.jl`：
 
 | 函数                             | 说明                   |
 | -------------------------------- | ---------------------- |
 | `interp_data_depths(A, z, zout)` | 按深度插值观测数据矩阵 |
+| `init_grid(zs_center)`           | 根据层中心深度初始化网格 |
+| `find_layer_indices(z_bound_top, zs_sim, zs_obs)` | 查找边界层对应的模拟层和观测层索引 |
 
 ---
 
@@ -436,7 +477,7 @@ prob = ODEProblem(RichardsEquation, u0, tspan, soil)
 sol = solve(prob, Tsit5(), reltol=1e-6, abstol=1e-6)
 ```
 
-### 7.5 使用 YAML 配置运行
+### 7.5 使用 YAML 配置运行（新 API）
 
 ```julia
 using SoilDifferentialEquations, Ipaper, RTableTools
@@ -451,32 +492,27 @@ d = fread(joinpath(dirname(fileConfig), config.file))
 data_origin = d[:, 2:end] |> Matrix |> drop_missing
 data_obs = interp_data_depths(data_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
 
-# 初始化土壤对象
-soil, θ_surf, yobs = InitSoil(config, data_obs)
+# 初始化土壤对象和状态
+soil, state, θ_top, yobs = setup(config, data_obs)
 
-# 运行优化（如果启用）
-if config.optim
-    lower, upper = SM_paramBound(soil)
-    theta0 = SM_param2theta(soil)
-    println("Optimizing (SCE-UA, $(config.objective), maxn=$(config.maxn))...")
-    @time theta_opt, feval, _ = sceua(theta -> SM_goal(config, data_obs, theta),
-        theta0, lower, upper; maxn=config.maxn)
-    
-    f = joinpath(dirname(fileConfig), "output/theta")
-    serialize(f, theta_opt)
-    SM_UpdateParam!(soil, theta_opt)
-else
-    println("Initial loss: $(SM_goal(config, data_obs, SM_param2theta(soil)))")
-end
+# 运行完整优化流程（包括可视化）
+soil, theta_opt, best_cost = Soil_main(config, data_obs, SITE, dates; 
+    plot_fun=plot_result, method_retention="van_Genuchten", maxn=10000)
+```
 
-# 模拟并绘图
-if !isempty(config.plot_file)
-    theta = SM_param2theta(soil)
-    ysim, yobs = SM_simulate(config, data_obs, theta)
-    depths = round.(Int, -soil.z[soil.inds_obs] .* 100)
-    fout = joinpath(dirname(fileConfig), config.plot_file)
-    plot_result(; ysim, yobs, dates=d[:, 1], depths, fout)
-end
+**手动控制优化流程**（可选）：
+```julia
+# 参数边界和初始值
+lower, upper = SM_paramBound(soil)
+theta0 = SM_param2theta(soil)
+
+# 手动运行 SCE-UA 优化
+theta_opt, feval, _ = sceua(
+    theta -> Soil_goal(config, theta, state, θ_top, yobs),
+    theta0, lower, upper; maxn=config.maxn)
+
+# 运行预测
+ysim = Soil_predict(config, theta_opt, state, θ_top)
 ```
 
 配置文件示例 (`case_SM_China.yaml`):
@@ -511,71 +547,76 @@ output:
 
 ### 7.6 USCRN 站点模拟示例
 
-USCRN (U.S. Climate Reference Network) 数据模拟示例 (`case_SM_uscrn.jl`):
+USCRN (U.S. Climate Reference Network) 数据模拟示例 (`case_SM_Bonan_uscrn.jl`):
 
 ```julia
-using SoilDifferentialEquations, Ipaper, RTableTools, Dates, YAML
-using LazyArtifacts
+using SoilDifferentialEquations, Ipaper, RTableTools, Dates, LazyArtifacts
 include("../main_plot.jl")
 
-fileConfig = "examples/SM/case_SM_uscrn.yaml"
+fileConfig = "examples/SM/case_SM_Bonan_uscrn.yaml"
 config = load_config(fileConfig)
 
 # 加载 USCRN 数据（通过 artifact）
-site_index = 3
-vars_SM = Symbol.(["SOIL_MOISTURE_5", "SOIL_MOISTURE_10", ...])
-f_uscrn2024 = artifact"USCRN2024" * "/USCRN_hourly_2024_sp54_Apr-Jun.csv"
-df = fread(f_uscrn2024)
-sites = unique_sort(df.site)
-SITE = sites[site_index]
-d = df[df.site.==SITE, [:time; vars_SM]]
+function load_uscrn_data(site_index::Int)
+    vars_SM = [:SOIL_MOISTURE_5, :SOIL_MOISTURE_10, :SOIL_MOISTURE_20, 
+               :SOIL_MOISTURE_50, :SOIL_MOISTURE_100]
+    f_uscrn2024 = artifact"USCRN2024" * "/USCRN_hourly_2024_sp54_Apr-Jun.csv"
+    df = fread(f_uscrn2024)
+    sites = unique_sort(df.site)
+    SITE = sites[site_index]
+    d = df[df.site.==SITE, [:time; vars_SM]]
+    return d, SITE
+end
 
-# 数据准备和模拟流程与 case_SM_China.jl 相同
+d, SITE = load_uscrn_data(3)
+
+# 数据准备
+(; zs_obs_orgin, zs_obs, scale_factor) = config
 data_origin = d[:, 2:end] |> Matrix |> drop_missing
-data_obs = interp_data_depths(data_origin .* config.scale_factor, config.zs_obs_orgin, config.zs_obs)
+data_obs = interp_data_depths(data_origin .* scale_factor, zs_obs_orgin, zs_obs)
 
-soil, θ_surf, yobs = InitSoil(config, data_obs)
-# ... 优化和绘图
+# 使用新 API 运行优化
+Soil_main(config, data_obs, SITE, d.time; plot_fun=plot_result, maxn=10000)
 ```
 
 ### 7.7 BEPS 求解器示例
 
 BEPS (Boreal Ecosystem Productivity Simulator) 土壤水分求解器示例，支持自定义土壤参数：
 
-配置文件示例 (`case_uscrn_BEPS.yaml`):
+配置文件示例 (`case_SM_BEPS_uscrn.yaml`):
 ```yaml
 # SM_uscrn BEPS 土壤水模拟配置文件
-# BEPS 求解器专用配置，包含优化后的土壤参数
 
 data:
-  col_time: 1            # 时间列索引
+  file: "USCRN_hourly_2024_sp54_Apr-Jun.csv"
+  col_time: 1
   col_obs_start: 3       # 土壤水分数据起始列（跳过P_CALC）
-  scale_factor: 1.0      # 数据已经是标准单位
+  scale_factor: 1.0
 
-  z_bound_top: 5         # 上边界层深度 [cm]
+  z_bound_top: 5
   zs_obs_orgin: [5, 10, 20, 50, 100]
   zs_obs: [5, 10, 20, 50, 100]
 
 model:
-  soil_type: 7                             # 基础土壤类型（会被自定义参数覆盖）
-  same_layer: true                         # BEPS 使用统一参数
+  soil_type: 7
+  same_layer: true                       # BEPS 使用统一参数
   method_retention: "van_Genuchten"
-  method_solve: "BEPS"                     # 使用 BEPS 求解器
-  dt: 3600.0                               # 时间步长（秒）
-  zs_center: [1.25, 5, 10, 20, 50, 100]    # 层中心深度 [cm]
+  method_solve: "BEPS"                   # 使用 BEPS 求解器
+  dt: 3600.0
+  zs_center: [1.25, 5, 10, 20, 50, 100]
 
-  # BEPS 优化的土壤参数（关键！）
+  # 自定义土壤参数
   soil_params:
-    θ_sat: 0.30     # 饱和含水量
-    θ_res: 0.03     # 残余含水量
-    Ksat: 1.04          # 饱和导水率 [cm/h]
-    α: 0.036        # 进气值倒数 [cm^-1]
-    n: 1.56             # 孔隙分布指数
+    θ_sat: 0.30
+    θ_res: 0.03
+    Ksat: 1.04
+    α: 0.036
+    n: 1.56
 
 optimization:
   enable: true
-  maxn: 2000                              # BEPS 收敛较快
-  objective: "KGE"                         # BEPS 使用 KGE
+  maxn: 2000
+  objective: "KGE"
 
 output:
   plot_file: "plot_BEPS.png"
@@ -586,7 +627,34 @@ output:
 - `soil_params` 字段用于覆盖标准土壤类型参数
 - BEPS 使用内部迭代直至收敛，通常需要较少的 SCE-UA 迭代次数
 
-### 7.8 土壤质地分类（USDA）
+### 7.8 土壤温度模拟示例（Tsoil）
+
+```yaml
+# Tsoil_CUG 土壤温度模拟配置文件
+model:
+  model_type: "Tsoil"         # 模型类型: 土壤温度模拟
+  soil_type: 7
+  dt: 3600.0
+  zs_center: [0, 5, 10, 15, 20, 40, 80, 160, 320]
+  method_solve: "Bonan"
+
+data:
+  file: "../../data/TS_CUG_202306.csv"
+  col_time: 1
+  col_obs_start: 2
+  scale_factor: 1.0
+  z_bound_top: 5              # 上边界层深度 (cm)
+
+optimization:
+  enable: true
+  maxn: 5000
+  objective: "NSE"
+
+output:
+  plot_file: "plot_Tsoil_CUG.png"
+```
+
+### 7.9 土壤质地分类（USDA）
 
 使用 `USDA` 模块进行土壤质地分类：
 
@@ -654,7 +722,3 @@ info = error_SM(soil)
 - 求解器文档: `docs/SM_solver.md`
 - 土壤特征曲线: `docs/Retention.md`
 - 地下水模块: `docs/ch09_groundwater.md`
-
----
-
-**最后更新**: 2026-02-02

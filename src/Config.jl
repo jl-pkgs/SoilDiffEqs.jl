@@ -19,6 +19,7 @@ using Parameters, YAML
   zs_obs::Vector{Float64} = Float64[]        # 插值后的观测深度
   z_bound_top::Float64 = 10.0                # top boundary layer depth [cm]
   itop::Int = 1                              # [derived] index of top boundary 
+  inds_obs::Vector{Int} = Int[]              # [derived] indices of observed layers in simulation grid 
 
   ## model
   soil_type::Int = 7
@@ -108,11 +109,23 @@ function load_config(fileConfig::String)
 
   itop = findfirst(==(z_bound_top), abs.(zs_obs))        # index of obs top boundary layer  
   ibeg = findfirst(==(z_bound_top), abs.(zs_center)) + 1 # index of soil modelling start
-  grid = (; z, z₊ₕ, Δz, Δz₊ₕ, N, ibeg, itop)
+  
+  # 计算观测层在模拟网格中的索引
+  # 只保留从 itop+1 开始的观测层（排除上边界层），且必须在模拟范围内（>= ibeg）
+  inds_obs = Int[]
+  for (i, z_obs) in enumerate(zs_obs)
+    i > itop || continue  # 跳过上边界层及之前的层
+    idx = findfirst(==(z_obs), abs.(zs_center))
+    if idx !== nothing && idx >= ibeg
+      push!(inds_obs, idx)
+    end
+  end
+  
+  grid = (; z, z₊ₕ, Δz, Δz₊ₕ, N, ibeg, itop, inds_obs)
 
   Config(;
     model_type,  # 模型类型
-    file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, itop, # data
+    file, fileConfig, col_time, col_obs_start, scale_factor, zs_obs_orgin, zs_obs, z_bound_top, itop, inds_obs, # data
     soil_type, same_layer, method_retention, method_solve, dt, zs_center, soil_params, grid, # model
     optim, maxn, objective, of_fun, # optimization
     plot_file, # output

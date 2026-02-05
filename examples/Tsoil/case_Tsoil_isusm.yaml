@@ -1,6 +1,26 @@
 # Tsoil_isusm 土壤温度模拟配置文件
 # 数据: Iowa State University Soil Moisture Network (ISUSM) 2022年7月
 
+data:
+  file: "../../data/TS_isusm_202207.csv"
+  col_time: 1
+  col_obs_start: 4             # 跳过 time, Ta, prcp，从 sv_t04 开始
+  scale_factor: 1.0
+  
+  # 原始观测深度 (inch -> cm)
+  # 4"=10.16cm, 12"=30.48cm, 14"=35.56cm, 16"=40.64cm, 20"=50.8cm, 
+  # 24"=60.96cm, 28"=71.12cm, 32"=81.28cm, 36"=91.44cm, 42"=106.68cm, 
+  # 50"=127.0cm, 52"=132.08cm
+  zs_obs_orgin: [10.16, 30.48, 35.56, 40.64, 50.8, 60.96, 71.12, 81.28, 91.44, 106.68, 127.0, 132.08]
+  
+  # 插值后的观测深度（与 zs_center 对齐，用于模拟）
+  # 注意：第1个观测层(10.16cm)对应模拟层第3层(12.5cm)附近
+  # Tsurf 使用第2个观测层 12inch=30.48cm，最接近模拟层第7层 (32.5cm)
+  zs_obs: [12.5, 32.5, 37.5, 42.5, 52.5, 62.5, 72.5, 82.5, 92.5, 107.5, 127.5, 132.5]
+  
+  z_bound_top: 32.5            # 32.5cm 处，对应 12inch 观测层
+
+
 model:
   model_type: "Tsoil"
   soil_type: 7                # LOAM
@@ -13,16 +33,6 @@ model:
   
   method_solve: "Bonan"        # 使用 Bonan 求解器（ODE 较慢）
 
-data:
-  file: "../../data/TS_isusm_202207.csv"
-  col_time: 1
-  col_obs_start: 4             # 跳过 time, Ta, prcp，从 sv_t04 开始
-  scale_factor: 1.0
-  
-  # 原始观测深度 (inch -> cm)
-  # 4"=10.16cm, 12"=30.48cm, 14"=35.56cm, ..., 52"=132.08cm
-  # Tsurf 使用第2个观测层 12inch=30.48cm，最接近模拟层第7层 (32.5cm)
-  z_bound_top: 32.5            # 32.5cm 处，对应 12inch 观测层
 
 optimization:
   enable: true

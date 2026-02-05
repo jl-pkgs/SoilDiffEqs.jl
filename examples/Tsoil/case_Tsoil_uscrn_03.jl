@@ -2,7 +2,7 @@ using SoilDifferentialEquations, Ipaper, RTableTools, Dates
 using LazyArtifacts
 include("../main_plot.jl")
 
-fileConfig = isempty(ARGS) ? joinpath(@__DIR__, "case_Tsoil_uscrn.yaml") : ARGS[1]
+fileConfig = isempty(ARGS) ? joinpath(@__DIR__, "case_Tsoil_uscrn_03.yaml") : ARGS[1]
 config = load_config(fileConfig)
 
 # 从 artifact 加载 USCRN 数据
@@ -36,6 +36,15 @@ dates = dates[valid_rows]
 dates = [DateTime(String(ds)[1:end-1]) for ds in dates]
 
 # 运行模拟
-model_main(config, data_obs, String(SITE), dates; plot_fun=plot_result)
+soil, theta_opt, best_cost = Soil_main(config, data_obs, String(SITE), dates; 
+  plot_fun=plot_result, maxn=config.maxn)
 
 println("Site $SITE processed!")
+println("Optimization completed. Best cost: $best_cost")
+if config.grid.N <= 5
+  println("Optimized parameters:")
+  println("  κ = $(soil.param.κ) W/m/K")
+  println("  cv = $(soil.param.cv ./ 1e6) MJ/m³/K")
+else
+  println("Optimized parameters: κ = $(soil.param.κ[1]) W/m/K, cv = $(soil.param.cv[1]/1e6) MJ/m³/K")
+end
