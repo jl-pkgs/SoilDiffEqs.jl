@@ -1,24 +1,28 @@
 using Serialization: serialize
+using Ipaper: approx
+
 export Soil_predict, Soil_goal, Soil_main
 export setup, model_main
 export Tsoil_param2theta, Tsoil_UpdateParam!, Tsoil_paramBound
 
 
-function observe_to_state(state_obs, N::Int, ibeg::Int, itop::Int)
-  N_obs = length(state_obs)
-  N_input = min(N_obs - itop + 1, N) # itop:N_obs
-  N_need = N - ibeg + 2 # 从ibeg-1到N
+"""
+    observe_to_state(state_obs, zs_obs, zs_sim)
 
-  state = zeros(eltype(state_obs), N)
-  state[1:ibeg-2] .= state_obs[1] # 上边界层全部赋值为第一个观测值
+将观测数据通过深度插值映射到模拟网格。
+使用 `approx` 进行线性插值，将 `zs_obs` 深度的观测值插值到 `zs_sim` 深度。
 
-  if N_input == N_need
-    state[ibeg-1:N] = state_obs[itop:end]
-  else
-    # N_input = x - (ibeg - 1) + 1 ==> x = N_input + ibeg - 2
-    state[ibeg-1:N_input+ibeg-2] .= state_obs[itop:end] # len = N_input
-    state[N_input+ibeg-1:N] .= state_obs[end]
-  end
+# Arguments
+- `state_obs`: 观测数据向量 (长度 = length(zs_obs))
+- `zs_obs`: 观测深度 [cm]
+- `zs_sim`: 模拟网格深度 [cm]
+
+# Returns
+- `state`: 插值到模拟网格的状态向量 (长度 = length(zs_sim))
+"""
+function observe_to_state(state_obs::AbstractVector{T}, zs_obs::AbstractVector, zs_sim::AbstractVector) where {T<:Real}
+  # 使用 approx 进行深度插值
+  state = approx(zs_obs, state_obs, zs_sim)
   return state
 end
 
@@ -54,16 +58,28 @@ function init_SM(config)
 end
 
 
-function init_Tsoil(config)
-  (; dt, soil_type) = config
+function init_Tsoil(config; Tsoil_init=nothing)
+  (; dt, soil_type, same_layer) = config
   (; N, ibeg, z, z₊ₕ, Δz, Δz₊ₕ) = config.grid
   inds_obs = config.inds_obs
 
-  # 初始化热力参数（使用默认值，后续会被优化参数覆盖）
+  # 使用 soil_properties_thermal 物理公式计算 κ 和 cv（与原版一致）
+  # 假设 80% 饱和含水量（原版使用的值）
+  θ_sat = θ_S[soil_type]
+  m_sat = θ_sat * ρ_wat .* Δz  # 每层的饱和含水量 [kg/m²]
+  m_ice = zeros(N)
+  m_liq = 0.8 .* m_sat  # 80% 饱和（原版使用的值）
+
+  # 如果没有提供初始温度，使用 20°C 作为默认值
+  Tsoil_default = isnothing(Tsoil_init) ? fill(20.0, N) : Tsoil_init
+
+  # 使用物理公式计算热力参数
+  # κ, cv = soil_properties_thermal(Δz, Tsoil_default, m_liq, m_ice; soil_type)
+
   κ = fill(1.0, N)  # 热导率 [W/m/K]
   cv = fill(2.0e6, N)  # 热容量 [J/m³/K]
 
-  param = SoilParam{Float64}(; N, κ, cv)
+  param = SoilParam{Float64}(; N, κ, cv, same_layer)
   soil = Soil{Float64}(; dt, N, ibeg, z, z₊ₕ, Δz, Δz₊ₕ, param, inds_obs)
   return soil
 end
@@ -88,7 +104,8 @@ function Soil_predict(config::Config, theta, state, θ_top)
       error("Unknown method_solve: $(config.method_solve)")
     end
   elseif model_type == "Tsoil"
-    soil = init_Tsoil(config)
+    # 使用 state 作为初始温度来计算 κ/cv
+    soil = init_Tsoil(config; Tsoil_init=state)
     set_state!(soil, state, model_type)
     Tsoil_UpdateParam!(soil, theta)
 
@@ -120,14 +137,19 @@ end
 
 function setup(config::Config, data_obs::AbstractMatrix{T}) where {T<:Real}
   (; N, ibeg, itop) = config.grid
-  state = observe_to_state(data_obs[1, :], N, ibeg, itop)
+  (; zs_obs, zs_center) = config
+
+  # 使用 approx 进行深度插值：将观测深度的数据插值到模拟网格深度
+  state = observe_to_state(data_obs[1, :], zs_obs, zs_center)
+
   θ_top = data_obs[:, itop]         # 边界层（ibeg-1层）的数据作为地表输入
   yobs = data_obs[:, (itop+1):end]  # 从模拟起始层（ibeg层）开始的观测数据 
 
   if config.model_type == "SM"
     soil = init_SM(config)
   elseif config.model_type == "Tsoil"
-    soil = init_Tsoil(config)
+    # 使用插值后的初始温度来计算 κ/cv（与原版一致）
+    soil = init_Tsoil(config; Tsoil_init=state)
   else
     error("Unknown model_type: $(config.model_type)")
   end
@@ -193,7 +215,7 @@ function Soil_main(config::Config, data_obs::AbstractMatrix{T}, SITE::AbstractSt
   elseif config.model_type == "Tsoil"
     Tsoil_UpdateParam!(soil, theta_opt)
   end
-  
+
   best_cost = Soil_goal(config, theta_opt, state, θ_top, yobs)
   return soil, theta_opt, best_cost
 end
@@ -230,7 +252,7 @@ function Tsoil_paramBound(soil::Soil{T}) where {T<:Real}
   # cv (热容量): 1e6 - 5e6 J/m³/K
   LOWER = [0.1, 1.0e6]
   UPPER = [10.0, 5.0e6]
-  
+
   if same_layer
     return LOWER, UPPER
   else

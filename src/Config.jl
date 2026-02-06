@@ -136,7 +136,7 @@ end
 
 
 function guess_outdir(config::Config, outdir=nothing)
-  isnothing(outdir) ? joinpath(dirname(config.file), "outdir") : outdir
+  isnothing(outdir) ? joinpath(dirname(config.config_file), "outdir") : outdir
 end
 
 function open_log(config::Config, log_file=nothing)
