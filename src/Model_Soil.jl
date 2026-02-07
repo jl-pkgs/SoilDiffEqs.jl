@@ -3,7 +3,6 @@ using Ipaper: approx
 
 export Soil_predict, Soil_goal, Soil_main
 export setup, model_main
-export Tsoil_param2theta, Tsoil_UpdateParam!, Tsoil_paramBound
 
 
 """
@@ -220,42 +219,3 @@ function Soil_main(config::Config, data_obs::AbstractMatrix{T}, SITE::AbstractSt
   return soil, theta_opt, best_cost
 end
 
-
-## Tsoil 参数处理函数
-function Tsoil_param2theta(soil::Soil{T}) where {T<:Real}
-  N = soil.N
-  (; same_layer) = soil.param
-  if same_layer
-    return [soil.param.κ[1], soil.param.cv[1]]
-  else
-    return [soil.param.κ; soil.param.cv]
-  end
-end
-
-function Tsoil_UpdateParam!(soil::Soil{T}, theta::AbstractVector{T}) where {T<:Real}
-  N = soil.N
-  (; same_layer) = soil.param
-  if same_layer
-    soil.param.κ .= theta[1]
-    soil.param.cv .= theta[2]
-  else
-    soil.param.κ .= theta[1:N]
-    soil.param.cv .= theta[N+1:2N]
-  end
-  return nothing
-end
-
-function Tsoil_paramBound(soil::Soil{T}) where {T<:Real}
-  N = soil.N
-  (; same_layer) = soil.param
-  # κ (热导率): 0.1 - 10 W/m/K
-  # cv (热容量): 1e6 - 5e6 J/m³/K
-  LOWER = [0.1, 1.0e6]
-  UPPER = [10.0, 5.0e6]
-
-  if same_layer
-    return LOWER, UPPER
-  else
-    return repeat(LOWER; inner=N), repeat(UPPER; inner=N)
-  end
-end
